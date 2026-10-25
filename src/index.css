@@ -124,20 +124,42 @@
   --shadow-card: 0 2px 6px rgba(28, 25, 23, 0.06);
 }
 
-/* Normalización Global del Modelo de Caja (box-sizing: border-box) */
+/* Normalización Global del Modelo de Caja (Regla 1: box-sizing: border-box) */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
 
+html {
+  font-size: 100%; /* Base 16px = 1rem (Regla 3: Tipografía Escalable y Resistencia al Zoom) */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   color: var(--color-text-base);
   background-color: var(--color-bg-page);
   margin: 0;
+  font-size: 1rem;
   font-family: "Geist", "Geist Fallback", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
+}
+
+/* Regla 4: Multimedia e Imágenes Flexibles */
+img,
+ picture,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
+}
+
+svg {
+  flex-shrink: 0;
 }
 
 /* ==========================================================================
@@ -146,19 +168,27 @@ body {
 
 .dash-main {
   width: 100%;
+  max-width: 100vw;
   min-height: 100vh;
+  overflow-x: clip;
   background-color: var(--color-bg-page);
 }
 
 #main-content {
   display: block;
   width: 100%;
-  max-width: 1180px;
+  max-width: 1560px;
+  min-width: 0;
   margin: 0 auto;
-  padding: 24px;
+  padding: 20px clamp(12px, 2.2vw, 32px);
   box-sizing: border-box;
   font-family: "Geist", "Geist Fallback", system-ui, sans-serif;
   color: var(--color-text-base);
+}
+
+#main-content > section {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .dash-navbar {
@@ -167,9 +197,9 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 10px 16px;
-  max-width: 1180px;
+  max-width: 1560px;
   margin: 0 auto;
-  padding: 8px 20px;
+  padding: 8px clamp(12px, 2.2vw, 32px);
 }
 
 .header-nav-tabs {
@@ -275,19 +305,21 @@ body {
 .dash-stat-grid,
 #overview {
   display: grid;
-  gap: 24px;
-  margin-bottom: 32px;
+  gap: 12px;
+  margin-bottom: 16px;
   grid-template-columns: 1fr;
 }
 
 @media (min-width: 640px) {
-  .dash-stat-grid {
+  .dash-stat-grid,
+  #overview {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1024px) {
-  .dash-stat-grid {
+  .dash-stat-grid,
+  #overview {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
@@ -296,9 +328,12 @@ body {
 .craft-card {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 24px;
-  border-radius: 14px;
+  gap: 14px;
+  padding: 16px 18px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
   border: 0.73px solid rgb(216, 204, 168);
   color: #261f14;
 
@@ -312,13 +347,20 @@ body {
     rgb(216, 204, 168) 100%
   );
 
-  /* Combinación de 5 sombras para efecto de relieve e iluminación */
+  /* Combinación de sombras para efecto de relieve e iluminación */
   box-shadow:
-    rgba(255, 255, 255, 0.55) 0px 3px 6px 0px inset,   /* Brillo superior interno */
-    rgba(0, 0, 0, 0.3) 0px -4px 10px 0px inset,        /* Sombra inferior interna */
-    rgba(80, 70, 40, 0.55) 0px 18px 55px 0px,          /* Sombra proyectada suave */
-    rgba(0, 0, 0, 0.3) 0px 4px 12px 0px,               /* Sombra de apoyo */
-    rgba(90, 80, 50, 0.5) 0px 0px 0px 1px;             /* Borde exterior fino */
+    rgba(255, 255, 255, 0.55) 0px 2px 4px 0px inset,
+    rgba(0, 0, 0, 0.22) 0px -3px 8px 0px inset,
+    rgba(80, 70, 40, 0.28) 0px 8px 24px 0px,
+    rgba(0, 0, 0, 0.18) 0px 2px 6px 0px,
+    rgba(90, 80, 50, 0.45) 0px 0px 0px 1px;
+}
+
+/* Ritmo vertical compacto para las 4 tarjetas de indicadores (#overview) */
+#overview .craft-card,
+.craft-kpi-card {
+  padding: 12px 16px;
+  gap: 4px;
 }
 
 /* Cuando el usuario cambia a otro tema (clean, bento, shadcn, paper), .craft-card se adapta suavemente */
@@ -337,8 +379,8 @@ body {
 .bento-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
-  margin-bottom: 32px;
+  gap: 16px;
+  margin-bottom: 20px;
 }
 
 @media (min-width: 640px) {
@@ -357,7 +399,7 @@ body {
   background-color: var(--color-bg-card);
   border: 1.5px solid var(--color-border-default);
   border-radius: var(--radius-outer);
-  padding: 24px;
+  padding: 20px;
   box-shadow: var(--shadow-card);
   color: var(--color-text-main);
 }
@@ -366,9 +408,9 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 12px;
-  padding: 20px 24px;
-  border-radius: 14px;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: 12px;
   border: 0.73px solid rgb(216, 204, 168);
   color: #261f14;
   background-image: linear-gradient(
@@ -380,11 +422,11 @@ body {
     rgb(216, 204, 168) 100%
   );
   box-shadow:
-    rgba(255, 255, 255, 0.55) 0px 3px 6px 0px inset,
-    rgba(0, 0, 0, 0.25) 0px -4px 10px 0px inset,
-    rgba(80, 70, 40, 0.4) 0px 14px 36px 0px,
-    rgba(0, 0, 0, 0.22) 0px 4px 10px 0px,
-    rgba(90, 80, 50, 0.5) 0px 0px 0px 1px;
+    rgba(255, 255, 255, 0.55) 0px 2px 4px 0px inset,
+    rgba(0, 0, 0, 0.22) 0px -3px 8px 0px inset,
+    rgba(80, 70, 40, 0.28) 0px 8px 24px 0px,
+    rgba(0, 0, 0, 0.18) 0px 2px 6px 0px,
+    rgba(90, 80, 50, 0.45) 0px 0px 0px 1px;
 }
 
 [data-theme="clean"] .bento-metric-tile,
@@ -413,30 +455,30 @@ h2 {
   color: var(--color-text-main);
 }
 
-/* Regla No Negociable TypeUI (§0.1): Badges nunca ocupan el 100% del ancho */
+/* Regla No Negociable TypeUI (§0.1): Badges compactos y proporcionados */
 .typeui-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.2rem;
   width: fit-content;
   max-width: max-content;
   white-space: nowrap;
   flex-shrink: 0;
-  padding: 0.15rem 0.55rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.25;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .typeui-badge-primary {
-  background-color: rgba(255, 255, 255, 0.65);
+  background-color: rgba(255, 255, 255, 0.72);
   color: var(--color-primary);
   border: 1px solid var(--color-primary);
 }
 
 .typeui-badge-neutral {
-  background-color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.68);
   color: var(--color-text-main);
   border: 1px solid var(--color-border-default);
 }
@@ -634,10 +676,13 @@ input:focus-visible {
   font-weight: 600;
 }
 
-/* Calendario Horizontal y Parrilla de Horarios (TypeUI Craft Relief + WCAG 2.2 AA) */
+/* Calendario Horizontal y Parrilla de Horarios Responsiva */
 .calendar-scroll-wrapper {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   background-color: var(--color-bg-card);
   border: 1.5px solid var(--color-border-default);
   border-radius: var(--radius-outer);
@@ -646,7 +691,7 @@ input:focus-visible {
 
 .calendar-grid-table {
   width: 100%;
-  min-width: 780px;
+  min-width: 960px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -655,7 +700,9 @@ input:focus-visible {
 .calendar-grid-table td {
   border: 1px solid var(--color-border-subtle);
   vertical-align: top;
-  padding: var(--spacing-sm);
+  padding: 0.5rem 0.6rem;
+  overflow: hidden;
+  word-wrap: break-word;
 }
 
 .calendar-grid-table thead th {
@@ -665,17 +712,22 @@ input:focus-visible {
   font-size: 0.8125rem;
   text-align: left;
   border-bottom: 1.5px solid var(--color-border-default);
-  padding: 0.625rem 0.75rem;
+  padding: 0.65rem 0.7rem;
 }
 
 .calendar-hour-col {
-  width: 92px;
+  width: 84px;
+  position: sticky;
+  left: 0;
+  z-index: 10;
   background-color: var(--color-bg-subtle);
   font-weight: 700;
   font-size: 0.8125rem;
   color: var(--color-primary);
   text-align: center;
+  vertical-align: middle !important;
   border-right: 1.5px solid var(--color-border-default);
+  padding: 0.5rem 0.35rem !important;
 }
 
 /* Píldoras horizontales de día */
@@ -683,12 +735,13 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 0.5rem 0.75rem;
+  padding: 0.45rem 0.65rem;
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-inner);
   background-color: var(--color-bg-card);
   color: var(--color-text-main);
   cursor: pointer;
+  min-width: 0;
   box-shadow: rgba(255, 255, 255, 0.5) 0px 2px 4px 0px inset;
   transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -708,20 +761,25 @@ input:focus-visible {
     rgba(70, 55, 30, 0.35) 0px 6px 14px 0px;
 }
 
-/* Celdas de espacio disponible y ocupado con estilo Craft Card en citas agendadas */
+/* Celdas de espacio disponible y ocupado amplias, legibles y responsivas */
 .calendar-empty-slot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
   width: 100%;
-  min-height: 44px;
+  min-height: 36px;
   border: 1.25px dashed var(--color-border-default);
-  border-radius: var(--radius-inner);
+  border-radius: 7px;
   background-color: var(--color-bg-subtle);
   color: var(--color-text-main);
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.4rem 0.6rem;
+  line-height: 1.25;
+  padding: 0.35rem 0.6rem;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
 
 .calendar-empty-slot:hover {
@@ -732,20 +790,25 @@ input:focus-visible {
 }
 
 .calendar-booked-slot {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
   width: 100%;
-  border-radius: 10px;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 0.5rem;
   border: 0.73px solid rgb(216, 204, 168);
   border-left: 4px solid var(--color-primary);
   background-image: linear-gradient(
     175deg,
-    rgb(228, 220, 190) 0%,
-    rgb(212, 201, 162) 45%,
-    rgb(222, 212, 178) 100%
+    rgb(232, 224, 196) 0%,
+    rgb(216, 205, 168) 45%,
+    rgb(225, 215, 182) 100%
   );
   box-shadow:
-    rgba(255, 255, 255, 0.6) 0px 2px 4px 0px inset,
-    rgba(0, 0, 0, 0.15) 0px -2px 6px 0px inset,
-    rgba(80, 70, 40, 0.22) 0px 6px 16px 0px;
+    rgba(255, 255, 255, 0.65) 0px 1px 3px 0px inset,
+    rgba(80, 70, 40, 0.15) 0px 3px 8px 0px;
   color: #261f14;
   padding: 0.5rem 0.625rem;
   font-size: 0.75rem;
@@ -758,7 +821,7 @@ input:focus-visible {
   background-image: none;
   background-color: var(--color-bg-tint);
   border: 1.5px solid var(--color-primary);
-  border-left-width: 5px;
+  border-left-width: 4px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
   color: var(--color-text-main);
 }
@@ -768,10 +831,234 @@ input:focus-visible {
   background-color: var(--color-valid-bg);
 }
 
-/* Adaptabilidad Móvil para pantallas <= 480px (Sección 3.2) */
-@media (max-width: 480px) {
+/* Subcomponentes internos responsivos de .calendar-booked-slot */
+.slot-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.slot-card-patient {
+  font-size: clamp(0.75rem, 0.85vw, 0.8125rem);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text-main);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.slot-card-allergy {
+  display: block;
+  width: 100%;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #ffffff;
+  background-color: #b30000;
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.25rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Reorganización fluida de botones en la tarjeta (2 columnas cuando cabe, 1 columna si es estrecha o con zoom) */
+.slot-card-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.1rem, 1fr));
+  gap: 0.35rem;
+  width: 100%;
+  padding-top: 0.125rem;
+}
+
+@container (max-width: 145px) {
+  .slot-card-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Botones de celda con estados accesibles (:hover, :active, :focus-visible) */
+.slot-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 0.25rem;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.15;
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-primary);
+  background-color: var(--color-primary);
+  color: #ffffff;
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.slot-btn-primary:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.slot-btn-primary:active {
+  transform: translateY(1px);
+}
+
+.slot-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 0.2rem;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.15;
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-border-default);
+  background-color: rgba(255, 255, 255, 0.92);
+  color: var(--color-text-main);
+  cursor: pointer;
+  text-align: center;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.slot-btn-secondary:hover {
+  background-color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+.slot-btn-secondary:active {
+  transform: translateY(1px);
+}
+
+/* Botones de barra de herramientas y acciones de tarjetas */
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-border-default);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.toolbar-btn:hover {
+  background-color: var(--color-bg-tint);
+}
+
+.toolbar-btn:active {
+  transform: translateY(1px);
+}
+
+.toolbar-btn-active {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 0.375rem;
+  border: 1px solid var(--color-primary);
+  background-color: var(--color-primary);
+  color: #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.toolbar-btn-active:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.toolbar-btn-active:active {
+  transform: translateY(1px);
+}
+
+/* Cuadrícula Responsiva Mobile-First para Horarios (1 col móvil -> 2 tablet -> 4 laptop -> 7 escritorio) */
+.schedule-responsive-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (min-width: 540px) {
+  .schedule-responsive-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .schedule-responsive-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .schedule-responsive-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+/* Grupo de acciones en tarjetas de pacientes y barra superior (se apila o expande en móvil) */
+.card-actions-responsive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .card-actions-responsive {
+    width: auto;
+  }
+}
+
+/* Regla 5: Dimensiones de Objetivos Táctiles y Adaptabilidad Móvil */
+@media (pointer: coarse), (max-width: 768px) {
   #main-content {
-    padding: 16px;
+    padding: 0.75rem 0.625rem;
+  }
+  .craft-card {
+    padding: 0.875rem;
+    gap: 0.75rem;
+  }
+  .dash-stat-grid,
+  #overview {
+    gap: 0.625rem;
+    margin-bottom: 0.875rem;
+  }
+  .slot-btn-primary,
+  .slot-btn-secondary {
+    min-height: 2.125rem; /* 34px área táctil cómoda en celdas */
+    font-size: 0.75rem;
+  }
+  .toolbar-btn,
+  .toolbar-btn-active,
+  .header-compact-btn,
+  .header-primary-btn {
+    min-height: 2.375rem; /* 38px área táctil cómoda en barra */
+  }
+  .calendar-empty-slot {
+    min-height: 2.375rem;
   }
   .form-container {
     padding: var(--spacing-md);

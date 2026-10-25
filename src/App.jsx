@@ -563,6 +563,43 @@ export default function App() {
   };
 
   /**
+   * Activar un día cerrado en 1 clic directamente desde la Agenda
+   */
+  const handleEnableDayNow = (dayOfWeekNumber) => {
+    const dayLabel =
+      DAYS_OF_WEEK.find((d) => d.value === dayOfWeekNumber)?.label || 'Día';
+    setAvailability((prev) => {
+      const exists = prev.some((item) => item.day_of_week === dayOfWeekNumber);
+      if (exists) {
+        return prev.map((item) =>
+          item.day_of_week === dayOfWeekNumber
+            ? {
+                ...item,
+                is_active: true,
+                start_time: item.start_time || '08:00',
+                end_time: item.end_time || '13:00',
+              }
+            : item
+        );
+      }
+      return [
+        ...prev,
+        {
+          day_of_week: dayOfWeekNumber,
+          start_time: '08:00',
+          end_time: '13:00',
+          slot_duration_minutes: 60,
+          is_active: true,
+        },
+      ];
+    });
+    setBannerAlert({
+      type: 'info',
+      text: `${dayLabel} activado correctamente en el calendario (08:00 a 13:00). Puedes ajustar las horas en la pestaña Horarios.`,
+    });
+  };
+
+  /**
    * Guardar Ficha Clínica del Paciente
    */
   const handleSavePatient = async (e) => {
@@ -1238,91 +1275,91 @@ export default function App() {
         {/* VISTA 1: CALENDARIO HORIZONTAL DE AGENDA (Días en horizontal × Horas en filas) */}
         {activeTab === 'agenda' && (
           <section aria-labelledby="heading-agenda" className="space-y-6">
-            {/* Grícula #overview.dash-stat-grid con tarjetas article.craft-card extraídas de TypeUI */}
+            {/* Grícula #overview.dash-stat-grid con Diseño Compacto y Minimalista (Opción 1) */}
             <div id="overview" className="dash-stat-grid" aria-label="Resumen operativo del consultorio">
-              <article className="craft-card">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wide">
+              <article className="craft-card craft-kpi-card">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#524634]">
                     Sesiones del Día
                   </span>
-                  <span className="typeui-badge typeui-badge-primary">
+                  <span className="typeui-badge typeui-badge-primary text-[10px] px-2 py-0.5 rounded-full font-medium">
                     2 espacios / hora
                   </span>
                 </div>
-                <div className="text-2xl font-extrabold">
+                <div className="text-xl font-bold text-[#1c160e] mb-0.5 leading-snug">
                   {activeDayAppointments.length}{' '}
-                  <span className="text-sm font-semibold opacity-80">
+                  <span className="text-xs font-normal text-[#524634]">
                     / {dailyHourlySlots.length * 2} espacios
                   </span>
                 </div>
-                <p className="text-xs font-medium capitalize m-0">
+                <p className="text-[11px] font-medium text-[#5c4f3b] capitalize m-0">
                   {formatDateHuman(selectedDate)}
                 </p>
               </article>
 
-              <article className="craft-card">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wide">
+              <article className="craft-card craft-kpi-card">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#524634]">
                     Total en la Semana
                   </span>
-                  <span className="typeui-badge typeui-badge-neutral">
+                  <span className="typeui-badge typeui-badge-neutral text-[10px] px-2 py-0.5 rounded-full font-medium">
                     Lun – Sáb
                   </span>
                 </div>
-                <div className="text-2xl font-extrabold">
+                <div className="text-xl font-bold text-[#1c160e] mb-0.5 leading-snug">
                   {weeklyTotalActive}{' '}
-                  <span className="text-sm font-semibold opacity-80">
+                  <span className="text-xs font-normal text-[#524634]">
                     citas activas
                   </span>
                 </div>
-                <p className="text-xs font-medium m-0">
+                <p className="text-[11px] font-medium text-[#5c4f3b] m-0">
                   Semana del {weekDays[0]?.dayNumber} {weekDays[0]?.monthShort} al{' '}
                   {weekDays[6]?.dayNumber} {weekDays[6]?.monthShort}
                 </p>
               </article>
 
-              <article className="craft-card">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wide">
+              <article className="craft-card craft-kpi-card">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#524634]">
                     Alertas de Alergia
                   </span>
                   {allergyAlertsTodayCount > 0 ? (
-                    <span className="typeui-badge typeui-badge-danger">
+                    <span className="typeui-badge typeui-badge-danger text-[10px] px-2 py-0.5 rounded-full font-medium">
                       ⚠️ {allergyAlertsTodayCount} en agenda hoy
                     </span>
                   ) : (
-                    <span className="typeui-badge typeui-badge-success">
+                    <span className="typeui-badge typeui-badge-success text-[10px] px-2 py-0.5 rounded-full font-medium">
                       ✓ Sin alertas
                     </span>
                   )}
                 </div>
-                <div className="text-2xl font-extrabold">
+                <div className="text-xl font-bold text-[#1c160e] mb-0.5 leading-snug">
                   {allergyAlertsTodayCount}{' '}
-                  <span className="text-sm font-semibold opacity-80">
+                  <span className="text-xs font-normal text-[#524634]">
                     paciente(s)
                   </span>
                 </div>
-                <p className="text-xs font-medium m-0">
+                <p className="text-[11px] font-medium text-[#5c4f3b] m-0">
                   Verificación clínica previa a agentes físicos
                 </p>
               </article>
 
-              <article className="craft-card">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wide">
+              <article className="craft-card craft-kpi-card">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#524634]">
                     Notas de Sesión Hoy
                   </span>
-                  <span className="typeui-badge typeui-badge-success">
+                  <span className="typeui-badge typeui-badge-success text-[10px] px-2 py-0.5 rounded-full font-medium">
                     Evolución
                   </span>
                 </div>
-                <div className="text-2xl font-extrabold">
+                <div className="text-xl font-bold text-[#1c160e] mb-0.5 leading-snug">
                   {completedNotesTodayCount}{' '}
-                  <span className="text-sm font-semibold opacity-80">
+                  <span className="text-xs font-normal text-[#524634]">
                     / {activeDayAppointments.length} registradas
                   </span>
                 </div>
-                <p className="text-xs font-medium m-0">
+                <p className="text-[11px] font-medium text-[#5c4f3b] m-0">
                   Se llenan al atender o finalizar cada sesión
                 </p>
               </article>
@@ -1335,16 +1372,16 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => changeSelectedDateByDays(-7)}
-                    className="secondary-button text-xs"
+                    className="toolbar-btn"
                     aria-label="Ir a la semana anterior"
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="w-3.5 h-3.5" />
                     Semana ant.
                   </button>
                   <button
                     type="button"
                     onClick={() => changeSelectedDateByDays(-1)}
-                    className="secondary-button text-xs"
+                    className="toolbar-btn"
                     aria-label="Ir al día anterior"
                   >
                     Día ant.
@@ -1352,14 +1389,14 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setSelectedDate(getTodayDateString())}
-                    className="secondary-button text-xs font-bold"
+                    className="toolbar-btn font-bold"
                   >
                     Hoy
                   </button>
                   <button
                     type="button"
                     onClick={() => changeSelectedDateByDays(1)}
-                    className="secondary-button text-xs"
+                    className="toolbar-btn"
                     aria-label="Ir al día siguiente"
                   >
                     Día sig.
@@ -1367,11 +1404,11 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => changeSelectedDateByDays(7)}
-                    className="secondary-button text-xs"
+                    className="toolbar-btn"
                     aria-label="Ir a la semana siguiente"
                   >
                     Semana sig.
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
@@ -1384,28 +1421,28 @@ export default function App() {
                     type="date"
                     value={selectedDate}
                     onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-                    className="form-input w-auto font-bold text-xs"
+                    className="form-input w-auto font-bold text-xs py-1 px-2"
                   />
 
-                  <div className="inline-flex rounded-lg border-2 border-[#52525b] overflow-hidden">
+                  <div className="inline-flex rounded-md border border-[#52525b] overflow-hidden">
                     <button
                       type="button"
                       onClick={() => setCalendarViewMode('week')}
                       className={
                         calendarViewMode === 'week'
-                          ? 'submit-button text-xs rounded-none border-0'
-                          : 'secondary-button text-xs rounded-none border-0'
+                          ? 'toolbar-btn-active rounded-none border-0'
+                          : 'toolbar-btn rounded-none border-0'
                       }
                     >
-                      Calendario Semanal (Horizontal)
+                      Vista Semanal
                     </button>
                     <button
                       type="button"
                       onClick={() => setCalendarViewMode('day')}
                       className={
                         calendarViewMode === 'day'
-                          ? 'submit-button text-xs rounded-none border-0'
-                          : 'secondary-button text-xs rounded-none border-0'
+                          ? 'toolbar-btn-active rounded-none border-0'
+                          : 'toolbar-btn rounded-none border-0'
                       }
                     >
                       Vista Día (2 Espacios)
@@ -1417,15 +1454,11 @@ export default function App() {
               {/* Tira Horizontal de los 7 días de la semana (Lunes a Domingo) */}
               <div>
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                  <p id="heading-agenda" className="text-xs font-bold text-[#111827] capitalize">
+                  <p id="heading-agenda" className="text-xs font-bold text-[#111827] capitalize m-0">
                     Semana del {weekDays[0]?.dayNumber} {weekDays[0]?.monthShort} al{' '}
-                    {weekDays[6]?.dayNumber} {weekDays[6]?.monthShort} · Día seleccionado:{' '}
+                    {weekDays[6]?.dayNumber} {weekDays[6]?.monthShort} ·{' '}
                     <span className="text-[#004070]">{formatDateHuman(selectedDate)}</span>
                   </p>
-                  <span className="text-xs text-slate-700">
-                    Haz clic en cualquier celda <strong>+ Espacio 1 libre</strong> o{' '}
-                    <strong>+ Espacio 2 libre</strong> para agendar en ese horario
-                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
@@ -1479,12 +1512,44 @@ export default function App() {
                     );
                   })}
                 </div>
+
+                {/* Aviso interactivo con botones directos cuando el día seleccionado está cerrado */}
+                {dailyHourlySlots.length === 0 && (
+                  <div className="mt-3 p-3 rounded-lg bg-white/90 border border-[#524634] flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-xs text-[#1c160e]">
+                      <strong>Día cerrado ({formatDateHuman(selectedDate)}):</strong>{' '}
+                      Puedes habilitar este día ahora mismo con un clic o configurar sus horas de apertura.
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const [y, m, d] = selectedDate.split('-').map(Number);
+                          const dow = new Date(y, m - 1, d).getDay();
+                          handleEnableDayNow(dow);
+                        }}
+                        className="toolbar-btn-active"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Activar este día ahora (08:00 – 13:00)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('availability')}
+                        className="toolbar-btn"
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        Ir a pestaña Horarios
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </article>
 
             {/* MODO 1: CALENDARIO SEMANAL HORIZONTAL (Columnas = Días Lunes a Sábado/Domingo, Filas = Horas) */}
             {calendarViewMode === 'week' && (
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0 max-w-full">
                 <div className="calendar-scroll-wrapper">
                   <table
                     className="calendar-grid-table"
@@ -1493,13 +1558,19 @@ export default function App() {
                     <thead>
                       <tr>
                         <th scope="col" className="calendar-hour-col">
-                          Hora
-                          <div className="text-[11px] font-normal text-slate-600">
-                            Bloques 60m
+                          <span className="text-xs font-bold">Hora</span>
+                          <div className="text-[11px] font-medium text-slate-600 mt-0.5">
+                            60 min
                           </div>
                         </th>
                         {weekDays
-                          .filter((wd) => wd.isActive || wd.dayOfWeek !== 0 || wd.activeCount > 0)
+                          .filter(
+                            (wd) =>
+                              wd.isActive ||
+                              wd.dayOfWeek !== 0 ||
+                              wd.activeCount > 0 ||
+                              wd.dateStr === selectedDate
+                          )
                           .map((wd) => {
                             const isSelected = wd.dateStr === selectedDate;
                             return (
@@ -1510,26 +1581,40 @@ export default function App() {
                                   isSelected ? 'bg-[#eef5fb]' : 'bg-[#e8eef3]'
                                 }
                               >
-                                <div className="flex items-center justify-between gap-1">
+                                <div className="flex items-center justify-between gap-2">
                                   <button
                                     type="button"
                                     onClick={() => {
                                       setSelectedDate(wd.dateStr);
                                       setCalendarViewMode('day');
                                     }}
-                                    className="text-left font-bold text-[#004070] hover:underline"
+                                    className="text-left text-sm font-bold text-[#004070] hover:underline truncate"
                                   >
                                     {wd.fullName} {wd.dayNumber}/{wd.dateStr.slice(5, 7)}
                                   </button>
-                                  <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-sm bg-white border border-[#595959] text-[#222222]">
+                                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white border border-slate-400 text-[#222222] shrink-0">
                                     {wd.activeCount}
                                   </span>
                                 </div>
-                                <div className="text-[11px] font-normal text-slate-700 mt-0.5">
-                                  {wd.isActive
-                                    ? `Horario: ${wd.rule.start_time} a ${wd.rule.end_time} (2 espacios)`
-                                    : 'Consultorio cerrado'}
-                                </div>
+                                {wd.isActive ? (
+                                  <div className="text-[11px] font-medium text-slate-600 mt-1 truncate">
+                                    {wd.rule.start_time} – {wd.rule.end_time} · 2 espacios
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center justify-between gap-1 mt-1">
+                                    <span className="text-[11px] font-medium text-slate-500 truncate">
+                                      Cerrado
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEnableDayNow(wd.dayOfWeek)}
+                                      className="slot-btn-primary flex-none"
+                                      title={`Activar ${wd.fullName}`}
+                                    >
+                                      + Activar día
+                                    </button>
+                                  </div>
+                                )}
                               </th>
                             );
                           })}
@@ -1544,14 +1629,18 @@ export default function App() {
                           <tr key={hourStr}>
                             <th scope="row" className="calendar-hour-col">
                               <div className="text-sm font-bold text-[#222222]">{hourStr}</div>
-                              <div className="text-[11px] font-normal text-slate-600">
+                              <div className="text-[11px] font-medium text-slate-600">
                                 a {nextHourStr}
                               </div>
                             </th>
 
                             {weekDays
                               .filter(
-                                (wd) => wd.isActive || wd.dayOfWeek !== 0 || wd.activeCount > 0
+                                (wd) =>
+                                  wd.isActive ||
+                                  wd.dayOfWeek !== 0 ||
+                                  wd.activeCount > 0 ||
+                                  wd.dateStr === selectedDate
                               )
                               .map((wd) => {
                                 const startH = wd.rule
@@ -1587,9 +1676,9 @@ export default function App() {
                                   return (
                                     <td
                                       key={`${wd.dateStr}-${hourStr}`}
-                                      className="bg-slate-100 text-center align-middle"
+                                      className="bg-slate-100/90 text-center align-middle"
                                     >
-                                      <span className="text-[11px] text-slate-500 font-semibold">
+                                      <span className="text-xs text-slate-500 font-semibold">
                                         Cerrado
                                       </span>
                                     </td>
@@ -1619,44 +1708,47 @@ export default function App() {
                                           return (
                                             <div
                                               key={`slot-${slotNum}`}
-                                              className="calendar-booked-slot space-y-1"
+                                              className="calendar-booked-slot"
                                             >
-                                              <div className="flex items-center justify-between gap-1">
+                                              <div className="slot-card-header">
                                                 <span className="text-[11px] font-bold text-[#004070]">
                                                   Espacio {slotNum}
                                                 </span>
-                                                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-sm bg-white border border-slate-400 text-[#222222]">
+                                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/90 border border-slate-400 text-[#222222] shrink-0">
                                                   {apt.status === 'completed' || hasNotes
-                                                    ? '✓ Nota lista'
+                                                    ? '✓ Nota'
                                                     : 'Programada'}
                                                 </span>
                                               </div>
 
-                                              <div className="font-bold text-xs text-[#222222] leading-tight">
+                                              <div className="slot-card-patient">
                                                 {pt?.full_name || 'Paciente'}
                                               </div>
 
                                               {hasAllergy && (
-                                                <div className="text-[10px] font-bold text-white bg-[#b30000] px-1.5 py-0.5 rounded-sm">
-                                                  ⚠️ Alergia: {pt.allergies}
+                                                <div className="slot-card-allergy">
+                                                  ⚠️ {pt.allergies}
                                                 </div>
                                               )}
 
-                                              <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                                              <div className="slot-card-actions">
                                                 <button
                                                   type="button"
                                                   onClick={() => openEditAppointmentModal(apt)}
-                                                  className="submit-button text-[11px] py-1 px-2 flex-1"
+                                                  className="slot-btn-primary"
+                                                  title={
+                                                    hasNotes
+                                                      ? 'Ver o editar nota de sesión'
+                                                      : 'Atender cita y registrar nota'
+                                                  }
                                                 >
-                                                  {hasNotes
-                                                    ? 'Ver / Editar Nota'
-                                                    : 'Atender / Nota'}
+                                                  {hasNotes ? 'Ver / Nota' : 'Atender'}
                                                 </button>
                                                 {pt && (
                                                   <button
                                                     type="button"
                                                     onClick={() => setSelectedPatientForRecord(pt)}
-                                                    className="secondary-button text-[11px] py-1 px-1.5"
+                                                    className="slot-btn-secondary"
                                                     title="Ver expediente clínico"
                                                   >
                                                     Ficha
@@ -1679,8 +1771,12 @@ export default function App() {
                                               )
                                             }
                                             className="calendar-empty-slot"
+                                            title={`Agendar en Espacio ${slotNum} a las ${hourStr}`}
                                           >
-                                            + Espacio {slotNum} libre ({hourStr})
+                                            <span>+ Espacio {slotNum}</span>
+                                            <span className="text-[11px] font-normal opacity-75 shrink-0">
+                                              {hourStr}
+                                            </span>
                                           </button>
                                         );
                                       })}
@@ -1699,34 +1795,48 @@ export default function App() {
 
             {/* MODO 2: VISTA DÍA EN CALENDARIO HORIZONTAL DE 2 COLUMNAS (Hora | Espacio 1 | Espacio 2) */}
             {calendarViewMode === 'day' && (
-              <div className="space-y-3">
-                <div className="bg-white rounded-md border-2 border-[#595959] p-3 flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <h2 className="text-sm font-bold text-[#222222] capitalize">
-                      Calendario del Día: {formatDateHuman(selectedDate)}
-                    </h2>
-                    <p className="text-xs text-slate-700">
-                      Columnas paralelas para los 2 pacientes simultáneos por hora (Espacio 1 y Espacio 2).
-                    </p>
-                  </div>
+              <div className="space-y-3 min-w-0 max-w-full">
+                <div className="bg-white rounded-md border border-[#595959] px-3 py-2 flex flex-wrap items-center justify-between gap-2">
+                  <h2 className="text-sm font-bold text-[#222222] capitalize m-0">
+                    {formatDateHuman(selectedDate)}
+                  </h2>
                   <button
                     type="button"
                     onClick={() => setCalendarViewMode('week')}
-                    className="secondary-button text-xs py-1.5 px-3"
+                    className="toolbar-btn"
                   >
-                    ← Volver al Calendario Semanal Horizontal
+                    ← Volver a Vista Semanal
                   </button>
                 </div>
 
                 {dailyHourlySlots.length === 0 ? (
-                  <div className="bg-white rounded-md border-2 border-[#595959] p-6 text-center space-y-2">
+                  <div className="bg-white rounded-md border-2 border-[#595959] p-6 text-center space-y-3">
                     <Calendar className="w-8 h-8 text-[#004070] mx-auto" />
                     <h3 className="text-base font-bold text-[#222222]">
-                      Consultorio cerrado en esta fecha ({formatDateHuman(selectedDate)})
+                      Consultorio cerrado ({formatDateHuman(selectedDate)})
                     </h3>
-                    <p className="text-sm text-slate-700">
-                      Selecciona otro día en la barra superior o activa este día en la pestaña Horarios.
-                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const [y, m, d] = selectedDate.split('-').map(Number);
+                          const dow = new Date(y, m - 1, d).getDay();
+                          handleEnableDayNow(dow);
+                        }}
+                        className="toolbar-btn-active"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        Activar este día ahora (08:00 – 13:00)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('availability')}
+                        className="toolbar-btn"
+                      >
+                        <Clock className="w-4 h-4" />
+                        Ir a Horarios
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="calendar-scroll-wrapper">
@@ -1737,7 +1847,7 @@ export default function App() {
                       <thead>
                         <tr>
                           <th scope="col" className="calendar-hour-col">
-                            Hora (60 min)
+                            Hora (60m)
                           </th>
                           <th scope="col">
                             Espacio 1 · Camilla / Cubículo 1
@@ -1790,9 +1900,12 @@ export default function App() {
                                             selectedDate
                                           )
                                         }
-                                        className="calendar-empty-slot py-3"
+                                        className="calendar-empty-slot py-2.5"
                                       >
-                                        + Agendar en Espacio {slotNum} ({hourStr} – {nextHourStr})
+                                        <span>+ Agendar en Espacio {slotNum}</span>
+                                        <span className="text-xs font-normal opacity-80">
+                                          {hourStr} – {nextHourStr}
+                                        </span>
                                       </button>
                                     </td>
                                   );
@@ -1812,13 +1925,13 @@ export default function App() {
 
                                 return (
                                   <td key={`day-slot-${slotNum}`} className="bg-white">
-                                    <div className="calendar-booked-slot space-y-2 p-3">
-                                      <div className="flex flex-wrap items-center justify-between gap-1">
+                                    <div className="calendar-booked-slot p-3">
+                                      <div className="slot-card-header">
                                         <span className="text-sm font-bold text-[#222222]">
                                           {patient?.full_name || 'Paciente'}{' '}
                                           {patient?.age !== undefined ? `(${patient.age} años)` : ''}
                                         </span>
-                                        <span className="px-2 py-0.5 rounded-sm text-xs font-bold bg-white border border-[#595959]">
+                                        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white border border-[#595959]">
                                           {apt.status === 'completed'
                                             ? 'Completada'
                                             : apt.status === 'no_show'
@@ -1828,7 +1941,7 @@ export default function App() {
                                       </div>
 
                                       {hasAllergies ? (
-                                        <div className="text-xs font-bold text-white bg-[#b30000] px-2 py-0.5 rounded-sm inline-block">
+                                        <div className="slot-card-allergy">
                                           ⚠️ ALERGIA: {patient.allergies}
                                         </div>
                                       ) : (
@@ -1838,33 +1951,33 @@ export default function App() {
                                       )}
 
                                       {patient?.consultation_reason && (
-                                        <p className="text-xs text-[#222222]">
+                                        <p className="text-xs text-[#222222] m-0">
                                           <strong>Motivo:</strong> {patient.consultation_reason}
                                         </p>
                                       )}
 
                                       <div className="text-xs bg-white border border-slate-300 p-2 rounded-sm space-y-1">
-                                        <p>
+                                        <p className="m-0">
                                           <strong>Lo que se le hizo:</strong>{' '}
                                           {apt.treatment_notes ||
                                             'Pendiente de registrar al atender la sesión.'}
                                         </p>
                                       </div>
 
-                                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                      <div className="card-actions-responsive pt-1">
                                         <button
                                           type="button"
                                           onClick={() => openEditAppointmentModal(apt)}
-                                          className="submit-button inline-flex items-center gap-1 text-xs py-1 px-2.5"
+                                          className="toolbar-btn-active"
                                         >
                                           <Edit3 className="w-3.5 h-3.5" />
-                                          Atender / Nota de Sesión
+                                          Atender / Nota
                                         </button>
                                         {patient && (
                                           <button
                                             type="button"
                                             onClick={() => setSelectedPatientForRecord(patient)}
-                                            className="secondary-button inline-flex items-center gap-1 text-xs py-1 px-2"
+                                            className="toolbar-btn"
                                           >
                                             <ClipboardList className="w-3.5 h-3.5" />
                                             Expediente
@@ -1875,7 +1988,7 @@ export default function App() {
                                             href={`https://wa.me/52${cleanPhone}?text=${whatsappMsg}`}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="secondary-button inline-flex items-center gap-1 text-xs py-1 px-2 no-underline"
+                                            className="toolbar-btn no-underline"
                                           >
                                             <MessageCircle className="w-3.5 h-3.5" />
                                             WhatsApp
@@ -1884,7 +1997,7 @@ export default function App() {
                                         <button
                                           type="button"
                                           onClick={() => handleCancelAppointment(apt)}
-                                          className="secondary-button inline-flex items-center gap-1 text-xs py-1 px-2"
+                                          className="toolbar-btn"
                                         >
                                           <XCircle className="w-3.5 h-3.5" />
                                           Cancelar
@@ -1908,41 +2021,38 @@ export default function App() {
 
         {/* VISTA 2: EXPEDIENTES CLÍNICOS */}
         {activeTab === 'patients' && (
-          <section aria-labelledby="heading-patients" className="space-y-6">
-            <article className="craft-card flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 id="heading-patients" className="text-base font-bold">
-                  Padrón de Expedientes Clínicos ({patients.length})
+          <section aria-labelledby="heading-patients" className="space-y-4">
+            <article className="craft-card">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 id="heading-patients" className="text-sm font-bold m-0">
+                  Expedientes Clínicos ({patients.length})
                 </h2>
-                <p className="text-xs m-0">
-                  Consulta y administra los datos clínicos, alergias, estudios previos e historial de sesiones de cada paciente.
-                </p>
+                <button
+                  type="button"
+                  onClick={openCreatePatientModal}
+                  className="toolbar-btn-active"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Alta de Paciente
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={openCreatePatientModal}
-                className="submit-button inline-flex items-center gap-1.5 text-xs"
-              >
-                <Plus className="w-4 h-4" />
-                Alta de Paciente
-              </button>
+
+              <div className="form-group mb-0">
+                <label htmlFor="patient-search-input" className="sr-only">
+                  Buscar expediente
+                </label>
+                <input
+                  id="patient-search-input"
+                  type="search"
+                  placeholder="Buscar por nombre, teléfono, alergia o motivo de consulta..."
+                  value={patientSearch}
+                  onChange={(e) => setPatientSearch(e.target.value)}
+                  className="form-input"
+                />
+              </div>
             </article>
 
-            <div className="form-group mb-0">
-              <label htmlFor="patient-search-input" className="form-label">
-                Buscar expediente por nombre, teléfono, alergia o motivo de consulta
-              </label>
-              <input
-                id="patient-search-input"
-                type="search"
-                placeholder="Ej. María Fernanda, AINEs, rodilla, 551234..."
-                value={patientSearch}
-                onChange={(e) => setPatientSearch(e.target.value)}
-                className="form-input"
-              />
-            </div>
-
-            <div className="space-y-6">
+            <div className="space-y-4">
               {filteredPatients.map((pt) => {
                 const ptSessions = appointments
                   .filter((a) => a.patient_id === pt.id && a.status !== 'cancelled')
@@ -1958,9 +2068,9 @@ export default function App() {
                     className="craft-card"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="space-y-1">
+                      <div className="space-y-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-bold text-[#222222]">
+                          <h3 className="text-base font-bold text-[#222222] m-0">
                             {pt.full_name} · {pt.age ?? '-'} años
                           </h3>
                           {hasAllergies && (
@@ -1974,41 +2084,41 @@ export default function App() {
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-700">
+                        <p className="text-xs text-slate-700 m-0">
                           Teléfono: <strong>{pt.phone}</strong>{' '}
                           {pt.email ? `· Correo: ${pt.email}` : ''}
                         </p>
                       </div>
 
-                      <div className="flex flex-wrap items-center gap-2">
+                      <div className="card-actions-responsive">
                         <button
                           type="button"
                           onClick={() => setSelectedPatientForRecord(pt)}
-                          className="submit-button inline-flex items-center gap-1 text-xs py-1.5 px-2.5"
+                          className="toolbar-btn-active"
                         >
-                          <FileText className="w-4 h-4" />
-                          Ver Historial ({ptSessions.length} sesiones)
+                          <FileText className="w-3.5 h-3.5" />
+                          Ver Historial ({ptSessions.length})
                         </button>
                         <button
                           type="button"
                           onClick={() => openEditPatientModal(pt)}
-                          className="secondary-button inline-flex items-center gap-1 text-xs py-1.5 px-2.5"
+                          className="toolbar-btn"
                         >
-                          <Edit3 className="w-4 h-4" />
-                          Editar Datos
+                          <Edit3 className="w-3.5 h-3.5" />
+                          Editar
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeletePatient(pt.id)}
-                          className="secondary-button inline-flex items-center gap-1 text-xs py-1.5 px-2.5"
+                          className="toolbar-btn"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                           Eliminar
                         </button>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50 border border-slate-300 p-3 rounded-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white/85 border border-slate-300 p-3 rounded-md">
                       <div>
                         <strong>Motivo de consulta:</strong> {pt.consultation_reason || '-'}
                       </div>
@@ -2029,180 +2139,146 @@ export default function App() {
           </section>
         )}
 
-        {/* VISTA 3: HORARIOS DE CONSULTA EN FORMATO CALENDARIO HORIZONTAL (Lunes a Domingo en columnas) */}
+        {/* VISTA 3: HORARIOS DE CONSULTA (Cuadrícula Responsiva Mobile-First: 1 col móvil -> 2 tablet -> 4 laptop -> 7 escritorio) */}
         {activeTab === 'availability' && (
-          <section className="bg-white rounded-md border-2 border-[#595959] p-4 space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h2 className="text-base font-bold text-[#222222]">
-                  Calendario Horizontal de Horarios del Consultorio (Lunes a Domingo)
-                </h2>
-                <p className="text-xs text-slate-700">
-                  Configura en horizontal los días laborales y horarios de apertura/cierre (bloques de 60 min · 2 espacios simultáneos).
-                </p>
-              </div>
-              <span className="text-xs font-bold px-2.5 py-1 rounded-sm bg-[#eef5fb] border border-[#004070] text-[#004070]">
-                Capacidad: 2 pacientes por hora
-              </span>
+          <section className="space-y-3" aria-label="Configuración de horarios por día">
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setActiveTab('agenda')}
+                className="toolbar-btn"
+              >
+                ← Volver a la Agenda
+              </button>
             </div>
 
-            <div className="calendar-scroll-wrapper">
-              <table
-                className="calendar-grid-table"
-                aria-label="Configuración horizontal de horarios por día de la semana"
-              >
-                <thead>
-                  <tr>
-                    {DAYS_OF_WEEK.map((dayObj) => {
-                      const row = availability.find((a) => a.day_of_week === dayObj.value);
-                      const isActive = Boolean(row?.is_active);
-                      return (
-                        <th
-                          key={dayObj.value}
-                          scope="col"
-                          className={isActive ? 'bg-[#e8eef3]' : 'bg-slate-100'}
-                        >
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-sm font-bold text-[#222222]">
-                              {dayObj.label}
-                            </span>
-                            <span
-                              className={`text-[10px] font-bold px-1.5 py-0.5 rounded-sm ${
-                                isActive
-                                  ? 'bg-[#137752] text-white'
-                                  : 'bg-slate-300 text-[#222222]'
-                              }`}
-                            >
-                              {isActive ? 'ABIERTO' : 'CERRADO'}
-                            </span>
+            <div className="schedule-responsive-grid">
+              {DAYS_OF_WEEK.map((dayObj) => {
+                const row = availability.find((a) => a.day_of_week === dayObj.value) || {
+                  day_of_week: dayObj.value,
+                  start_time: '08:00',
+                  end_time: '19:00',
+                  slot_duration_minutes: 60,
+                  is_active: false,
+                };
+                const isActive = Boolean(row.is_active);
+                const checkboxId = `day-active-${dayObj.value}`;
+                const startId = `day-start-${dayObj.value}`;
+                const endId = `day-end-${dayObj.value}`;
+
+                const startH = Number((row.start_time || '08:00').split(':')[0]);
+                const endH = Number((row.end_time || '19:00').split(':')[0]);
+                const totalBlocks = isActive && endH > startH ? endH - startH : 0;
+
+                return (
+                  <article key={dayObj.value} className="craft-card">
+                    <div className="flex items-center justify-between gap-2 pb-2 border-b border-black/15">
+                      <span className="text-sm font-bold text-[#1c160e]">
+                        {dayObj.label}
+                      </span>
+                      <span
+                        className={`typeui-badge ${
+                          isActive ? 'typeui-badge-success' : 'typeui-badge-neutral'
+                        }`}
+                      >
+                        {isActive ? 'ABIERTO' : 'CERRADO'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        id={checkboxId}
+                        type="checkbox"
+                        checked={isActive}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setAvailability((prev) =>
+                            prev.map((item) =>
+                              item.day_of_week === dayObj.value
+                                ? { ...item, is_active: checked }
+                                : item
+                            )
+                          );
+                        }}
+                        className="h-4 w-4 cursor-pointer"
+                      />
+                      <label
+                        htmlFor={checkboxId}
+                        className="text-xs font-bold text-[#1c160e] cursor-pointer"
+                      >
+                        {isActive ? 'Día habilitado' : 'Habilitar día'}
+                      </label>
+                    </div>
+
+                    {isActive ? (
+                      <div className="space-y-2.5">
+                        <div>
+                          <label
+                            htmlFor={startId}
+                            className="block text-xs font-semibold text-[#524634] mb-1"
+                          >
+                            Apertura:
+                          </label>
+                          <input
+                            id={startId}
+                            type="time"
+                            value={row.start_time}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setAvailability((prev) =>
+                                prev.map((item) =>
+                                  item.day_of_week === dayObj.value
+                                    ? { ...item, start_time: val }
+                                    : item
+                                )
+                              );
+                            }}
+                            className="form-input py-1.5 px-2 text-xs font-bold"
+                          />
+                        </div>
+
+                        <div>
+                          <label
+                            htmlFor={endId}
+                            className="block text-xs font-semibold text-[#524634] mb-1"
+                          >
+                            Cierre:
+                          </label>
+                          <input
+                            id={endId}
+                            type="time"
+                            value={row.end_time}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setAvailability((prev) =>
+                                prev.map((item) =>
+                                  item.day_of_week === dayObj.value
+                                    ? { ...item, end_time: val }
+                                    : item
+                                )
+                              );
+                            }}
+                            className="form-input py-1.5 px-2 text-xs font-bold"
+                          />
+                        </div>
+
+                        <div className="rounded-md bg-white/85 border border-black/15 p-2 text-[11px] text-[#1c160e] space-y-0.5">
+                          <div className="font-bold text-[#004070]">
+                            {totalBlocks} bloques de 60 min
                           </div>
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    {DAYS_OF_WEEK.map((dayObj) => {
-                      const row = availability.find((a) => a.day_of_week === dayObj.value) || {
-                        day_of_week: dayObj.value,
-                        start_time: '08:00',
-                        end_time: '19:00',
-                        slot_duration_minutes: 60,
-                        is_active: false,
-                      };
-                      const checkboxId = `day-active-${dayObj.value}`;
-                      const startId = `day-start-${dayObj.value}`;
-                      const endId = `day-end-${dayObj.value}`;
-
-                      const startH = Number((row.start_time || '08:00').split(':')[0]);
-                      const endH = Number((row.end_time || '19:00').split(':')[0]);
-                      const totalBlocks = row.is_active && endH > startH ? endH - startH : 0;
-
-                      return (
-                        <td
-                          key={dayObj.value}
-                          className={row.is_active ? 'bg-white' : 'bg-slate-50'}
-                        >
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                              <input
-                                id={checkboxId}
-                                type="checkbox"
-                                checked={row.is_active}
-                                onChange={(e) => {
-                                  const checked = e.target.checked;
-                                  setAvailability((prev) =>
-                                    prev.map((item) =>
-                                      item.day_of_week === dayObj.value
-                                        ? { ...item, is_active: checked }
-                                        : item
-                                    )
-                                  );
-                                }}
-                                className="h-4 w-4"
-                              />
-                              <label
-                                htmlFor={checkboxId}
-                                className="text-xs font-bold text-[#222222] cursor-pointer"
-                              >
-                                {row.is_active ? 'Día habilitado' : 'Habilitar día'}
-                              </label>
-                            </div>
-
-                            {row.is_active ? (
-                              <div className="space-y-2.5">
-                                <div>
-                                  <label
-                                    htmlFor={startId}
-                                    className="block text-xs font-bold text-[#222222] mb-1"
-                                  >
-                                    Hora de apertura:
-                                  </label>
-                                  <input
-                                    id={startId}
-                                    type="time"
-                                    value={row.start_time}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      setAvailability((prev) =>
-                                        prev.map((item) =>
-                                          item.day_of_week === dayObj.value
-                                            ? { ...item, start_time: val }
-                                            : item
-                                        )
-                                      );
-                                    }}
-                                    className="form-input py-1.5 px-2 text-xs font-bold"
-                                  />
-                                </div>
-
-                                <div>
-                                  <label
-                                    htmlFor={endId}
-                                    className="block text-xs font-bold text-[#222222] mb-1"
-                                  >
-                                    Hora de cierre:
-                                  </label>
-                                  <input
-                                    id={endId}
-                                    type="time"
-                                    value={row.end_time}
-                                    onChange={(e) => {
-                                      const val = e.target.value;
-                                      setAvailability((prev) =>
-                                        prev.map((item) =>
-                                          item.day_of_week === dayObj.value
-                                            ? { ...item, end_time: val }
-                                            : item
-                                        )
-                                      );
-                                    }}
-                                    className="form-input py-1.5 px-2 text-xs font-bold"
-                                  />
-                                </div>
-
-                                <div className="rounded-sm bg-[#eef5fb] border border-[#004070] p-2 text-[11px] text-[#222222] space-y-0.5">
-                                  <div className="font-bold text-[#004070]">
-                                    {totalBlocks} bloques de 60 min
-                                  </div>
-                                  <div>
-                                    Capacidad máxima: <strong>{totalBlocks * 2} citas</strong> (2 por hora)
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="py-6 text-center text-xs font-semibold text-slate-500">
-                                Sin consulta este día
-                              </div>
-                            )}
+                          <div>
+                            Capacidad: <strong>{totalBlocks * 2} citas</strong>
                           </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="py-4 text-center text-xs font-medium text-[#5c4f3b]">
+                        Sin consulta este día
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           </section>
         )}
