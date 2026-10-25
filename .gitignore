@@ -1,0 +1,22 @@
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.env.*
+!.env.example
+backup_fisio_*.json
+backup_fisio_*.csv
+*.csv
+# Respaldos y bases de datos locales
+*.bak
+*.backup
+*.sqlite
+*.sqlite3
+*.db
+*.xlsx
+
+# Directorios generados
+node_modules/
+dist/
+dist-ssr/

@@ -1,0 +1,793 @@
+@import "tailwindcss";
+
+:root,
+[data-theme="craft"] {
+  /* TypeUI Skill: Craft Card (Metálico Cálido / Relieve Táctil en Latón y Tierra) */
+  --color-text-base: rgb(107, 93, 72);
+  --color-text-main: #261f14; /* Alto contraste sobre superficie cálida */
+  --color-text-muted: rgb(107, 93, 72);
+  --color-bg-page: #eae3d2;
+  --color-bg-card: #f7f3e8;
+  --color-bg-subtle: #efe9da;
+  --color-bg-tint: #e2d9c3;
+  --color-border-default: #78684c;
+  --color-border-subtle: rgb(216, 204, 168);
+  --color-focus-ring: #4a3b22;
+
+  /* Acción primaria en tono bronce/tierra profundo */
+  --color-primary: #46371e;
+  --color-primary-hover: #2c2211;
+
+  /* Estados semánticos y de validación */
+  --color-error-text: #ffffff;
+  --color-error-bg: #a81c1c;
+  --color-error-border: #7f1d1d;
+  --color-error-input-bg: #fff1f1;
+  --color-valid-border: #1b6545;
+  --color-valid-bg: #e7f5ee;
+
+  /* Escala de espaciado */
+  --spacing-xs: 0.25rem; /* 4px */
+  --spacing-sm: 0.5rem;  /* 8px */
+  --spacing-md: 1rem;    /* 16px */
+  --spacing-lg: 1.5rem;  /* 24px */
+  --spacing-xl: 2rem;    /* 32px */
+
+  /* Radios anidados: 14px exterior (craft-card) y 8px interior */
+  --radius-outer: 14px;
+  --radius-inner: 8px;
+  --radius-control: 8px;
+
+  --shadow-card:
+    rgba(255, 255, 255, 0.6) 0px 2px 4px 0px inset,
+    rgba(80, 70, 40, 0.18) 0px 10px 28px -4px,
+    rgba(90, 80, 50, 0.35) 0px 0px 0px 1px;
+}
+
+/* TypeUI Skill 2: Clean Clinical */
+[data-theme="clean"] {
+  --color-text-base: #374151;
+  --color-text-main: #111827;
+  --color-text-muted: #374151;
+  --color-bg-page: #f4f6f8;
+  --color-bg-card: #ffffff;
+  --color-bg-subtle: #f8fafc;
+  --color-bg-tint: #eef5fb;
+  --color-border-default: #52525b;
+  --color-border-subtle: #cbd5e1;
+  --color-focus-ring: #005a9c;
+  --color-primary: #004070;
+  --color-primary-hover: #002847;
+  --radius-outer: 16px;
+  --radius-inner: 8px;
+  --radius-control: 8px;
+  --shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.06);
+}
+
+/* TypeUI Skill 3: Bento Modular */
+[data-theme="bento"] {
+  --color-text-base: #3f3f46;
+  --color-text-main: #18181b;
+  --color-text-muted: #3f3f46;
+  --color-bg-page: #f5f3ef;
+  --color-bg-card: #ffffff;
+  --color-bg-subtle: #faf8f5;
+  --color-bg-tint: #e6f4f1;
+  --color-border-default: #52525b;
+  --color-border-subtle: #d6d3d1;
+  --color-focus-ring: #0f766e;
+  --color-primary: #0f5257;
+  --color-primary-hover: #093538;
+  --radius-outer: 16px;
+  --radius-inner: 8px;
+  --radius-control: 8px;
+  --shadow-card: 0 4px 12px -2px rgba(24, 24, 27, 0.07);
+}
+
+/* TypeUI Skill 4: Shadcn Monochrome */
+[data-theme="shadcn"] {
+  --color-text-base: #3f3f46;
+  --color-text-main: #09090b;
+  --color-text-muted: #3f3f46;
+  --color-bg-page: #f4f4f5;
+  --color-bg-card: #ffffff;
+  --color-bg-subtle: #fafafa;
+  --color-bg-tint: #f4f4f5;
+  --color-border-default: #3f3f46;
+  --color-border-subtle: #d4d4d8;
+  --color-focus-ring: #18181b;
+  --color-primary: #18181b;
+  --color-primary-hover: #27272a;
+  --radius-outer: 12px;
+  --radius-inner: 6px;
+  --radius-control: 6px;
+  --shadow-card: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* TypeUI Skill 5: Paper Editorial */
+[data-theme="paper"] {
+  --color-text-base: #44403c;
+  --color-text-main: #1c1917;
+  --color-text-muted: #44403c;
+  --color-bg-page: #f2efe9;
+  --color-bg-card: #fffdf9;
+  --color-bg-subtle: #f7f4ee;
+  --color-bg-tint: #eae4dc;
+  --color-border-default: #57534e;
+  --color-border-subtle: #d6d3d1;
+  --color-focus-ring: #1e3a5f;
+  --color-primary: #1e3a5f;
+  --color-primary-hover: #12243b;
+  --radius-outer: 14px;
+  --radius-inner: 8px;
+  --radius-control: 8px;
+  --shadow-card: 0 2px 6px rgba(28, 25, 23, 0.06);
+}
+
+/* Normalización Global del Modelo de Caja (box-sizing: border-box) */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  color: var(--color-text-base);
+  background-color: var(--color-bg-page);
+  margin: 0;
+  font-family: "Geist", "Geist Fallback", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ==========================================================================
+   ESTRUCTURA EXTRAÍDA DE TYPEUI (#main-content, .dash-main, .dash-navbar, .craft-card)
+   ========================================================================== */
+
+.dash-main {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--color-bg-page);
+}
+
+#main-content {
+  display: block;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px;
+  box-sizing: border-box;
+  font-family: "Geist", "Geist Fallback", system-ui, sans-serif;
+  color: var(--color-text-base);
+}
+
+.dash-navbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px 20px;
+}
+
+.header-nav-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: var(--color-bg-subtle);
+  border: 1px solid var(--color-border-default);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.header-nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-text-main);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.header-nav-tab:hover {
+  background-color: rgba(255, 255, 255, 0.65);
+}
+
+.header-nav-tab-active {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.header-nav-tab-active:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.header-compact-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 7px;
+  border: 1px solid var(--color-border-default);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.header-compact-btn:hover {
+  background-color: var(--color-bg-subtle);
+}
+
+.header-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 7px;
+  border: 1px solid var(--color-primary);
+  background-color: var(--color-primary);
+  color: #ffffff;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: rgba(255, 255, 255, 0.2) 0px 1px 1px 0px inset;
+}
+
+.header-primary-btn:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.header-theme-select {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 32px;
+  width: auto;
+  padding: 0 26px 0 9px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 7px;
+  border: 1px solid var(--color-border-default);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23261f14' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  background-size: 13px 13px;
+  cursor: pointer;
+}
+
+.dash-stat-grid,
+#overview {
+  display: grid;
+  gap: 24px;
+  margin-bottom: 32px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .dash-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .dash-stat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* 3. El estilo exacto de la Tarjeta ("Craft Card") con gradiente metálico/dorado y relieve */
+.craft-card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 14px;
+  border: 0.73px solid rgb(216, 204, 168);
+  color: #261f14;
+
+  /* Gradiente de fondo sutil metálico/dorado extraído de TypeUI */
+  background-image: linear-gradient(
+    175deg,
+    rgb(221, 212, 176) 0%,
+    rgb(200, 188, 144) 30%,
+    rgb(184, 172, 128) 55%,
+    rgb(204, 192, 154) 80%,
+    rgb(216, 204, 168) 100%
+  );
+
+  /* Combinación de 5 sombras para efecto de relieve e iluminación */
+  box-shadow:
+    rgba(255, 255, 255, 0.55) 0px 3px 6px 0px inset,   /* Brillo superior interno */
+    rgba(0, 0, 0, 0.3) 0px -4px 10px 0px inset,        /* Sombra inferior interna */
+    rgba(80, 70, 40, 0.55) 0px 18px 55px 0px,          /* Sombra proyectada suave */
+    rgba(0, 0, 0, 0.3) 0px 4px 12px 0px,               /* Sombra de apoyo */
+    rgba(90, 80, 50, 0.5) 0px 0px 0px 1px;             /* Borde exterior fino */
+}
+
+/* Cuando el usuario cambia a otro tema (clean, bento, shadcn, paper), .craft-card se adapta suavemente */
+[data-theme="clean"] .craft-card,
+[data-theme="bento"] .craft-card,
+[data-theme="shadcn"] .craft-card,
+[data-theme="paper"] .craft-card {
+  background-image: none;
+  background-color: var(--color-bg-card);
+  border: 1.5px solid var(--color-border-default);
+  box-shadow: var(--shadow-card);
+  color: var(--color-text-main);
+}
+
+/* Tarjetas de sección y métricas */
+.bento-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+@media (min-width: 640px) {
+  .bento-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .bento-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.bento-card {
+  background-color: var(--color-bg-card);
+  border: 1.5px solid var(--color-border-default);
+  border-radius: var(--radius-outer);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  color: var(--color-text-main);
+}
+
+.bento-metric-tile {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 24px;
+  border-radius: 14px;
+  border: 0.73px solid rgb(216, 204, 168);
+  color: #261f14;
+  background-image: linear-gradient(
+    175deg,
+    rgb(221, 212, 176) 0%,
+    rgb(200, 188, 144) 30%,
+    rgb(184, 172, 128) 55%,
+    rgb(204, 192, 154) 80%,
+    rgb(216, 204, 168) 100%
+  );
+  box-shadow:
+    rgba(255, 255, 255, 0.55) 0px 3px 6px 0px inset,
+    rgba(0, 0, 0, 0.25) 0px -4px 10px 0px inset,
+    rgba(80, 70, 40, 0.4) 0px 14px 36px 0px,
+    rgba(0, 0, 0, 0.22) 0px 4px 10px 0px,
+    rgba(90, 80, 50, 0.5) 0px 0px 0px 1px;
+}
+
+[data-theme="clean"] .bento-metric-tile,
+[data-theme="bento"] .bento-metric-tile,
+[data-theme="shadcn"] .bento-metric-tile,
+[data-theme="paper"] .bento-metric-tile {
+  background-image: none;
+  background-color: var(--color-bg-card);
+  border: 1.5px solid var(--color-border-default);
+  box-shadow: var(--shadow-card);
+  color: var(--color-text-main);
+}
+
+/* Regla TypeUI: Límite de tamaño de encabezados en Dashboards (<= 28px página, <= 24px widgets) */
+h1 {
+  font-size: clamp(1.125rem, 2vw, 1.375rem);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--color-text-main);
+}
+
+h2 {
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  color: var(--color-text-main);
+}
+
+/* Regla No Negociable TypeUI (§0.1): Badges nunca ocupan el 100% del ancho */
+.typeui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: fit-content;
+  max-width: max-content;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.typeui-badge-primary {
+  background-color: rgba(255, 255, 255, 0.65);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.typeui-badge-neutral {
+  background-color: rgba(255, 255, 255, 0.6);
+  color: var(--color-text-main);
+  border: 1px solid var(--color-border-default);
+}
+
+.typeui-badge-success {
+  background-color: var(--color-valid-bg);
+  color: var(--color-valid-border);
+  border: 1px solid var(--color-valid-border);
+}
+
+.typeui-badge-danger {
+  background-color: var(--color-error-bg);
+  color: var(--color-error-text);
+  border: 1px solid var(--color-error-border);
+}
+
+/* Contenedor Principal de Formulario en Columna Única (Sección 2.1 y 3.2) */
+.form-container {
+  width: 100%;
+  max-width: 544px;
+  margin: 0 auto;
+  background-color: var(--color-bg-card);
+  border: 1.5px solid var(--color-border-default);
+  border-radius: var(--radius-outer);
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Ley de Proximidad de la Gestalt: Separación Inter-Grupo y Proximidad Etiqueta-Input */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--color-text-main);
+  margin-bottom: var(--spacing-xs);
+}
+
+.required-asterisk {
+  color: var(--color-error-bg);
+  font-weight: 800;
+  margin-left: 0.2rem;
+}
+
+.form-hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Controles de entrada con contraste en reposo y altura base alineada con botones (TypeUI §0.1) */
+.form-input {
+  width: 100%;
+  min-height: 38px;
+  border: 1.5px solid var(--color-border-default);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  border-radius: var(--radius-control);
+  padding: 0.45rem 0.75rem;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  line-height: 1.4;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input.w-auto {
+  width: auto;
+}
+
+/* Regla No Negociable TypeUI (§0.1): Reemplazar flecha nativa de <select> con chevron SVG balanceado */
+select.form-input {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23261f14' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px 16px;
+  padding-inline-end: 2.5rem;
+}
+
+/* Agrupación Semántica <fieldset> y <legend> (Sección 2.2) */
+.form-fieldset {
+  border: 1.5px solid var(--color-border-default);
+  border-radius: var(--radius-inner);
+  padding: var(--spacing-md);
+  margin: 0 0 var(--spacing-lg) 0;
+  background-color: var(--color-bg-card);
+}
+
+.form-legend {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  padding: 0 var(--spacing-xs);
+  color: var(--color-text-main);
+}
+
+/* Indicador de enfoque accesible visible por teclado (WCAG SC 2.4.7) */
+.form-input:focus-visible,
+.radio-input:focus-visible,
+.submit-button:focus-visible,
+.secondary-button:focus-visible,
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Estado de interacción válido y no válido activado por el usuario (Sección 2.4) */
+.form-input:user-invalid,
+.form-input[aria-invalid="true"] {
+  border-color: var(--color-error-border);
+  background-color: var(--color-error-input-bg);
+}
+
+.form-input:user-valid {
+  border-color: var(--color-valid-border);
+}
+
+/* Botones con altura uniforme y efecto táctil */
+.submit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 38px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  font-family: inherit;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-control);
+  padding: 0.45rem 0.875rem;
+  cursor: pointer;
+  box-shadow: rgba(255, 255, 255, 0.25) 0px 1px 2px 0px inset, rgba(0, 0, 0, 0.2) 0px 2px 6px 0px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.1s ease;
+}
+
+.submit-button:hover {
+  background-color: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 38px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  font-weight: 700;
+  font-size: 0.875rem;
+  font-family: inherit;
+  border: 1.5px solid var(--color-border-default);
+  border-radius: var(--radius-control);
+  padding: 0.45rem 0.875rem;
+  cursor: pointer;
+  box-shadow: rgba(255, 255, 255, 0.5) 0px 1px 2px 0px inset;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.secondary-button:hover {
+  background-color: var(--color-bg-tint);
+  border-color: var(--color-primary);
+}
+
+/* Contenedor de alerta de error accesible (WCAG SC 1.4.3 & SC 3.3.1) */
+.error-message {
+  display: none;
+}
+
+.error-message.active {
+  display: block;
+  color: var(--color-error-text);
+  background-color: var(--color-error-bg);
+  border-left: 4px solid var(--color-error-border);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+/* Calendario Horizontal y Parrilla de Horarios (TypeUI Craft Relief + WCAG 2.2 AA) */
+.calendar-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  background-color: var(--color-bg-card);
+  border: 1.5px solid var(--color-border-default);
+  border-radius: var(--radius-outer);
+  box-shadow: var(--shadow-card);
+}
+
+.calendar-grid-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.calendar-grid-table th,
+.calendar-grid-table td {
+  border: 1px solid var(--color-border-subtle);
+  vertical-align: top;
+  padding: var(--spacing-sm);
+}
+
+.calendar-grid-table thead th {
+  background-color: var(--color-bg-tint);
+  color: var(--color-text-main);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  text-align: left;
+  border-bottom: 1.5px solid var(--color-border-default);
+  padding: 0.625rem 0.75rem;
+}
+
+.calendar-hour-col {
+  width: 92px;
+  background-color: var(--color-bg-subtle);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  color: var(--color-primary);
+  text-align: center;
+  border-right: 1.5px solid var(--color-border-default);
+}
+
+/* Píldoras horizontales de día */
+.calendar-day-pill {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-inner);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-main);
+  cursor: pointer;
+  box-shadow: rgba(255, 255, 255, 0.5) 0px 2px 4px 0px inset;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.calendar-day-pill:hover {
+  background-color: var(--color-bg-tint);
+  border-color: var(--color-primary);
+}
+
+.calendar-day-pill-active,
+.calendar-day-pill.active {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+  box-shadow:
+    rgba(255, 255, 255, 0.25) 0px 2px 4px 0px inset,
+    rgba(70, 55, 30, 0.35) 0px 6px 14px 0px;
+}
+
+/* Celdas de espacio disponible y ocupado con estilo Craft Card en citas agendadas */
+.calendar-empty-slot {
+  width: 100%;
+  min-height: 44px;
+  border: 1.25px dashed var(--color-border-default);
+  border-radius: var(--radius-inner);
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-main);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.calendar-empty-slot:hover {
+  background-color: var(--color-bg-tint);
+  border-style: solid;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.calendar-booked-slot {
+  width: 100%;
+  border-radius: 10px;
+  border: 0.73px solid rgb(216, 204, 168);
+  border-left: 4px solid var(--color-primary);
+  background-image: linear-gradient(
+    175deg,
+    rgb(228, 220, 190) 0%,
+    rgb(212, 201, 162) 45%,
+    rgb(222, 212, 178) 100%
+  );
+  box-shadow:
+    rgba(255, 255, 255, 0.6) 0px 2px 4px 0px inset,
+    rgba(0, 0, 0, 0.15) 0px -2px 6px 0px inset,
+    rgba(80, 70, 40, 0.22) 0px 6px 16px 0px;
+  color: #261f14;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.75rem;
+}
+
+[data-theme="clean"] .calendar-booked-slot,
+[data-theme="bento"] .calendar-booked-slot,
+[data-theme="shadcn"] .calendar-booked-slot,
+[data-theme="paper"] .calendar-booked-slot {
+  background-image: none;
+  background-color: var(--color-bg-tint);
+  border: 1.5px solid var(--color-primary);
+  border-left-width: 5px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  color: var(--color-text-main);
+}
+
+.calendar-booked-slot.completed {
+  border-color: var(--color-valid-border);
+  background-color: var(--color-valid-bg);
+}
+
+/* Adaptabilidad Móvil para pantallas <= 480px (Sección 3.2) */
+@media (max-width: 480px) {
+  #main-content {
+    padding: 16px;
+  }
+  .form-container {
+    padding: var(--spacing-md);
+    margin: var(--spacing-sm) auto;
+    border-width: 1.5px;
+  }
+}
+
+/* Respeto a las Preferencias de Movimiento (WCAG 2.2 SC 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="es" data-theme="craft">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="fisio-citas — Sistema de agenda clínica horizontal con 2 espacios simultáneos por hora, control de expedientes, alertas de alergias y notas de sesión para consultorio de fisioterapia deportiva."
+  />
+  <meta name="author" content="Consultorio de Fisioterapia Deportiva — Lic. Ft. Eduardo" />
+  <meta name="theme-color" content="#6b5d48" />
+  <title>fisio-citas — Calendario Clínico y Expedientes de Fisioterapia</title>
+
+  <!-- Tipografía Geist y Geist Mono (TypeUI Craft Skill) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="/src/index.css" />
+</head>
+
+<body class="antialiased">
+  <!-- Enlace de salto accesible por teclado -->
+  <a href="#main-content" class="sr-only focus:not-sr-only">
+    Saltar al contenido principal
+  </a>
+
+  <!-- Contenedor raíz con estructura semántica inicial (hidratada por React en /src/main.jsx) -->
+  <div id="root">
+    <div class="dash-main" data-theme="craft">
+      <!-- Barra de navegación superior compacta -->
+      <header class="sticky top-0 z-20 bg-[#f7f3e8]/95 border-b border-[#78684c]">
+        <div class="dash-navbar">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-[#46371e] text-white flex items-center justify-center text-xs font-extrabold">
+              FC
+            </div>
+            <div class="leading-tight">
+              <div class="flex items-center gap-2">
+                <h1 class="text-sm font-extrabold m-0">Fisio Citas</h1>
+                <span class="typeui-badge typeui-badge-primary">2 espacios / hora</span>
+              </div>
+              <p class="text-[11px] m-0 opacity-85">
+                Consultorio Lic. Ft. Eduardo · Sesiones de 60 min
+              </p>
+            </div>
+          </div>
+          <nav aria-label="Secciones principales" class="header-nav-tabs">
+            <button type="button" class="header-nav-tab header-nav-tab-active">Agenda</button>
+            <button type="button" class="header-nav-tab">Expedientes</button>
+            <button type="button" class="header-nav-tab">Horarios</button>
+            <button type="button" class="header-nav-tab">Respaldos</button>
+          </nav>
+        </div>
+      </header>
+
+      <!-- Contenido principal (#main-content) -->
+      <main id="main-content" class="space-y-6">
+        <!-- Resumen operativo en cuadrícula (#overview.dash-stat-grid) -->
+        <section aria-label="Resumen operativo del consultorio">
+          <div id="overview" class="dash-stat-grid">
+            <article class="craft-card">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-bold uppercase tracking-wide">Sesiones del Día</span>
+                <span class="typeui-badge typeui-badge-primary">2 espacios / hora</span>
+              </div>
+              <div class="text-2xl font-extrabold">15 – 20 pacientes</div>
+              <p class="text-xs font-medium m-0">Sesiones de 60 minutos en Espacio 1 y Espacio 2</p>
+            </article>
+
+            <article class="craft-card">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-bold uppercase tracking-wide">Horario Semanal</span>
+                <span class="typeui-badge typeui-badge-neutral">Lun – Sáb</span>
+              </div>
+              <div class="text-2xl font-extrabold">08:00 – 19:00</div>
+              <p class="text-xs font-medium m-0">Lunes a Viernes 08:00–19:00 · Sábado 08:00–13:00</p>
+            </article>
+
+            <article class="craft-card">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-bold uppercase tracking-wide">Alertas de Alergia</span>
+                <span class="typeui-badge typeui-badge-danger">Verificación Clínica</span>
+              </div>
+              <div class="text-2xl font-extrabold">Alerta Visual</div>
+              <p class="text-xs font-medium m-0">Destacada en agenda y expediente antes de cada sesión</p>
+            </article>
+
+            <article class="craft-card">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-bold uppercase tracking-wide">Notas de Sesión Hoy</span>
+                <span class="typeui-badge typeui-badge-success">Evolución</span>
+              </div>
+              <div class="text-2xl font-extrabold">Tratamiento</div>
+              <p class="text-xs font-medium m-0">Registro de lo que se le hizo al paciente al atender la cita</p>
+            </article>
+          </div>
+        </section>
+
+        <!-- Vista previa semántica del Calendario Horizontal Semanal -->
+        <section aria-labelledby="calendario-horizontal-heading">
+          <article class="craft-card">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 id="calendario-horizontal-heading" class="text-base font-bold">
+                  Calendario Semanal Horizontal (Días en Columnas × Horas en Filas)
+                </h2>
+                <p class="text-xs m-0">
+                  Visualiza de Lunes a Sábado en horizontal con 2 espacios simultáneos por cada bloque de 60 minutos.
+                </p>
+              </div>
+              <span class="typeui-badge typeui-badge-primary">Capacidad: 2 pacientes por hora</span>
+            </div>
+
+            <div class="calendar-scroll-wrapper">
+              <table class="calendar-grid-table" aria-label="Calendario semanal horizontal de fisioterapia">
+                <thead>
+                  <tr>
+                    <th scope="col" class="calendar-hour-col">Hora (60m)</th>
+                    <th scope="col">Lunes</th>
+                    <th scope="col">Martes</th>
+                    <th scope="col">Miércoles</th>
+                    <th scope="col">Jueves</th>
+                    <th scope="col">Viernes</th>
+                    <th scope="col">Sábado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row" class="calendar-hour-col">08:00 - 09:00</th>
+                    <td>Espacio 1 libre · Espacio 2 libre</td>
+                    <td>Espacio 1 libre · Espacio 2 libre</td>
+                    <td>Espacio 1 libre · Espacio 2 libre</td>
+                    <td>Espacio 1 libre · Espacio 2 libre</td>
+                    <td>Espacio 1 libre · Espacio 2 libre</td>
+                    <td>Espacio 1 libre · Espacio 2 libre</td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="calendar-hour-col">09:00 - 10:00</th>
+                    <td>
+                      <strong>Espacio 1:</strong> María Fernanda López (⚠️ Alergia: AINEs)<br />
+                      <strong>Espacio 2:</strong> Carlos Eduardo Ramírez
+                    </td>
+                    <td>Espacio 1 libre · Espacio 2 libre</td>
+                    <td>Espacio 1 libre · Espacio 2 libre</td>
+                    <td>Espacio 1 libre · Espacio 2 libre</td>
+                    <td>Espacio 1 libre · Espacio 2 libre</td>
+                    <td>Espacio 1 libre · Espacio 2 libre</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- Estructura semántica de Expediente Clínico y Formulario de Columna Única -->
+        <section aria-labelledby="expediente-estructura-heading">
+          <article class="craft-card">
+            <h2 id="expediente-estructura-heading" class="text-base font-bold">
+              Datos Clínicos por Paciente
+            </h2>
+            <p class="text-xs m-0">
+              Cada ficha clínica registra: Nombre completo, Edad, Alergias, Estudios previos, Antecedentes familiares, Motivo de consulta y el Historial de lo que se le hizo en cada sesión.
+            </p>
+
+            <div class="form-container">
+              <form action="#" method="post" novalidate>
+                <div class="form-group">
+                  <label for="init-patient-name" class="form-label">
+                    Nombre completo del paciente <span class="required-asterisk" aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    id="init-patient-name"
+                    name="full_name"
+                    type="text"
+                    required
+                    placeholder="Ej. María Fernanda López"
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="init-patient-age" class="form-label">
+                    Edad <span class="required-asterisk" aria-hidden="true">*</span>
+                  </label>
+                  <input
+                    id="init-patient-age"
+                    name="age"
+                    type="number"
+                    min="0"
+                    max="120"
+                    required
+                    placeholder="Ej. 29"
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="init-patient-allergies" class="form-label">
+                    Alergias
+                  </label>
+                  <input
+                    id="init-patient-allergies"
+                    name="allergies"
+                    type="text"
+                    placeholder="Ej. Ninguna conocida, AINEs, Látex..."
+                    class="form-input"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="init-patient-studies" class="form-label">
+                    Estudios previos
+                  </label>
+                  <textarea
+                    id="init-patient-studies"
+                    name="previous_studies"
+                    rows="2"
+                    placeholder="Ej. Resonancia magnética, radiografía AP y lateral, ultrasonido..."
+                    class="form-input"
+                  ></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="init-patient-family" class="form-label">
+                    Antecedentes familiares
+                  </label>
+                  <textarea
+                    id="init-patient-family"
+                    name="family_history"
+                    rows="2"
+                    placeholder="Ej. Madre con hipertensión arterial, padre con diabetes..."
+                    class="form-input"
+                  ></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label for="init-patient-reason" class="form-label">
+                    Motivo de consulta <span class="required-asterisk" aria-hidden="true">*</span>
+                  </label>
+                  <textarea
+                    id="init-patient-reason"
+                    name="consultation_reason"
+                    rows="2"
+                    required
+                    placeholder="Ej. Esguince de ligamento colateral medial grado II..."
+                    class="form-input"
+                  ></textarea>
+                </div>
+
+                <fieldset class="form-fieldset">
+                  <legend class="form-legend">
+                    Espacio de atención (máx. 2 pacientes por hora) <span class="required-asterisk" aria-hidden="true">*</span>
+                  </legend>
+                  <div class="space-y-2 mt-1">
+                    <div class="flex items-center gap-2">
+                      <input
+                        id="init-slot-1"
+                        type="radio"
+                        name="slot_number"
+                        value="1"
+                        checked
+                        class="radio-input h-4 w-4"
+                      />
+                      <label for="init-slot-1" class="text-sm font-medium text-[#222222]">
+                        Espacio 1
+                      </label>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <input
+                        id="init-slot-2"
+                        type="radio"
+                        name="slot_number"
+                        value="2"
+                        class="radio-input h-4 w-4"
+                      />
+                      <label for="init-slot-2" class="text-sm font-medium text-[#222222]">
+                        Espacio 2
+                      </label>
+                    </div>
+                  </div>
+                </fieldset>
+
+                <div aria-live="polite"></div>
+
+                <button type="submit" class="submit-button">
+                  Guardar Expediente Clínico
+                </button>
+              </form>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>
