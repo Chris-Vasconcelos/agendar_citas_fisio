@@ -18,8 +18,14 @@ export function PatientModal({
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    await onSave(patientForm, editingPatientId);
-    setIsSaving(false);
+    try {
+      await onSave(patientForm, editingPatientId);
+    } catch (error) {
+       // El error usualmente se setea internamente desde App.jsx en onSave, pero si explota:
+       console.error("Error inesperado en PatientModal", error);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -38,6 +44,7 @@ export function PatientModal({
             type="button"
             onClick={onClose}
             className="secondary-button text-xs py-1 px-2.5"
+            disabled={isSaving}
           >
             Cerrar
           </button>

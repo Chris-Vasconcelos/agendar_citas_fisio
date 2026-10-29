@@ -147,6 +147,7 @@ export default function App() {
       family_history: '',
       consultation_reason: '',
       privacy_consent: false,
+      privacy_consent_at: null,
     });
     setIsPatientModalOpen(true);
   };
@@ -165,6 +166,7 @@ export default function App() {
       family_history: pt.family_history || '',
       consultation_reason: pt.consultation_reason || '',
       privacy_consent: Boolean(pt.privacy_consent),
+      privacy_consent_at: pt.privacy_consent_at || null,
     });
     setIsPatientModalOpen(true);
   };

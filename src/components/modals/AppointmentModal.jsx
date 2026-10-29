@@ -22,8 +22,17 @@ export function AppointmentModal({
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    await onSave(aptForm, editingAppointmentId);
-    setIsSaving(false);
+    try {
+      await onSave(aptForm, editingAppointmentId);
+    } catch (error) {
+      setAptFormError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar. Intenta nuevamente.'
+      );
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -44,6 +53,7 @@ export function AppointmentModal({
             type="button"
             onClick={onClose}
             className="secondary-button text-xs py-1 px-2.5"
+            disabled={isSaving}
           >
             Cerrar
           </button>

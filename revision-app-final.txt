@@ -1,0 +1,534 @@
+4bb910a Fix: Data loading regressions and form saving states
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { getTodayDateString, formatTimeShort, addMinutesToTimeStr } from './utils/date';
+import { DEFAULT_PROFESSIONAL } from './utils/constants';
+
+// Hooks
+import { useAuth } from './hooks/useAuth';
+import { usePatients } from './hooks/usePatients';
+import { useAvailability } from './hooks/useAvailability';
+import { useAppointments } from './hooks/useAppointments';
+
+// Layout
+import { Header } from './components/layout/Header';
+import { BottomNav } from './components/layout/BottomNav';
+
+// Pages
+import { AgendaPage } from './pages/AgendaPage';
+import { PatientsPage } from './pages/PatientsPage';
+import { AvailabilityPage } from './pages/AvailabilityPage';
+import { SecurityPage } from './pages/SecurityPage';
+
+// Modals
+import { AppointmentModal } from './components/modals/AppointmentModal';
+import { PatientModal } from './components/modals/PatientModal';
+import { RecordModal } from './components/modals/RecordModal';
+import { PrivacyModal } from './components/modals/PrivacyModal';
+import { AuthModal } from './components/modals/AuthModal';
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('agenda');
+  const [selectedDate, setSelectedDate] = useState(getTodayDateString);
+  const [calendarViewMode, setCalendarViewMode] = useState('week');
+  const [designSkill, setDesignSkill] = useState(
+    () => localStorage.getItem('fisio_typeui_skill_v2') || 'craft'
+  );
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', designSkill);
+    localStorage.setItem('fisio_typeui_skill_v2', designSkill);
+  }, [designSkill]);
+
+  // Autenticación Supabase
+  const { session } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [authSuccess, setAuthSuccess] = useState('');
+
+  // Modales adicionales y alertas
+  const [showPrivacyNoticeModal, setShowPrivacyNoticeModal] = useState(false);
+  const [bannerAlert, setBannerAlert] = useState(null);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [restoreReport, setRestoreReport] = useState(null);
+
+  const appendAuditLog = useCallback((code, detail) => {
+    const entry = {
+      id: crypto.randomUUID(),
+      code,
+      detail,
+      timestamp: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => [entry, ...prev.slice(0, 29)]);
+  }, []);
+
+  // Primero inicializar appointments, luego availability, luego patients (ya que patients depende de appointments para validación de borrado)
+  const [patientsByIdProxy, setPatientsByIdProxy] = useState(new Map());
+
+  const { appointments, setAppointments, validateAppointmentConstraints, saveAppointment, cancelAppointment } = useAppointments(session, appendAuditLog, setBannerAlert, patientsByIdProxy);
+  const { patients, setPatients, patientsById, savePatient, deletePatient } = usePatients(session, appendAuditLog, setBannerAlert, appointments);
+  const { availability, setAvailability, handleEnableDayNow } = useAvailability(session, setBannerAlert);
+
+  useEffect(() => {
+    setPatientsByIdProxy(patientsById);
+  }, [patientsById]);
+
+
+  // Modal de Cita
+  const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
+  const [editingAppointmentId, setEditingAppointmentId] = useState(null);
+  const [aptForm, setAptForm] = useState({});
+  const [aptFieldErrors, setAptFieldErrors] = useState({});
+  const [aptFormError, setAptFormError] = useState('');
+
+  // Modal de Paciente y Expediente
+  const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
+  const [editingPatientId, setEditingPatientId] = useState(null);
+  const [selectedPatientForRecord, setSelectedPatientForRecord] = useState(null);
+  const [patientForm, setPatientForm] = useState({});
+  const [patientFieldErrors, setPatientFieldErrors] = useState({});
+  const [patientFormError, setPatientFormError] = useState('');
+  const [patientSearch, setPatientSearch] = useState('');
+
+
+  // Lógica de apertura de Modales
+  const openCreateAppointmentModal = (defaultStart = '09:00', defaultSlot = 'auto', customDate = selectedDate) => {
+    const targetDate = customDate || selectedDate;
+    setSelectedDate(targetDate);
+    setEditingAppointmentId(null);
+    setAptFieldErrors({});
+    setAptFormError('');
+    setAptForm({
+      patient_id: patients[0]?.id || '',
+      slot_number: defaultSlot,
+      date: targetDate,
+      startTime: defaultStart,
+      endTime: addMinutesToTimeStr(defaultStart, 60),
+      status: 'scheduled',
+      patient_condition: '',
+      treatment_notes: '',
+      professional_name: DEFAULT_PROFESSIONAL,
+    });
+    setIsAppointmentModalOpen(true);
+  };
+
+  const openEditAppointmentModal = (apt) => {
+    const d = new Date(apt.start_time);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    setEditingAppointmentId(apt.id);
+    setAptFieldErrors({});
+    setAptFormError('');
+    setAptForm({
+      patient_id: apt.patient_id,
+      slot_number: String(apt.slot_number || 1),
+      date: `${y}-${m}-${day}`,
+      startTime: formatTimeShort(apt.start_time),
+      endTime: formatTimeShort(apt.end_time),
+      status: apt.status || 'scheduled',
+      patient_condition: apt.patient_condition || '',
+      treatment_notes: apt.treatment_notes || '',
+      professional_name: apt.professional_name || DEFAULT_PROFESSIONAL,
+    });
+    setIsAppointmentModalOpen(true);
+  };
+
+  const openCreatePatientModal = () => {
+    setEditingPatientId(null);
+    setPatientFieldErrors({});
+    setPatientFormError('');
+    setPatientForm({
+      full_name: '',
+      age: '',
+      phone: '',
+      email: '',
+      allergies: '',
+      previous_studies: '',
+      family_history: '',
+      consultation_reason: '',
+      privacy_consent: false,
+    });
+    setIsPatientModalOpen(true);
+  };
+
+  const openEditPatientModal = (pt) => {
+    setEditingPatientId(pt.id);
+    setPatientFieldErrors({});
+    setPatientFormError('');
+    setPatientForm({
+      full_name: pt.full_name || '',
+      age: pt.age !== null && pt.age !== undefined ? String(pt.age) : '',
+      phone: pt.phone || '',
+      email: pt.email || '',
+      allergies: pt.allergies || '',
+      previous_studies: pt.previous_studies || '',
+      family_history: pt.family_history || '',
+      consultation_reason: pt.consultation_reason || '',
+      privacy_consent: Boolean(pt.privacy_consent),
+    });
+    setIsPatientModalOpen(true);
+  };
+
+  // Handlers para submit de Formularios
+  const handleAppointmentFormSave = async (form, editId) => {
+    setAptFormError('');
+    setAptFieldErrors({});
+
+    const errors = {};
+    if (!form.patient_id) errors.patient_id = 'Selecciona un paciente para agendar la cita.';
+    if (!form.date) errors.date = 'Selecciona la fecha de la cita.';
+    if (!form.startTime) errors.startTime = 'Ingresa la hora de inicio.';
+    if (!form.endTime) errors.endTime = 'Ingresa la hora de término.';
+    if (!form.professional_name || form.professional_name.trim().length < 3) {
+      errors.professional_name = 'Ingresa el nombre del fisioterapeuta que atendió la sesión.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setAptFieldErrors(errors);
+      setAptFormError('Corrige los campos obligatorios marcados antes de guardar.');
+      return;
+    }
+
+    const startISO = new Date(`${form.date}T${form.startTime}:00`).toISOString();
+    const endISO = new Date(`${form.date}T${form.endTime}:00`).toISOString();
+
+    const validation = validateAppointmentConstraints(startISO, endISO, form.slot_number, editId);
+    if (!validation.valid) {
+      if (validation.field) setAptFieldErrors({ [validation.field]: validation.error });
+      setAptFormError(validation.error);
+      return;
+    }
+
+    const assignedSlot = validation.assignedSlot || 1;
+    const payload = {
+      patient_id: form.patient_id,
+      slot_number: assignedSlot,
+      start_time: startISO,
+      end_time: endISO,
+      status: form.status || 'scheduled',
+      patient_condition: (form.patient_condition || '').trim(),
+      treatment_notes: (form.treatment_notes || '').trim(),
+      professional_name: (form.professional_name || DEFAULT_PROFESSIONAL).trim(),
+    };
+
+    const res = await saveAppointment(payload, editId, assignedSlot);
+    if (res.success) {
+      setIsAppointmentModalOpen(false);
+    } else {
+      setAptFormError(res.error);
+    }
+  };
+
+  const handlePatientFormSave = async (form, editId) => {
+    setPatientFormError('');
+    setPatientFieldErrors({});
+
+    const cleanName = form.full_name.trim();
+    const cleanPhone = form.phone.trim();
+    const cleanEmail = form.email?.trim() || null;
+    const numericAge = form.age !== '' ? Number(form.age) : null;
+    const cleanReason = form.consultation_reason.trim();
+
+    const fieldErrors = {};
+    if (cleanName.length < 3) fieldErrors.full_name = 'El nombre completo debe contener al menos 3 caracteres.';
+    if (numericAge === null || Number.isNaN(numericAge) || numericAge < 0 || numericAge > 120) {
+      fieldErrors.age = 'La edad debe ser un número válido entre 0 y 120 años.';
+    }
+    if (cleanPhone.length < 7) fieldErrors.phone = 'Ingresa un teléfono válido de al menos 7 dígitos.';
+    if (cleanEmail && (!cleanEmail.includes('@') || cleanEmail.length < 6)) {
+      fieldErrors.email = 'Ingresa un correo electrónico válido o déjalo vacío.';
+    }
+    if (cleanReason.length < 3) fieldErrors.consultation_reason = 'Ingresa el motivo de consulta del paciente.';
+    if (!form.privacy_consent) {
+      const consentMsg = 'Es obligatorio confirmar que el paciente aceptó el Aviso de Privacidad antes de guardar su expediente.';
+      fieldErrors.privacy_consent = consentMsg;
+      appendAuditLog('PACIENTES', consentMsg);
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
+      setPatientFieldErrors(fieldErrors);
+      setPatientFormError('Revisa los campos obligatorios marcados antes de guardar el expediente.');
+      return;
+    }
+
+    const payload = {
+      full_name: cleanName,
+      age: numericAge,
+      phone: cleanPhone,
+      email: cleanEmail,
+      allergies: form.allergies.trim() || 'Ninguna conocida',
+      previous_studies: form.previous_studies.trim() || 'Sin estudios previos',
+      family_history: form.family_history.trim() || 'Sin antecedentes familiares registrados',
+      consultation_reason: cleanReason,
+      privacy_consent: true,
+      privacy_consent_at: form.privacy_consent_at || new Date().toISOString(),
+    };
+
+    const res = await savePatient(payload, editId);
+    if (res.success) {
+      setIsPatientModalOpen(false);
+      setEditingPatientId(null);
+    } else {
+      setPatientFormError(res.error);
+    }
+  };
+
+
+  // Helpers de renderizado de la vista de agenda
+  const appointmentsForSelectedDate = useMemo(() => {
+    return appointments
+      .filter((a) => {
+        const d = new Date(a.start_time);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}` === selectedDate;
+      })
+      .sort((a, b) => {
+        const diff = new Date(a.start_time) - new Date(b.start_time);
+        if (diff !== 0) return diff;
+        return Number(a.slot_number || 1) - Number(b.slot_number || 1);
+      });
+  }, [appointments, selectedDate]);
+
+  const weekDays = useMemo(() => {
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const current = new Date(y, m - 1, d);
+    const dayOfWeek = current.getDay(); // 0 = Dom, 1 = Lun ... 6 = Sáb
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(y, m - 1, d + diffToMonday);
+
+    const shortNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const fullNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+
+    return Array.from({ length: 7 }, (_, idx) => {
+      const dt = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + idx);
+      const dy = dt.getFullYear();
+      const dm = String(dt.getMonth() + 1).padStart(2, '0');
+      const dd = String(dt.getDate()).padStart(2, '0');
+      const dateStr = `${dy}-${dm}-${dd}`;
+      const dow = dt.getDay();
+      const rule = availability.find((a) => Number(a.day_of_week) === dow);
+      const monthShort = new Intl.DateTimeFormat('es-MX', { month: 'short' }).format(dt);
+
+      const dayAppointments = appointments.filter((a) => {
+        if (a.status === 'cancelled') return false;
+        const ad = new Date(a.start_time);
+        const ay = ad.getFullYear();
+        const am = String(ad.getMonth() + 1).padStart(2, '0');
+        const aday = String(ad.getDate()).padStart(2, '0');
+        return `${ay}-${am}-${aday}` === dateStr;
+      });
+
+      return {
+        dateStr,
+        dayOfWeek: dow,
+        shortName: shortNames[dow],
+        fullName: fullNames[dow],
+        dayNumber: dd,
+        monthShort,
+        rule,
+        isActive: Boolean(rule && rule.is_active),
+        activeCount: dayAppointments.length,
+        appointments: dayAppointments,
+      };
+    });
+  }, [selectedDate, availability, appointments]);
+
+  const weeklyHourRange = useMemo(() => {
+    let minH = 8;
+    let maxH = 19;
+    const activeRules = availability.filter((a) => a.is_active);
+    if (activeRules.length > 0) {
+      minH = Math.min(...activeRules.map((r) => Number(r.start_time.split(':')[0])));
+      maxH = Math.max(...activeRules.map((r) => Number(r.end_time.split(':')[0])));
+    }
+    const hours = [];
+    for (let h = minH; h < maxH; h += 1) {
+      hours.push(`${String(h).padStart(2, '0')}:00`);
+    }
+    return hours;
+  }, [availability]);
+
+  const dailyHourlySlots = useMemo(() => {
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    const dayOfWeek = new Date(y, m - 1, d).getDay();
+    const rule = availability.find((a) => Number(a.day_of_week) === dayOfWeek);
+    if (!rule || !rule.is_active) return [];
+
+    const [startH] = rule.start_time.split(':').map(Number);
+    const [endH] = rule.end_time.split(':').map(Number);
+    const hours = [];
+    for (let h = startH; h < endH; h += 1) {
+      hours.push(`${String(h).padStart(2, '0')}:00`);
+    }
+    return hours;
+  }, [availability, selectedDate]);
+
+  const activeDayAppointments = appointmentsForSelectedDate.filter(
+    (a) => a.status !== 'cancelled'
+  );
+  const weeklyTotalActive = weekDays.reduce((acc, wd) => acc + wd.activeCount, 0);
+  const allergyAlertsTodayCount = activeDayAppointments.filter((a) => {
+    const pt = patientsById.get(a.patient_id);
+    return (
+      pt?.allergies &&
+      pt.allergies.toLowerCase() !== 'ninguna' &&
+      pt.allergies.toLowerCase() !== 'ninguna conocida'
+    );
+  }).length;
+  const completedNotesTodayCount = activeDayAppointments.filter(
+    (a) => a.treatment_notes && a.treatment_notes.trim().length > 0
+  ).length;
+
+  return (
+    <div className="dash-main pb-24" data-theme={designSkill}>
+      <Header
+        designSkill={designSkill}
+        setDesignSkill={setDesignSkill}
+        session={session}
+        setShowPrivacyNoticeModal={setShowPrivacyNoticeModal}
+        setAuthError={setAuthError}
+        setAuthSuccess={setAuthSuccess}
+        setShowAuthModal={setShowAuthModal}
+        openCreateAppointmentModal={openCreateAppointmentModal}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        patientsCount={patients.length}
+        selectedDate={selectedDate}
+      />
+
+      <main id="main-content" className="space-y-6">
+        <div aria-live="polite">
+          {bannerAlert && (
+            <article className="craft-card flex-row items-center justify-between gap-2 text-sm font-semibold">
+              <span>{bannerAlert.text}</span>
+              <button
+                type="button"
+                onClick={() => setBannerAlert(null)}
+                className="secondary-button text-xs"
+              >
+                Cerrar
+              </button>
+            </article>
+          )}
+        </div>
+
+        {activeTab === 'agenda' && (
+          <AgendaPage
+             selectedDate={selectedDate}
+             setSelectedDate={setSelectedDate}
+             calendarViewMode={calendarViewMode}
+             setCalendarViewMode={setCalendarViewMode}
+             weekDays={weekDays}
+             dailyHourlySlots={dailyHourlySlots}
+             weeklyHourRange={weeklyHourRange}
+             activeDayAppointments={activeDayAppointments}
+             weeklyTotalActive={weeklyTotalActive}
+             allergyAlertsTodayCount={allergyAlertsTodayCount}
+             completedNotesTodayCount={completedNotesTodayCount}
+             appointmentsForSelectedDate={appointmentsForSelectedDate}
+             patientsById={patientsById}
+             handleEnableDayNow={handleEnableDayNow}
+             openCreateAppointmentModal={openCreateAppointmentModal}
+             openEditAppointmentModal={openEditAppointmentModal}
+             setSelectedPatientForRecord={setSelectedPatientForRecord}
+             handleCancelAppointment={cancelAppointment}
+             setActiveTab={setActiveTab}
+          />
+        )}
+
+        {activeTab === 'patients' && (
+          <PatientsPage
+            patients={patients}
+            appointments={appointments}
+            patientSearch={patientSearch}
+            setPatientSearch={setPatientSearch}
+            openCreatePatientModal={openCreatePatientModal}
+            openEditPatientModal={openEditPatientModal}
+            setSelectedPatientForRecord={setSelectedPatientForRecord}
+            handleDeletePatient={deletePatient}
+          />
+        )}
+
+        {activeTab === 'availability' && (
+          <AvailabilityPage
+            availability={availability}
+            setAvailability={setAvailability}
+            setActiveTab={setActiveTab}
+          />
+        )}
+
+        {activeTab === 'security' && (
+          <SecurityPage
+            patients={patients}
+            appointments={appointments}
+            availability={availability}
+            patientsById={patientsById}
+            appendAuditLog={appendAuditLog}
+            restoreReport={restoreReport}
+            setRestoreReport={setRestoreReport}
+            auditLogs={auditLogs}
+            setBannerAlert={setBannerAlert}
+            setPatients={setPatients}
+            setAppointments={setAppointments}
+            setAvailability={setAvailability}
+            session={session}
+            supabase={supabase}
+            isSupabaseConfigured={isSupabaseConfigured}
+          />
+        )}
+      </main>
+
+      <AppointmentModal
+        isOpen={isAppointmentModalOpen}
+        onClose={() => setIsAppointmentModalOpen(false)}
+        editingAppointmentId={editingAppointmentId}
+        aptForm={aptForm}
+        setAptForm={setAptForm}
+        aptFieldErrors={aptFieldErrors}
+        setAptFieldErrors={setAptFieldErrors}
+        aptFormError={aptFormError}
+        setAptFormError={setAptFormError}
+        patients={patients}
+        onSave={handleAppointmentFormSave}
+      />
+
+      <PatientModal
+        isOpen={isPatientModalOpen}
+        onClose={() => setIsPatientModalOpen(false)}
+        editingPatientId={editingPatientId}
+        patientForm={patientForm}
+        setPatientForm={setPatientForm}
+        patientFieldErrors={patientFieldErrors}
+        patientFormError={patientFormError}
+        setShowPrivacyNoticeModal={setShowPrivacyNoticeModal}
+        onSave={handlePatientFormSave}
+      />
+
+      <RecordModal
+        selectedPatientForRecord={selectedPatientForRecord}
+        setSelectedPatientForRecord={setSelectedPatientForRecord}
+        appointments={appointments}
+        openEditAppointmentModal={openEditAppointmentModal}
+      />
+
+      <PrivacyModal
+        isOpen={showPrivacyNoticeModal}
+        onClose={() => setShowPrivacyNoticeModal(false)}
+      />
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        authError={authError}
+        setAuthError={setAuthError}
+        authSuccess={authSuccess}
+        setAuthSuccess={setAuthSuccess}
+      />
+
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+    </div>
+  );
+}
