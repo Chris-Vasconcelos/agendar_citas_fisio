@@ -263,7 +263,9 @@ export default function App() {
       family_history: form.family_history.trim() || 'Sin antecedentes familiares registrados',
       consultation_reason: cleanReason,
       privacy_consent: true,
-      privacy_consent_at: form.privacy_consent_at || new Date().toISOString(),
+      privacy_consent_at: editId
+        ? form.privacy_consent_at
+        : (form.privacy_consent_at || new Date().toISOString()),
     };
 
     const res = await savePatient(payload, editId);
@@ -504,6 +506,7 @@ export default function App() {
         setPatientForm={setPatientForm}
         patientFieldErrors={patientFieldErrors}
         patientFormError={patientFormError}
+        setPatientFormError={setPatientFormError}
         setShowPrivacyNoticeModal={setShowPrivacyNoticeModal}
         onSave={handlePatientFormSave}
       />

@@ -8,6 +8,7 @@ export function PatientModal({
   setPatientForm,
   patientFieldErrors,
   patientFormError,
+  setPatientFormError,
   setShowPrivacyNoticeModal,
   onSave
 }) {
@@ -21,8 +22,11 @@ export function PatientModal({
     try {
       await onSave(patientForm, editingPatientId);
     } catch (error) {
-       // El error usualmente se setea internamente desde App.jsx en onSave, pero si explota:
-       console.error("Error inesperado en PatientModal", error);
+      setPatientFormError(
+        error instanceof Error
+          ? error.message
+          : 'No se pudo guardar el paciente. Intenta nuevamente.'
+      );
     } finally {
       setIsSaving(false);
     }
