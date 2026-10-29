@@ -4,6 +4,7 @@ import { DAYS_OF_WEEK } from '../utils/constants';
 export function AvailabilityPage({
   availability,
   setAvailability,
+  saveAvailabilityDay,
   setActiveTab
 }) {
   return (
@@ -58,19 +59,7 @@ export function AvailabilityPage({
                   checked={isActive}
                   onChange={(e) => {
                     const checked = e.target.checked;
-                    setAvailability((prev) => {
-                        const exists = prev.some((item) => item.day_of_week === dayObj.value);
-                        if (exists) {
-                            return prev.map((item) =>
-                            item.day_of_week === dayObj.value
-                                ? { ...item, is_active: checked }
-                                : item
-                            )
-                        } else {
-                            return [...prev, { ...row, is_active: checked }]
-                        }
-                    }
-                    );
+                    saveAvailabilityDay({ ...row, is_active: checked });
                   }}
                   className="h-4 w-4 cursor-pointer"
                 />
@@ -97,13 +86,7 @@ export function AvailabilityPage({
                       value={row.start_time}
                       onChange={(e) => {
                         const val = e.target.value;
-                        setAvailability((prev) =>
-                          prev.map((item) =>
-                            item.day_of_week === dayObj.value
-                              ? { ...item, start_time: val }
-                              : item
-                          )
-                        );
+                        saveAvailabilityDay({ ...row, start_time: val });
                       }}
                       className="form-input py-1.5 px-2 text-xs font-bold"
                     />
@@ -122,13 +105,7 @@ export function AvailabilityPage({
                       value={row.end_time}
                       onChange={(e) => {
                         const val = e.target.value;
-                        setAvailability((prev) =>
-                          prev.map((item) =>
-                            item.day_of_week === dayObj.value
-                              ? { ...item, end_time: val }
-                              : item
-                          )
-                        );
+                        saveAvailabilityDay({ ...row, end_time: val });
                       }}
                       className="form-input py-1.5 px-2 text-xs font-bold"
                     />

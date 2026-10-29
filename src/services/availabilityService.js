@@ -10,10 +10,21 @@ export const fetchAvailability = async () => {
   return data;
 };
 
-export const updateAvailability = async (payload) => {
-    // Currently, App.jsx seems to update it in memory/localStorage.
-    // Ideally this goes to DB, but for now we'll match existing behaviour where it's saved locally or via DB upsert if implemented.
+export const updateAvailability = async (payload, userId) => {
     if (isSupabaseConfigured && supabase) {
-        // Implement upsert here when needed. Currently not fully saving to DB in App.jsx.
+        if (!userId) {
+            throw new Error('Operación no autorizada: No hay sesión activa.');
+        }
+
+        const { data, error } = await supabase
+            .from('availability')
+            .upsert({ user_id: userId, ...payload }, { onConflict: 'day_of_week' })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    } else {
+        return payload;
     }
 }

@@ -11,7 +11,10 @@ export const fetchAppointments = async () => {
 };
 
 export const saveAppointment = async (payload, editingAppointmentId, userId) => {
-    if (isSupabaseConfigured && supabase && userId) {
+    if (isSupabaseConfigured && supabase) {
+      if (!userId) {
+          throw new Error('Operación no autorizada: No hay sesión activa.');
+      }
       if (editingAppointmentId) {
         const { data, error } = await supabase
           .from('appointments')
@@ -31,7 +34,7 @@ export const saveAppointment = async (payload, editingAppointmentId, userId) => 
         return data;
       }
     } else {
-        // Local handling
+        // Local handling solo si no está configurado Supabase
         return {
             id: editingAppointmentId || crypto.randomUUID(),
             ...payload

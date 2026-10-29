@@ -3,7 +3,7 @@ import { fetchPatients, savePatient as apiSavePatient, deletePatient as apiDelet
 import { INITIAL_DEMO_PATIENTS } from '../utils/constants';
 import { isSupabaseConfigured } from '../lib/supabase';
 
-export function usePatients(session, appendAuditLog, setBannerAlert, appointments) {
+export function usePatients(session, appendAuditLog, setBannerAlert, appointmentsRef) {
     const [patients, setPatients] = useState(() => {
         const saved = localStorage.getItem('fisio_patients_v3');
         return saved ? JSON.parse(saved) : INITIAL_DEMO_PATIENTS;
@@ -23,6 +23,9 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
     useEffect(() => {
         if (session) {
             loadPatients();
+        } else if (isSupabaseConfigured) {
+            // Limpiar datos al cerrar sesión si Supabase está configurado
+            setPatients([]);
         }
     }, [session, loadPatients]);
 
@@ -56,7 +59,7 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
     };
 
     const deletePatient = async (patientId) => {
-        const hasAppointments = appointments.some((a) => a.patient_id === patientId);
+        const hasAppointments = (appointmentsRef.current || []).some((a) => a.patient_id === patientId);
         if (hasAppointments) {
           const msg = 'No se puede eliminar un paciente que ya tiene sesiones clínicas registradas en su historial.';
           setBannerAlert({ type: 'warning', text: msg });

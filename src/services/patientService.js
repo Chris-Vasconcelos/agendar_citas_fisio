@@ -11,7 +11,10 @@ export const fetchPatients = async () => {
 };
 
 export const savePatient = async (payload, editingPatientId, userId) => {
-  if (isSupabaseConfigured && supabase && userId) {
+  if (isSupabaseConfigured && supabase) {
+    if (!userId) {
+      throw new Error('Operación no autorizada: No hay sesión activa.');
+    }
     if (editingPatientId) {
       const { data, error } = await supabase
         .from('patients')
@@ -31,7 +34,7 @@ export const savePatient = async (payload, editingPatientId, userId) => {
       return data;
     }
   } else {
-    // Local return
+    // Local return solo si no hay Supabase configurado
     return {
       id: editingPatientId || crypto.randomUUID(),
       ...payload

@@ -66,6 +66,8 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
     useEffect(() => {
         if (session) {
             loadAppointments();
+        } else if (isSupabaseConfigured) {
+            setAppointments([]);
         }
     }, [session, loadAppointments]);
 

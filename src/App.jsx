@@ -9,6 +9,7 @@ import { usePatients } from './hooks/usePatients';
 import { useAvailability } from './hooks/useAvailability';
 import { useAppointments } from './hooks/useAppointments';
 
+import { Lock } from 'lucide-react';
 // Layout
 import { Header } from './components/layout/Header';
 import { BottomNav } from './components/layout/BottomNav';
@@ -61,17 +62,21 @@ export default function App() {
     setAuditLogs((prev) => [entry, ...prev.slice(0, 29)]);
   }, []);
 
-  // Primero inicializar appointments, luego availability, luego patients (ya que patients depende de appointments para validación de borrado)
-  const [patientsByIdProxy, setPatientsByIdProxy] = useState(new Map());
+  // 1. Availability no tiene dependencias entre hooks
+  const { availability, setAvailability, handleEnableDayNow, saveAvailabilityDay } = useAvailability(session, setBannerAlert);
 
-  const { appointments, setAppointments, validateAppointmentConstraints, saveAppointment, cancelAppointment } = useAppointments(session, appendAuditLog, setBannerAlert, patientsByIdProxy);
-  const { patients, setPatients, patientsById, savePatient, deletePatient } = usePatients(session, appendAuditLog, setBannerAlert, appointments);
-  const { availability, setAvailability, handleEnableDayNow } = useAvailability(session, setBannerAlert);
+  // 2. Patients depende solo indirectamente de appointments (para validación en borrado)
+  // Pasaremos una referencia en lugar de un estado directo para no forzar renderizados cruzados:
+  const appointmentsRef = React.useRef([]);
+
+  const { patients, setPatients, patientsById, savePatient, deletePatient } = usePatients(session, appendAuditLog, setBannerAlert, appointmentsRef);
+
+  // 3. Appointments necesita patientsById puramente (no crea ciclo infinito si lo usamos directamente)
+  const { appointments, setAppointments, validateAppointmentConstraints, saveAppointment, cancelAppointment } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById);
 
   useEffect(() => {
-    setPatientsByIdProxy(patientsById);
-  }, [patientsById]);
-
+    appointmentsRef.current = appointments;
+  }, [appointments]);
 
   // Modal de Cita
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
@@ -342,13 +347,23 @@ export default function App() {
   const weeklyHourRange = useMemo(() => {
     let minH = 8;
     let maxH = 19;
+    let maxM = 0;
     const activeRules = availability.filter((a) => a.is_active);
     if (activeRules.length > 0) {
       minH = Math.min(...activeRules.map((r) => Number(r.start_time.split(':')[0])));
-      maxH = Math.max(...activeRules.map((r) => Number(r.end_time.split(':')[0])));
+      const maxEndTime = activeRules.reduce((max, r) => {
+        const [h, m] = r.end_time.split(':').map(Number);
+        return h > max.h || (h === max.h && m > max.m) ? { h, m } : max;
+      }, { h: 0, m: 0 });
+      maxH = maxEndTime.h;
+      maxM = maxEndTime.m;
     }
+
+    // Add extra hour if end time has minutes
+    const effectiveMaxH = maxM > 0 ? maxH + 1 : maxH;
+
     const hours = [];
-    for (let h = minH; h < maxH; h += 1) {
+    for (let h = minH; h < effectiveMaxH; h += 1) {
       hours.push(`${String(h).padStart(2, '0')}:00`);
     }
     return hours;
@@ -361,9 +376,13 @@ export default function App() {
     if (!rule || !rule.is_active) return [];
 
     const [startH] = rule.start_time.split(':').map(Number);
-    const [endH] = rule.end_time.split(':').map(Number);
+    const [endH, endM] = rule.end_time.split(':').map(Number);
+
+    // Add extra hour if end time has minutes
+    const effectiveEndH = endM > 0 ? endH + 1 : endH;
+
     const hours = [];
-    for (let h = startH; h < endH; h += 1) {
+    for (let h = startH; h < effectiveEndH; h += 1) {
       hours.push(`${String(h).padStart(2, '0')}:00`);
     }
     return hours;
@@ -418,7 +437,24 @@ export default function App() {
           )}
         </div>
 
-        {activeTab === 'agenda' && (
+        {(!session && isSupabaseConfigured) ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <Lock className="w-12 h-12 text-slate-400 mb-4" />
+            <h2 className="text-xl font-bold text-[#1c160e]">Acceso Restringido</h2>
+            <p className="text-sm text-slate-600 mt-2 max-w-md">
+              Inicia sesión con tu cuenta de fisioterapeuta para acceder a la agenda, expedientes y configuración.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowAuthModal(true)}
+              className="submit-button mt-6"
+            >
+              Iniciar sesión
+            </button>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'agenda' && (
           <AgendaPage
              selectedDate={selectedDate}
              setSelectedDate={setSelectedDate}
@@ -459,28 +495,31 @@ export default function App() {
           <AvailabilityPage
             availability={availability}
             setAvailability={setAvailability}
+            saveAvailabilityDay={saveAvailabilityDay}
             setActiveTab={setActiveTab}
           />
         )}
 
-        {activeTab === 'security' && (
-          <SecurityPage
-            patients={patients}
-            appointments={appointments}
-            availability={availability}
-            patientsById={patientsById}
-            appendAuditLog={appendAuditLog}
-            restoreReport={restoreReport}
-            setRestoreReport={setRestoreReport}
-            auditLogs={auditLogs}
-            setBannerAlert={setBannerAlert}
-            setPatients={setPatients}
-            setAppointments={setAppointments}
-            setAvailability={setAvailability}
-            session={session}
-            supabase={supabase}
-            isSupabaseConfigured={isSupabaseConfigured}
-          />
+            {activeTab === 'security' && (
+              <SecurityPage
+                patients={patients}
+                appointments={appointments}
+                availability={availability}
+                patientsById={patientsById}
+                appendAuditLog={appendAuditLog}
+                restoreReport={restoreReport}
+                setRestoreReport={setRestoreReport}
+                auditLogs={auditLogs}
+                setBannerAlert={setBannerAlert}
+                setPatients={setPatients}
+                setAppointments={setAppointments}
+                setAvailability={setAvailability}
+                session={session}
+                supabase={supabase}
+                isSupabaseConfigured={isSupabaseConfigured}
+              />
+            )}
+          </>
         )}
       </main>
 
