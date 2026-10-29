@@ -55,7 +55,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
     const loadAppointments = useCallback(async () => {
         try {
             const data = await fetchAppointments();
-            if (data) {
+            if (Array.isArray(data)) {
                setAppointments(data);
             }
         } catch (error) {

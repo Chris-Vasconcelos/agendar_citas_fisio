@@ -12,7 +12,7 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
     const loadPatients = useCallback(async () => {
         try {
             const data = await fetchPatients();
-            if (data && data.length > 0) {
+            if (Array.isArray(data)) {
                setPatients(data);
             }
         } catch (error) {

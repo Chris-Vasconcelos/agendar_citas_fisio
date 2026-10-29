@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export function PatientModal({
   isOpen,
@@ -11,11 +11,15 @@ export function PatientModal({
   setShowPrivacyNoticeModal,
   onSave
 }) {
+  const [isSaving, setIsSaving] = useState(false);
+
   if (!isOpen) return null;
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    onSave(patientForm, editingPatientId);
+    setIsSaving(true);
+    await onSave(patientForm, editingPatientId);
+    setIsSaving(false);
   }
 
   return (
@@ -239,11 +243,12 @@ export function PatientModal({
               type="button"
               onClick={onClose}
               className="secondary-button"
+              disabled={isSaving}
             >
               Cancelar
             </button>
-            <button type="submit" className="submit-button">
-              Guardar Expediente
+            <button type="submit" className="submit-button" disabled={isSaving}>
+              {isSaving ? 'Guardando...' : 'Guardar Expediente'}
             </button>
           </div>
         </form>

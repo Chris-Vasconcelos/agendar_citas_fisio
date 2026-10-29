@@ -13,7 +13,7 @@ export function useAvailability(session, setBannerAlert) {
     const loadAvailability = useCallback(async () => {
         try {
             const data = await fetchAvailability();
-            if (data && data.length > 0) {
+            if (Array.isArray(data)) {
                setAvailability(data);
             }
         } catch (error) {

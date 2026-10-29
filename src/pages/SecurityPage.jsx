@@ -132,14 +132,17 @@ export function SecurityPage({
         );
 
         if (isSupabaseConfigured && supabase && session?.user) {
-          await supabase.from('patients').upsert(
+          const { error: errorPatients } = await supabase.from('patients').upsert(
             restoredPatients.map((p) => ({ ...p, user_id: session.user.id })),
             { onConflict: 'id' }
           );
-          await supabase.from('appointments').upsert(
+          if (errorPatients) throw errorPatients;
+
+          const { error: errorAppointments } = await supabase.from('appointments').upsert(
             restoredAppointments.map((a) => ({ ...a, user_id: session.user.id })),
             { onConflict: 'id' }
           );
+          if (errorAppointments) throw errorAppointments;
         }
 
         setPatients(restoredPatients);

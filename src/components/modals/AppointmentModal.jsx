@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { addMinutesToTimeStr } from '../../utils/date';
 import { DEFAULT_PROFESSIONAL } from '../../utils/constants';
 
@@ -15,11 +15,15 @@ export function AppointmentModal({
   patients,
   onSave
 }) {
+  const [isSaving, setIsSaving] = useState(false);
+
   if (!isOpen) return null;
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    onSave(aptForm, editingAppointmentId);
+    setIsSaving(true);
+    await onSave(aptForm, editingAppointmentId);
+    setIsSaving(false);
   }
 
   return (
@@ -273,11 +277,12 @@ export function AppointmentModal({
               type="button"
               onClick={onClose}
               className="secondary-button"
+              disabled={isSaving}
             >
               Cancelar
             </button>
-            <button type="submit" className="submit-button">
-              {editingAppointmentId ? 'Guardar Nota de Sesión y Cambios' : 'Confirmar y Agendar Cita'}
+            <button type="submit" className="submit-button" disabled={isSaving}>
+              {isSaving ? 'Guardando...' : (editingAppointmentId ? 'Guardar Nota de Sesión y Cambios' : 'Confirmar y Agendar Cita')}
             </button>
           </div>
         </form>
