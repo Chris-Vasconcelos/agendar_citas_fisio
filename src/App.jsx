@@ -562,7 +562,7 @@ export default function App() {
       />
 
       <RecordModal
-        selectedPatientForRecord={selectedPatientForRecord}
+        selectedPatientForRecord={!isSupabaseConfigured || session?.user?.id ? selectedPatientForRecord : null}
         setSelectedPatientForRecord={setSelectedPatientForRecord}
         appointments={appointments}
         openEditAppointmentModal={openEditAppointmentModal}
