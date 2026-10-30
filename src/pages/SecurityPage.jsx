@@ -131,18 +131,19 @@ export function SecurityPage({
           validPatientIds.has(a.patient_id)
         );
 
-        if (isSupabaseConfigured && supabase && session?.user) {
-          const { error: errorPatients } = await supabase.from('patients').upsert(
-            restoredPatients.map((p) => ({ ...p, user_id: session.user.id })),
-            { onConflict: 'id' }
-          );
-          if (errorPatients) throw errorPatients;
-
-          const { error: errorAppointments } = await supabase.from('appointments').upsert(
-            restoredAppointments.map((a) => ({ ...a, user_id: session.user.id })),
-            { onConflict: 'id' }
-          );
-          if (errorAppointments) throw errorAppointments;
+        if (restoredAppointments.length !== parsed.appointments.length) {
+          throw new Error('El respaldo contiene citas con pacientes ausentes. No se restauró ningún registro.');
+        }
+        if (isSupabaseConfigured && supabase) {
+          if (!session?.user?.id) throw new Error('La sesión no está activa.');
+          const { error } = await supabase.rpc('restore_clinical_backup', {
+            backup: {
+              patients: restoredPatients,
+              appointments: restoredAppointments,
+              availability: Array.isArray(parsed.availability) ? parsed.availability : []
+            }
+          });
+          if (error) throw error;
         }
 
         setPatients(restoredPatients);
