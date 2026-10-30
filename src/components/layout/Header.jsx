@@ -1,6 +1,6 @@
 import React from 'react';
 import { Shield, Lock, LogOut, Plus } from 'lucide-react';
-import { signOutUser } from '../../lib/supabase';
+import { signOutUser, isSupabaseConfigured } from '../../lib/supabase';
 
 export function Header({
   designSkill,
@@ -92,6 +92,7 @@ export function Header({
               </button>
             )}
 
+            {(!isSupabaseConfigured || session) && (
             <button
               type="button"
               onClick={() => openCreateAppointmentModal('09:00', 'auto', selectedDate)}
@@ -100,6 +101,7 @@ export function Header({
               <Plus className="w-3.5 h-3.5" />
               Agendar Cita
             </button>
+            )}
           </div>
         </div>
       </header>
