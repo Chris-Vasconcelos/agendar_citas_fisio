@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Plus, FileText, Edit3, Trash2 } from 'lucide-react';
-import { normalizePatientText } from '../utils/patientSearch';
+import { matchesPatient } from '../utils/patientSearch';
 
 export function PatientsPage({
   patients,
@@ -12,15 +12,10 @@ export function PatientsPage({
   setSelectedPatientForRecord,
   handleDeletePatient
 }) {
-  const filteredPatients = useMemo(() => {
-    const terms = normalizePatientText(patientSearch).split(' ').filter(Boolean);
-    return patients.filter((p) => {
-      const name = normalizePatientText(p.full_name);
-      const phone = String(p.phone ?? '').replace(/\D/g, '');
-      return terms.every((term) => name.includes(term) ||
-        (/\d/.test(term) && phone.includes(term.replace(/\D/g, ''))));
-    }).sort((a, b) => String(a.full_name ?? '').localeCompare(String(b.full_name ?? ''), 'es'));
-  }, [patients, patientSearch]);
+  const filteredPatients = useMemo(() => patients
+    .filter((p) => matchesPatient(p, patientSearch))
+    .sort((a, b) => String(a.full_name ?? '').localeCompare(String(b.full_name ?? ''), 'es')),
+    [patients, patientSearch]);
   const [visibleCount, setVisibleCount] = React.useState(25);
   React.useEffect(() => setVisibleCount(25), [patientSearch]);
 

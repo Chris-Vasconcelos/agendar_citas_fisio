@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { addMinutesToTimeStr } from '../../utils/date';
 import { DEFAULT_PROFESSIONAL } from '../../utils/constants';
-import { normalizePatientText } from '../../utils/patientSearch';
+import { normalizePatientText, matchesPatient } from '../../utils/patientSearch';
 
 export function AppointmentModal({
   isOpen,
@@ -19,7 +19,7 @@ export function AppointmentModal({
   const [isSaving, setIsSaving] = useState(false);
   const [patientQuery, setPatientQuery] = useState('');
   const query = normalizePatientText(patientQuery);
-  const matches = patients.filter((p) => normalizePatientText(p.full_name).includes(query) || String(p.phone ?? '').replace(/\D/g, '').includes(query.replace(/\D/g, '')) && /\d/.test(query)).slice(0, 100);
+  const matches = patients.filter((p) => matchesPatient(p, patientQuery)).slice(0, 100);
   const selected = patients.find((p) => p.id === aptForm.patient_id);
 
   if (!isOpen) return null;
