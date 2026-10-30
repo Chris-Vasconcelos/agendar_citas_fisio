@@ -547,6 +547,7 @@ export default function App() {
         patientFormError={patientFormError}
         setPatientFormError={setPatientFormError}
         setShowPrivacyNoticeModal={setShowPrivacyNoticeModal}
+        patients={patients}
         onSave={handlePatientFormSave}
       />
 

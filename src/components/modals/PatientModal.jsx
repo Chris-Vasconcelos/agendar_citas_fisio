@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { normalizePatientText } from '../../utils/patientSearch';
 
 export function PatientModal({
   isOpen,
@@ -10,9 +11,13 @@ export function PatientModal({
   patientFormError,
   setPatientFormError,
   setShowPrivacyNoticeModal,
-  onSave
+  onSave,
+  patients = []
 }) {
   const [isSaving, setIsSaving] = useState(false);
+  const name = normalizePatientText(patientForm.full_name);
+  const phone = String(patientForm.phone ?? '').replace(/\D/g, '');
+  const duplicates = patients.filter((p) => p.id !== editingPatientId && ((name && normalizePatientText(p.full_name) === name) || (phone.length >= 7 && String(p.phone ?? '').replace(/\D/g, '') === phone)));
 
   if (!isOpen) return null;
 
@@ -77,6 +82,7 @@ export function PatientModal({
             </div>
           </div>
 
+          {duplicates.length > 0 && <div role="alert" className="mb-3 rounded-md border border-amber-500 bg-amber-50 p-3 text-xs text-amber-950"><strong>Posible paciente duplicado; verifica antes de guardar.</strong>{duplicates.slice(0, 3).map((p) => <p key={p.id}>{p.full_name} · {p.phone || "Sin teléfono"} · ID: {p.id.slice(0, 8)}</p>)}<p>No se fusionan expedientes automáticamente.</p></div>}
           <div className="form-group">
             <label htmlFor="patient-age" className="form-label">
               Edad <span className="required-asterisk" aria-hidden="true">*</span>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { addMinutesToTimeStr } from '../../utils/date';
 import { DEFAULT_PROFESSIONAL } from '../../utils/constants';
+import { normalizePatientText } from '../../utils/patientSearch';
 
 export function AppointmentModal({
   isOpen,
@@ -16,6 +17,10 @@ export function AppointmentModal({
   onSave
 }) {
   const [isSaving, setIsSaving] = useState(false);
+  const [patientQuery, setPatientQuery] = useState('');
+  const query = normalizePatientText(patientQuery);
+  const matches = patients.filter((p) => normalizePatientText(p.full_name).includes(query) || String(p.phone ?? '').replace(/\D/g, '').includes(query.replace(/\D/g, '')) && /\d/.test(query)).slice(0, 100);
+  const selected = patients.find((p) => p.id === aptForm.patient_id);
 
   if (!isOpen) return null;
 
@@ -64,6 +69,7 @@ export function AppointmentModal({
             <label htmlFor="apt-patient-select" className="form-label">
               Paciente <span className="required-asterisk" aria-hidden="true">*</span>
             </label>
+            <input type="search" className="form-input mb-2" aria-label="Buscar paciente" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} placeholder="Buscar paciente por nombre o teléfono" disabled={isSaving} />
             <select
               id="apt-patient-select"
               value={aptForm.patient_id}
@@ -73,12 +79,15 @@ export function AppointmentModal({
               required
             >
               <option value="">-- Selecciona un paciente --</option>
-              {patients.map((p) => (
+              {selected && !matches.some((p) => p.id === selected.id) && <option value={selected.id}>{selected.full_name} · Tel: {selected.phone ?? '-'}</option>}
+              {matches.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.full_name} ({p.age ?? '-'} años · Tel: {p.phone})
                 </option>
               ))}
             </select>
+            <p className="text-xs text-slate-600">Verifica nombre, edad y teléfono. Máximo 100 resultados por búsqueda.</p>
+            {selected && <p className="text-xs font-semibold text-[#004070]">Paciente seleccionado: {selected.full_name} · {selected.age ?? '-'} años · Tel: {selected.phone ?? '-'}</p>}
             <div aria-live="polite">
               {aptFieldErrors.patient_id && (
                 <span className="error-message active">{aptFieldErrors.patient_id}</span>
