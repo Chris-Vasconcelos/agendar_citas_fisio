@@ -1,12 +1,14 @@
 import React from 'react';
 import { formatTimeShort } from '../../utils/date';
 import { DEFAULT_PROFESSIONAL } from '../../utils/constants';
+import { ConsentPhotoSection } from './ConsentPhotoSection';
 
 export function RecordModal({
   selectedPatientForRecord,
   setSelectedPatientForRecord,
   appointments,
-  openEditAppointmentModal
+  openEditAppointmentModal,
+  userId
 }) {
   if (!selectedPatientForRecord) return null;
 
@@ -55,6 +57,7 @@ export function RecordModal({
           </div>
         </div>
 
+        <ConsentPhotoSection patient={selectedPatientForRecord} userId={userId} />
         <div className="space-y-2 border-t-2 border-[#595959] pt-3">
           <h3 className="text-sm font-bold text-[#222222]">
             Historial de Sesiones y Tratamientos

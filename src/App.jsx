@@ -93,6 +93,16 @@ export default function App() {
   const [patientFieldErrors, setPatientFieldErrors] = useState({});
   const [patientFormError, setPatientFormError] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
+  // Close sensitive patient views immediately when authentication disappears.
+  useEffect(() => {
+    if (isSupabaseConfigured && !session?.user?.id) {
+      setSelectedPatientForRecord(null);
+      setIsAppointmentModalOpen(false);
+      setIsPatientModalOpen(false);
+      setPatientSearch('');
+    }
+  }, [session?.user?.id]);
+
 
 
   // Lógica de apertura de Modales
