@@ -103,7 +103,7 @@ export default function App() {
     setAptFieldErrors({});
     setAptFormError('');
     setAptForm({
-      patient_id: patients[0]?.id || '',
+      patient_id: '',
       slot_number: defaultSlot,
       date: targetDate,
       startTime: defaultStart,

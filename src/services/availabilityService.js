@@ -18,7 +18,7 @@ export const updateAvailability = async (payload, userId) => {
 
         const { data, error } = await supabase
             .from('availability')
-            .upsert({ user_id: userId, ...payload }, { onConflict: 'day_of_week' })
+            .upsert({ user_id: userId, ...payload }, { onConflict: 'user_id,day_of_week' })
             .select()
             .single();
 
