@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Plus, FileText, Edit3, Trash2 } from 'lucide-react';
+import { normalizePatientText } from '../utils/patientSearch';
 
 export function PatientsPage({
   patients,
@@ -12,16 +13,16 @@ export function PatientsPage({
   handleDeletePatient
 }) {
   const filteredPatients = useMemo(() => {
-    const q = patientSearch.trim().toLowerCase();
-    if (!q) return patients;
-    return patients.filter(
-      (p) =>
-        p.full_name.toLowerCase().includes(q) ||
-        p.phone.toLowerCase().includes(q) ||
-        (p.consultation_reason || '').toLowerCase().includes(q) ||
-        (p.allergies || '').toLowerCase().includes(q)
-    );
+    const terms = normalizePatientText(patientSearch).split(' ').filter(Boolean);
+    return patients.filter((p) => {
+      const name = normalizePatientText(p.full_name);
+      const phone = String(p.phone ?? '').replace(/\D/g, '');
+      return terms.every((term) => name.includes(term) ||
+        (/\d/.test(term) && phone.includes(term.replace(/\D/g, ''))));
+    }).sort((a, b) => String(a.full_name ?? '').localeCompare(String(b.full_name ?? ''), 'es'));
   }, [patients, patientSearch]);
+  const [visibleCount, setVisibleCount] = React.useState(25);
+  React.useEffect(() => setVisibleCount(25), [patientSearch]);
 
   return (
     <section aria-labelledby="heading-patients" className="space-y-4">
@@ -47,7 +48,7 @@ export function PatientsPage({
           <input
             id="patient-search-input"
             type="search"
-            placeholder="Buscar por nombre, teléfono, alergia o motivo de consulta..."
+            placeholder="Buscar por nombre o teléfono..."
             value={patientSearch}
             onChange={(e) => setPatientSearch(e.target.value)}
             className="form-input"
@@ -55,8 +56,10 @@ export function PatientsPage({
         </div>
       </article>
 
+      <p className="text-xs text-slate-600" role="status">{filteredPatients.length} pacientes encontrados</p>
+      {filteredPatients.length === 0 && <p className="craft-card">Sin coincidencias. Verifica los datos antes de crear otro expediente.</p>}
       <div className="space-y-4">
-        {filteredPatients.map((pt) => {
+        {filteredPatients.slice(0, visibleCount).map((pt) => {
           const ptSessions = appointments
             .filter((a) => a.patient_id === pt.id && a.status !== 'cancelled')
             .sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
@@ -139,6 +142,7 @@ export function PatientsPage({
           );
         })}
       </div>
+      {visibleCount < filteredPatients.length && <button type="button" className="toolbar-btn" onClick={() => setVisibleCount((n) => n + 25)}>Mostrar 25 pacientes más</button>}
     </section>
   );
 }
