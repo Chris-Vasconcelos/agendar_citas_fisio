@@ -32,7 +32,7 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(getTodayDateString);
   const [calendarViewMode, setCalendarViewMode] = useState('week');
   const [designSkill, setDesignSkill] = useState(
-    () => localStorage.getItem('fisio_typeui_skill_v2') || 'craft'
+    () => localStorage.getItem('fisio_typeui_skill_v2') || 'clean'
   );
 
   useEffect(() => {

@@ -17,21 +17,21 @@ export function Header({
   selectedDate
 }) {
   return (
-    <header className="sticky top-0 z-20 bg-[#f7f3e8]/95 backdrop-blur-sm border-b border-[#78684c]">
+    <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-slate-200">
         <div className="dash-navbar">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#46371e] text-white flex items-center justify-center text-xs font-extrabold shadow-xs">
+            <div className="w-8 h-8 rounded-lg bg-[#164b59] text-white flex items-center justify-center text-xs font-extrabold shadow-xs">
               FC
             </div>
             <div className="leading-tight">
               <div className="flex items-center gap-2">
-                <h1 className="text-sm font-extrabold m-0">Fisio Citas</h1>
+                <h1 className="text-sm font-extrabold m-0">MINA</h1>
                 <span className="hidden sm:inline-flex typeui-badge typeui-badge-primary">
                   2 espacios / hora
                 </span>
               </div>
               <p className="hidden md:block text-[11px] m-0 opacity-85">
-                Consultorio Lic. Ft. Eduardo · Sesiones de 60 min
+                El valor del movimiento · Lic. Ft. Eduardo
               </p>
             </div>
           </div>
