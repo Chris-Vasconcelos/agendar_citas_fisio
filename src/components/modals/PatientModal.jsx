@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { possibleDuplicatePatients } from '../../utils/patientSearch';
 
 export function PatientModal({
   isOpen,
@@ -10,14 +11,22 @@ export function PatientModal({
   patientFormError,
   setPatientFormError,
   setShowPrivacyNoticeModal,
-  onSave
+  onSave,
+  patients = []
 }) {
   const [isSaving, setIsSaving] = useState(false);
+  const duplicates = possibleDuplicatePatients(patients, patientForm, editingPatientId);
+  const [confirmedDifferentPerson, setConfirmedDifferentPerson] = useState(false);
+  React.useEffect(() => setConfirmedDifferentPerson(false), [patientForm.full_name, patientForm.phone, editingPatientId]);
 
   if (!isOpen) return null;
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (duplicates.length > 0 && !confirmedDifferentPerson) {
+      setPatientFormError('Confirma que no se trata de un expediente duplicado.');
+      return;
+    }
     setIsSaving(true);
     try {
       await onSave(patientForm, editingPatientId);
@@ -77,6 +86,7 @@ export function PatientModal({
             </div>
           </div>
 
+          {duplicates.length > 0 && <div role="alert" className="mb-3 rounded-md border border-amber-500 bg-amber-50 p-3 text-xs text-amber-950"><strong>Posible paciente duplicado; verifica antes de guardar.</strong>{duplicates.slice(0, 3).map((p) => <p key={p.id}>{p.full_name} · {p.phone || "Sin teléfono"} · ID: {p.id.slice(0, 8)}</p>)}<p>No se fusionan expedientes automáticamente.</p><label className="flex gap-2 items-center mt-2"><input type="checkbox" checked={confirmedDifferentPerson} onChange={(e) => setConfirmedDifferentPerson(e.target.checked)} />Confirmo que verifiqué y se trata de una persona distinta.</label></div>}
           <div className="form-group">
             <label htmlFor="patient-age" className="form-label">
               Edad <span className="required-asterisk" aria-hidden="true">*</span>

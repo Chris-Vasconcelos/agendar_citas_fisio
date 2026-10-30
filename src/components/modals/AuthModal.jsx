@@ -41,6 +41,7 @@ export function AuthModal({
           setAuthError(error.message);
           return;
         }
+        setAuthForm({ email: '', password: '' });
         onClose();
       } else {
         const { error } = await signUpWithEmailPassword(cleanEmail, cleanPass);
