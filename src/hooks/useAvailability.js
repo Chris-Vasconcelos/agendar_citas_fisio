@@ -6,6 +6,7 @@ import { DAYS_OF_WEEK } from '../utils/constants';
 
 export function useAvailability(session, setBannerAlert) {
     const [availability, setAvailability] = useState(() => {
+        if (isSupabaseConfigured) return [];
         const saved = localStorage.getItem('fisio_availability_v3');
         return saved ? JSON.parse(saved) : INITIAL_DEMO_AVAILABILITY;
     });
@@ -22,12 +23,20 @@ export function useAvailability(session, setBannerAlert) {
     }, []);
 
     useEffect(() => {
-        if (session) {
-            loadAvailability();
-        } else if (isSupabaseConfigured) {
-            setAvailability([]);
+        if (!isSupabaseConfigured) return;
+
+        // Invalidate the previous user's data and any outstanding request.
+        let cancelled = false;
+        setAvailability([]);
+        if (session?.user?.id) {
+            fetchAvailability().then((data) => {
+                if (!cancelled && Array.isArray(data)) setAvailability(data);
+            }).catch((error) => {
+                if (!cancelled) console.error('[Supabase load error]:', error);
+            });
         }
-    }, [session, loadAvailability]);
+        return () => { cancelled = true; };
+    }, [session?.user?.id]);
 
     useEffect(() => {
         if (!isSupabaseConfigured) {

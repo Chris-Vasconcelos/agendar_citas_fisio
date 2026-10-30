@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 
 export function usePatients(session, appendAuditLog, setBannerAlert, appointmentsRef) {
     const [patients, setPatients] = useState(() => {
+        if (isSupabaseConfigured) return [];
         const saved = localStorage.getItem('fisio_patients_v3');
         return saved ? JSON.parse(saved) : INITIAL_DEMO_PATIENTS;
     });
@@ -21,13 +22,20 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
     }, []);
 
     useEffect(() => {
-        if (session) {
-            loadPatients();
-        } else if (isSupabaseConfigured) {
-            // Limpiar datos al cerrar sesión si Supabase está configurado
-            setPatients([]);
+        if (!isSupabaseConfigured) return;
+
+        // Invalidate the previous user's data and any outstanding request.
+        let cancelled = false;
+        setPatients([]);
+        if (session?.user?.id) {
+            fetchPatients().then((data) => {
+                if (!cancelled && Array.isArray(data)) setPatients(data);
+            }).catch((error) => {
+                if (!cancelled) console.error('[Supabase load error]:', error);
+            });
         }
-    }, [session, loadPatients]);
+        return () => { cancelled = true; };
+    }, [session?.user?.id]);
 
     useEffect(() => {
         if (!isSupabaseConfigured) {

@@ -6,6 +6,7 @@ import { isSupabaseConfigured } from '../lib/supabase';
 
 export function useAppointments(session, appendAuditLog, setBannerAlert, patientsById) {
     const [appointments, setAppointments] = useState(() => {
+        if (isSupabaseConfigured) return [];
         const saved = localStorage.getItem('fisio_appointments_v3');
         if (saved) return JSON.parse(saved);
         const today = getTodayDateString();
@@ -64,12 +65,20 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
     }, []);
 
     useEffect(() => {
-        if (session) {
-            loadAppointments();
-        } else if (isSupabaseConfigured) {
-            setAppointments([]);
+        if (!isSupabaseConfigured) return;
+
+        // Invalidate the previous user's data and any outstanding request.
+        let cancelled = false;
+        setAppointments([]);
+        if (session?.user?.id) {
+            fetchAppointments().then((data) => {
+                if (!cancelled && Array.isArray(data)) setAppointments(data);
+            }).catch((error) => {
+                if (!cancelled) console.error('[Supabase load error]:', error);
+            });
         }
-    }, [session, loadAppointments]);
+        return () => { cancelled = true; };
+    }, [session?.user?.id]);
 
     useEffect(() => {
         if (!isSupabaseConfigured) {
