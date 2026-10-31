@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS public.patients (
   consultation_reason text NOT NULL CHECK (char_length(btrim(consultation_reason)) >= 3),
   privacy_consent boolean NOT NULL DEFAULT false
     CONSTRAINT patients_privacy_consent_required CHECK (privacy_consent = true),
-  privacy_consent_at timestamptz NOT NULL DEFAULT now(),
+  privacy_consent_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
