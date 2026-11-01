@@ -32,7 +32,7 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(getTodayDateString);
   const [calendarViewMode, setCalendarViewMode] = useState('week');
   const [designSkill, setDesignSkill] = useState(
-    () => localStorage.getItem('fisio_typeui_skill_v2') || 'craft'
+    () => localStorage.getItem('fisio_typeui_skill_v2') || 'clean'
   );
 
   useEffect(() => {
@@ -93,6 +93,16 @@ export default function App() {
   const [patientFieldErrors, setPatientFieldErrors] = useState({});
   const [patientFormError, setPatientFormError] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
+  // Close sensitive patient views immediately when authentication disappears.
+  useEffect(() => {
+    if (isSupabaseConfigured && !session?.user?.id) {
+      setSelectedPatientForRecord(null);
+      setIsAppointmentModalOpen(false);
+      setIsPatientModalOpen(false);
+      setPatientSearch('');
+    }
+  }, [session?.user?.id]);
+
 
 
   // Lógica de apertura de Modales
@@ -439,8 +449,13 @@ export default function App() {
 
         {(!session && isSupabaseConfigured) ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
-            <Lock className="w-12 h-12 text-slate-400 mb-4" />
-            <h2 className="text-xl font-bold text-[#1c160e]">Acceso Restringido</h2>
+            {import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL ? (
+              <img src={import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL}
+                alt="Consultorio MINA"
+                className="w-full max-w-xl h-48 object-cover rounded-xl mb-5"
+              />
+            ) : <Lock className="w-12 h-12 text-slate-400 mb-4" />}
+            <h2 className="text-xl font-bold text-[#1c160e]">MINA — El valor del movimiento</h2>
             <p className="text-sm text-slate-600 mt-2 max-w-md">
               Inicia sesión con tu cuenta de fisioterapeuta para acceder a la agenda, expedientes y configuración.
             </p>
@@ -547,11 +562,12 @@ export default function App() {
         patientFormError={patientFormError}
         setPatientFormError={setPatientFormError}
         setShowPrivacyNoticeModal={setShowPrivacyNoticeModal}
+        patients={patients}
         onSave={handlePatientFormSave}
       />
 
       <RecordModal
-        selectedPatientForRecord={selectedPatientForRecord}
+        selectedPatientForRecord={!isSupabaseConfigured || session?.user?.id ? selectedPatientForRecord : null}
         setSelectedPatientForRecord={setSelectedPatientForRecord}
         appointments={appointments}
         openEditAppointmentModal={openEditAppointmentModal}
