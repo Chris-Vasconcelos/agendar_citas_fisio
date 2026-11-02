@@ -1,10 +1,8 @@
 import React from 'react';
-import { Shield, Lock, LogOut, Plus, Settings2 } from 'lucide-react';
+import { Shield, Lock, LogOut, Plus } from 'lucide-react';
 import { signOutUser, isSupabaseConfigured } from '../../lib/supabase';
 
 export function Header({
-  designSkill,
-  setDesignSkill,
   textSize,
   setTextSize,
   session,
@@ -46,27 +44,6 @@ export function Header({
               </button>
             ))}
           </div>
-          <details className="mina-settings">
-            <summary className="mina-icon-button" title="Apariencia" aria-label="Apariencia">
-              <Settings2 className="w-4 h-4" aria-hidden="true" />
-            </summary>
-            <div className="mina-settings-popover">
-              <label htmlFor="typeui-skill-selector">Apariencia</label>
-              <select
-                id="typeui-skill-selector"
-                value={designSkill}
-                onChange={(e) => setDesignSkill(e.target.value)}
-                className="header-theme-select"
-              >
-                <option value="clean">Clínico</option>
-                <option value="craft">Craft</option>
-                <option value="bento">Bento</option>
-                <option value="shadcn">Shadcn</option>
-                <option value="paper">Papel</option>
-              </select>
-            </div>
-          </details>
-
           <button type="button" className="mina-icon-button" title="Aviso de privacidad"
             aria-label="Aviso de privacidad" onClick={() => setShowPrivacyNoticeModal(true)}>
             <Shield className="w-4 h-4" aria-hidden="true" />
