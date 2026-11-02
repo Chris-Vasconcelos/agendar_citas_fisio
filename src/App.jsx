@@ -32,6 +32,14 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('agenda');
   const [selectedDate, setSelectedDate] = useState(getTodayDateString);
   const [calendarViewMode, setCalendarViewMode] = useState('week');
+  const [textSize, setTextSize] = useState(() => {
+    const saved = localStorage.getItem('mina_text_size_v1');
+    return ['sm', 'md', 'lg'].includes(saved) ? saved : 'md';
+  });
+  useEffect(() => {
+    document.documentElement.dataset.size = textSize;
+    localStorage.setItem('mina_text_size_v1', textSize);
+  }, [textSize]);
   const [designSkill, setDesignSkill] = useState(
     () => localStorage.getItem('fisio_typeui_skill_v2') || 'clean'
   );
@@ -424,6 +432,8 @@ export default function App() {
     <div className="dash-main mina-app-shell pb-24 md:pb-8" data-theme={designSkill}>
       <Header
         designSkill={designSkill}
+        textSize={textSize}
+        setTextSize={setTextSize}
         setDesignSkill={setDesignSkill}
         session={session}
         setShowPrivacyNoticeModal={setShowPrivacyNoticeModal}
