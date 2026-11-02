@@ -1,42 +1,50 @@
+/* MINA loading screen: scoped selectors deliberately avoid shared application CSS. */
 .mina-splash {
   position:fixed; inset:0; z-index:9999; display:grid; place-items:center;
-  background:#fff; opacity:1; transition:opacity .36s ease; pointer-events:auto;
+  background:#fff; opacity:1; pointer-events:auto;
+  transition:opacity .65s cubic-bezier(.2,.7,.2,1);
 }
 .mina-splash-leaving { opacity:0; pointer-events:none; }
-.mina-splash-content { width:min(82vw,430px); }
-.mina-splash svg { display:block; width:100%; height:auto; overflow:visible; }
+.mina-splash-content {
+  width:min(82vw,430px); transform:translateY(0) scale(1);
+  transition:transform .65s cubic-bezier(.2,.7,.2,1), filter .65s ease;
+}
+.mina-splash-leaving .mina-splash-content { transform:translateY(-15px) scale(.94); filter:blur(2px); }
+.mina-splash svg { display:block; width:100%; height:auto; max-width:none; overflow:visible; }
 .mina-splash .blue { --splash-ink:#052743; }
 .mina-splash .gray { --splash-ink:#748da0; }
-.mina-splash-draw {
+.mina-splash .mina-splash-draw {
   stroke:var(--splash-ink); stroke-width:3; stroke-linecap:round; stroke-linejoin:round;
-  fill:none; stroke-dasharray:var(--mina-path-length, 9999px) var(--mina-path-length, 9999px);
-  stroke-dashoffset:var(--mina-path-length, 9999px);
+  fill:none; opacity:0;
 }
-.mina-splash .shape {
-  fill:var(--splash-ink); fill-opacity:0;
-
-}
-.mina-splash-drawing .mina-splash-draw {
-  animation: mina-splash-trace 1.05s ease-out both;
-  animation-delay: var(--delay);
-}
-.mina-splash-drawing .shape {
-  animation: mina-splash-trace 1.05s ease-out both, mina-splash-paint .55s ease-out both;
-  animation-delay: var(--delay), calc(var(--delay) + .7s);
-}
-.mina-splash .letter { stroke-width:16; stroke-linecap:butt; stroke-linejoin:miter; }
-.mina-splash .line { stroke-width:3; }
-.mina-splash-tagline {
+.mina-splash .mina-splash-draw.shape { fill:var(--splash-ink); fill-opacity:0; }
+.mina-splash .mina-splash-draw.letter { stroke-width:16; stroke-linecap:butt; stroke-linejoin:miter; }
+.mina-splash .mina-splash-draw.line { stroke-width:3; }
+.mina-splash .mina-splash-tagline {
   fill:#748da0; font:500 33px Geist,Arial,sans-serif;
-  letter-spacing:5.4px; opacity:0; animation:mina-splash-caption .4s ease-out 2.1s both;
+  letter-spacing:5.4px; opacity:0;
 }
 .mina-splash-visually-hidden { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
-@keyframes mina-splash-trace { to { stroke-dashoffset:0; } }
-@keyframes mina-splash-paint { to { fill-opacity:1; } }
-@keyframes mina-splash-caption { to { opacity:1; } }
+.mina-app-shell.mina-app-starting {
+  opacity:0; pointer-events:none; transform:translateY(18px);
+}
+.mina-app-shell.mina-app-revealing {
+  opacity:1; transform:translateY(0);
+  transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);
+}
 @media (prefers-reduced-motion:reduce) {
- .mina-splash,.mina-splash-draw,.mina-splash-tagline { animation:none !important; transition:none !important; }
- .mina-splash-draw { stroke-dashoffset:0 !important; }
- .mina-splash .shape { fill-opacity:1 !important; }
- .mina-splash-tagline { opacity:1 !important; }
+  .mina-splash,.mina-splash-content,.mina-app-shell.mina-app-revealing { transition:none !important; }
+  .mina-splash-leaving .mina-splash-content { transform:none; filter:none; }
+}
+
+/* Keyboard skip link is invisible by default, even before Tailwind loads. */
+.mina-skip-link {
+ position:absolute; width:1px; height:1px; overflow:hidden;
+ clip-path:inset(50%); white-space:nowrap;
+}
+.mina-skip-link:focus-visible {
+ position:fixed; top:10px; left:10px; z-index:10001;
+ width:auto; height:auto; clip-path:none; overflow:visible;
+ padding:10px 16px; border:2px solid #052743; border-radius:8px;
+ background:#fff; color:#052743; font-size:16px;
 }

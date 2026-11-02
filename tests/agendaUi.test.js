@@ -55,6 +55,7 @@ test('startup waits for the session and all data resources before removing the s
   assert.match(app, /availabilityLoadedFor === owner/);
   assert.match(auth, /authLoading/);
   assert.match(splash, /getTotalLength/);
+  assert.match(splash, /path\.animate\(/);
   const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
   assert.match(css, /prefers-reduced-motion/);
 });
@@ -64,11 +65,21 @@ test('splash draws original paths on every reload using measured length', () => 
   const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
   const page = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(splash, /getTotalLength\(\)/);
-  assert.match(splash, /setDrawingReady\(true\)/);
+  assert.match(splash, /requestAnimationFrame/);
   assert.doesNotMatch(splash, /sessionStorage/);
   assert.doesNotMatch(splash, /pathLength="1"/);
-  assert.match(css, /mina-splash-drawing/);
-  assert.match(css, /stroke-dashoffset:var\(--mina-path-length/);
+  assert.match(css, /mina-app-revealing/);
+  assert.match(splash, /strokeDashoffset/);
   assert.match(css, /prefers-reduced-motion/);
   assert.doesNotMatch(page, /Iniciando MINA…/);
+});
+
+test('entry transition avoids an unstyled visible skip link and keeps keyboard access', () => {
+  const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
+  const page = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.doesNotMatch(page, /Saltar al contenido/);
+  assert.match(app, /mina-skip-link/);
+  assert.match(css, /mina-skip-link:focus-visible/);
+  assert.match(app, /onRevealStart=\{handleSplashReveal\}/);
 });

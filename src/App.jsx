@@ -31,6 +31,8 @@ import { AuthModal } from './components/modals/AuthModal';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('agenda');
+  const [introRevealing, setIntroRevealing] = useState(false);
+  const handleSplashReveal = useCallback(() => setIntroRevealing(true), []);
   const [selectedDate, setSelectedDate] = useState(getTodayDateString);
   const [calendarViewMode, setCalendarViewMode] = useState('week');
   const [textSize, setTextSize] = useState(() => {
@@ -438,8 +440,9 @@ export default function App() {
   const startupErrors = [authInitError, patientsLoadError, appointmentsLoadError, availabilityLoadError].filter(Boolean);
   return (
     <>
-      <Splash ready={startupReady} />
-    <div className="dash-main mina-app-shell pb-24 md:pb-8" data-theme={designSkill}>
+      <Splash ready={startupReady} onRevealStart={handleSplashReveal} />
+      <a className="mina-skip-link" href="#main-content">Saltar al contenido</a>
+    <div className={`dash-main mina-app-shell pb-24 md:pb-8 ${introRevealing ? 'mina-app-revealing' : 'mina-app-starting'}`} data-theme={designSkill}>
       <Header
         designSkill={designSkill}
         textSize={textSize}
