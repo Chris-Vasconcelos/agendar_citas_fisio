@@ -54,9 +54,9 @@ test('startup waits for the session and all data resources before removing the s
   assert.match(app, /appointmentsLoadedFor === owner/);
   assert.match(app, /availabilityLoadedFor === owner/);
   assert.match(auth, /authLoading/);
-  assert.match(splash, /getTotalLength/);
-  assert.match(splash, /path\.animate\(/);
+  assert.match(splash, /pathLength="1"/);
   const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
+  assert.match(css, /mina-original-trace 6s linear/);
   assert.match(css, /prefers-reduced-motion/);
 });
 
@@ -64,12 +64,12 @@ test('splash draws original paths on every reload using measured length', () => 
   const splash = readFileSync(new URL('../src/components/layout/Splash.jsx', import.meta.url), 'utf8');
   const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
   const page = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(splash, /getTotalLength\(\)/);
-  assert.match(splash, /requestAnimationFrame/);
+  assert.match(splash, /DRAW_DURATION_MS = 6000/);
+  assert.match(splash, /LAST_DELAY_MS = 2000/);
   assert.doesNotMatch(splash, /sessionStorage/);
-  assert.doesNotMatch(splash, /pathLength="1"/);
+  assert.match(splash, /pathLength="1"/);
   assert.match(css, /mina-app-revealing/);
-  assert.match(splash, /strokeDashoffset/);
+  assert.match(css, /stroke-dasharray: 1 1/);
   assert.match(css, /prefers-reduced-motion/);
   assert.doesNotMatch(page, /Iniciando MINA…/);
 });
@@ -110,4 +110,18 @@ test('auth and all three initial loads release errors or timeout timers', () => 
     assert.match(source, /withTimeout\(fetch/);
     assert.match(source, /\[session\?\.user\?\.id\]/);
   }
+});
+
+test('MINA original animation preserves 8 paths, 6-second trace and source delays', () => {
+  const splash = readFileSync(new URL('../src/components/layout/Splash.jsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
+  assert.equal((splash.match(/d: '/g) || []).length, 8);
+  for (const delay of ['0', '0.22', '0.6', '1.2', '1.4', '1.6', '1.8', '2']) {
+    assert.ok(splash.includes(`delay: ${delay},`), `Original stagger missing: ${delay}`);
+  }
+  assert.match(css, /mina-original-trace 6s linear 1 both/);
+  assert.match(css, /mina-original-paint 6s linear 1 both/);
+  assert.match(css, /mina-original-caption 6s linear 1 both/);
+  assert.match(css, /stroke-dasharray: 1 1/);
+  assert.match(css, /28%,64%,72%,100%/);
 });
