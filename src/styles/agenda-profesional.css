@@ -210,3 +210,79 @@
 
 .mina-agenda .calendar-booked-slot.no-show { background: #fff8f0; border-color: #f3ddc7; border-left-color: #d69b59; }
 .mina-agenda .calendar-booked-slot.no-show .mina-status-pill { color: #945b27; border-color: #f3ddc7; }
+
+/* Agenda semanal compacta: 2 carriles de 30 px, fila total de ~70 px. */
+.mina-app-shell #main-content { padding-top: 20px; }
+.mina-agenda { gap: 10px; }
+.mina-agenda-heading { align-items: center; }
+.mina-agenda-heading h2 { font-size: 22px; font-weight: 750; }
+.mina-agenda-overview { padding: 0 0 6px; gap: 8px 14px; }
+.mina-agenda-overview strong { font-size: 12px; }
+.mina-calendar-panel { gap: 10px; padding: 12px; }
+.mina-compact-week-grid { min-width: 770px !important; table-layout: fixed; }
+.mina-agenda .mina-compact-week-grid th,
+.mina-agenda .mina-compact-week-grid td { padding: 3px 4px; }
+.mina-agenda .mina-compact-week-grid thead th { padding: 8px 7px; height: 44px; }
+.mina-agenda .mina-compact-week-grid .calendar-hour-col { width: 70px; }
+.mina-agenda .mina-compact-week-grid tbody .calendar-hour-col { padding: 7px 5px; vertical-align: top; }
+.mina-agenda .mina-compact-week-grid tbody .calendar-hour-col div { font-weight: 550; font-size: 11px; }
+.mina-grid-day-button {
+  max-width: 100%; display: inline-flex; white-space: nowrap; align-items: center;
+  padding: 3px; color: #294d72; font-size: 11px; font-weight: 700;
+}
+.mina-grid-day-button:hover { color: #1c66ad; }
+.mina-grid-day-count { font-size: 10px; color: #718196; font-weight: 500; }
+.mina-agenda .mina-compact-week-grid thead th { position: sticky; top: 0; z-index: 4; }
+.mina-agenda .mina-compact-week-grid .calendar-hour-col { position: sticky; left: 0; z-index: 3; }
+.mina-agenda .mina-compact-week-grid thead .calendar-hour-col { z-index: 5; }
+.mina-hour-lanes { display: grid; grid-template-rows: repeat(2, 30px); gap: 3px; min-height: 63px; }
+.mina-week-appointment {
+  display: flex; align-items: center; min-width: 0; height: 30px; border-radius: 5px;
+  border-left: 3px solid #4d91d9; background: #eaf3ff; color: #1e507e;
+  position: relative; overflow: hidden;
+}
+.mina-week-appointment.completed { border-left-color: #399773; background: #e9f7ee; color: #245a43; }
+.mina-week-appointment.no-show { border-left-color: #d78d42; background: #fff2e3; color: #87551f; }
+.mina-week-appointment-main {
+  display: flex; align-items: center; gap: 5px; width: 100%; height: 100%; min-width: 0;
+  padding: 2px 5px; text-align: left; border: 0; background: transparent;
+  color: inherit; cursor: pointer; font-size: 10px; font-weight: 600;
+}
+.mina-week-appointment-name { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; flex: 1; }
+.mina-week-appointment-state { font-size: 9px; opacity: .84; flex: none; font-weight: 500; }
+.mina-week-allergy { font-size: 9px; flex: none; color: #a13f1f; }
+.mina-week-record {
+  border: 0; background: rgba(255,255,255,.88); color: #315a83; width: 27px;
+  height: 27px; flex: none; border-radius: 4px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; position: absolute; right: 1px; top: 1px;
+}
+.mina-week-appointment:hover .mina-week-record,
+.mina-week-appointment:focus-within .mina-week-record { opacity: 1; pointer-events: auto; }
+.mina-week-empty-lane {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 30px; border: 0; border-radius: 4px;
+  background: transparent; color: #276ca5; cursor: pointer; font-size: 15px;
+}
+.mina-week-empty-lane span { opacity: 0; }
+.mina-week-empty-lane:hover { background: #eff7ff; }
+.mina-week-empty-lane:hover span,
+.mina-week-empty-lane:focus-visible span { opacity: 1; }
+.mina-agenda .mina-compact-week-grid .mina-closed-cell {
+  background: repeating-linear-gradient(135deg,#f4f6f9,#f4f6f9 8px,#ecf1f5 8px,#ecf1f5 9px) !important;
+}
+.mina-app-shell .mina-toast {
+  position: fixed; top: 80px; right: 18px; z-index: 100; width: min(380px, calc(100vw - 36px));
+  background: #fff; border: 1px solid #d5e6f5; border-left: 4px solid #347bd0;
+  box-shadow: 0 10px 32px rgba(20,43,75,.14); border-radius: 11px;
+  padding: 12px 14px; color: #2b425a; font-size: 12px;
+}
+.mina-app-shell .mina-toast-error { border-left-color: #bd4036; }
+@media (hover:none) {
+  .mina-week-record { opacity: 1; pointer-events: auto; }
+  .mina-week-empty-lane span { opacity: .65; }
+}
+@media (max-width:790px) {
+  .mina-agenda .mina-compact-week-grid { min-width: 810px !important; }
+  .mina-app-shell #main-content { padding-top: 16px; }
+}
