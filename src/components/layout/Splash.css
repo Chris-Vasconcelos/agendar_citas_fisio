@@ -1,0 +1,15 @@
+/* MINA splash: SVG strokes animated directly by requestAnimationFrame.
+   No iframe or global SVG animation CSS can supersede the drawing. */
+.mina-splash {position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:white;opacity:1;pointer-events:auto;transition:opacity .65s ease}
+.mina-splash-leaving {opacity:0;pointer-events:none}
+.mina-splash-content {width:min(88vw,540px);transition:transform .65s ease,filter .65s ease}
+.mina-splash-leaving .mina-splash-content {transform:translateY(-14px) scale(.97);filter:blur(1px)}
+.mina-splash svg {display:block;width:100%;height:auto;max-width:none;overflow:visible}
+.mina-splash .mina-stroke {stroke-width:3;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.mina-splash .mina-stroke.letter {stroke-width:16;stroke-linecap:butt;stroke-linejoin:miter}
+.mina-splash .mina-stroke.line {stroke-width:3}
+.mina-splash .mina-tagline {fill:#748da0;font:500 33px Arial,sans-serif;letter-spacing:5.4px;opacity:0}
+.mina-app-shell.mina-app-starting{opacity:0;pointer-events:none;transform:translateY(18px)}
+.mina-app-shell.mina-app-revealing{opacity:1;transform:translateY(0);transition:opacity .7s ease,transform .7s ease}
+.mina-skip-link{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.mina-skip-link:focus-visible{position:fixed;top:10px;left:10px;z-index:10001;width:auto;height:auto;clip-path:none;overflow:visible;padding:10px 16px;border:2px solid #052743;border-radius:8px;background:#fff;color:#052743;font-size:16px}

@@ -36,10 +36,13 @@ CREATE TABLE IF NOT EXISTS public.patients (
   consultation_reason text NOT NULL CHECK (char_length(btrim(consultation_reason)) >= 3),
   privacy_consent boolean NOT NULL DEFAULT false
     CONSTRAINT patients_privacy_consent_required CHECK (privacy_consent = true),
-  privacy_consent_at timestamptz NOT NULL DEFAULT now(),
+  privacy_consent_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- The composite key allows appointments to enforce same-owner patient references.
+ALTER TABLE public.patients ADD CONSTRAINT patients_id_user_unique UNIQUE (id, user_id);
 
 CREATE INDEX IF NOT EXISTS idx_patients_user_id ON public.patients (user_id);
 
@@ -84,7 +87,9 @@ CREATE TRIGGER trg_availability_updated_at
 CREATE TABLE IF NOT EXISTS public.appointments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL DEFAULT auth.uid() REFERENCES auth.users(id) ON DELETE CASCADE,
-  patient_id uuid NOT NULL REFERENCES public.patients(id) ON DELETE RESTRICT,
+  patient_id uuid NOT NULL,
+  CONSTRAINT appointments_patient_same_owner FOREIGN KEY (patient_id, user_id)
+    REFERENCES public.patients(id, user_id) ON DELETE RESTRICT,
   slot_number smallint NOT NULL DEFAULT 1 CHECK (slot_number IN (1, 2)),
   start_time timestamptz NOT NULL,
   end_time timestamptz NOT NULL,
