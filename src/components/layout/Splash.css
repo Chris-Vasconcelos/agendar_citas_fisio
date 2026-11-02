@@ -12,7 +12,6 @@
   fill:none; stroke-dasharray:var(--mina-path-length, 9999px) var(--mina-path-length, 9999px);
   stroke-dashoffset:var(--mina-path-length, 9999px);
 }
-}
 .mina-splash .shape {
   fill:var(--splash-ink); fill-opacity:0;
 
