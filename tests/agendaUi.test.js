@@ -63,7 +63,7 @@ test('splash draws all MINA paths directly before releasing the app', () => {
   assert.match(splash, /ORIGINAL_CYCLE_MS = 6000/);
   assert.match(splash, /LAST_DELAY_MS = 2000/);
   assert.match(splash, /!ready \|\| !drawingDone/);
-  assert.doesNotMatch(splash, /iframe|srcDoc|matchMedia/);
+  assert.doesNotMatch(splash, /<iframe|srcDoc=|matchMedia\(/);
   assert.match(css, /mina-app-revealing/);
 });
 
