@@ -338,7 +338,7 @@
 
 /* MINA readability system. Compact layout comes from removing repetition, not tiny letters. */
 :root {
-  --mina-fs-sm: .875rem; /* 14px */
+  --mina-fs-sm: max(14px, .875rem); /* minimum 14px, including A− */
   --mina-fs-base: 1rem; /* 16px */
   --mina-fs-lg: 1.125rem;
   --mina-fs-xl: 1.25rem;
@@ -464,3 +464,20 @@ html[data-size="lg"] { font-size: 112.5%; }
   .mina-brand-subtitle { display: none; }
   .mina-new-appointment { padding-inline: .5rem; }
 }
+
+/* Minimum readable supporting labels in the application shell. */
+.mina-app-shell .mina-brand-subtitle,
+.mina-app-shell .mina-grid-day-count,
+.mina-app-shell .mina-day-count,
+.mina-app-shell .mina-hours-note,
+.mina-app-shell .mina-week-allergy,
+.mina-app-shell .mina-note-status,
+.mina-app-shell .mina-status-pill,
+.mina-app-shell .mina-patient-row p,
+.mina-app-shell .mina-patient-row .text-xs,
+.mina-app-shell .mina-patient-details,
+.mina-app-shell .mina-nav-item,
+.mina-app-shell .mina-agenda-overview,
+.mina-app-shell .mina-week-appointment-state { font-size: var(--mina-fs-sm); }
+.mina-app-shell .mina-brand-subtitle { line-height: 1.2; }
+.mina-app-shell .mina-week-appointment-state { max-width: 100%; }
