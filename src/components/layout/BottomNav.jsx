@@ -4,7 +4,7 @@ import { Calendar, Users, Clock, Download } from 'lucide-react';
 export function BottomNav({ activeTab, setActiveTab }) {
   return (
     <nav
-        aria-label="Navegación principal del sistema fisio-citas"
+        aria-label="Navegación principal de MINA"
         className="fixed bottom-0 inset-x-0 z-20 bg-white border-t-2 border-[#595959]"
       >
         <div className="max-w-4xl mx-auto grid grid-cols-4">
@@ -16,7 +16,7 @@ export function BottomNav({ activeTab, setActiveTab }) {
             }`}
           >
             <Calendar className="w-5 h-5" />
-            Agenda (2x Hora)
+            Agenda
           </button>
 
           <button

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Lock, LogOut, Plus } from 'lucide-react';
+import { Shield, Lock, LogOut, Plus, Settings2 } from 'lucide-react';
 import { signOutUser, isSupabaseConfigured } from '../../lib/supabase';
 
 export function Header({
@@ -21,17 +21,14 @@ export function Header({
         <div className="dash-navbar">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#164b59] text-white flex items-center justify-center text-xs font-extrabold shadow-xs">
-              FC
+              M
             </div>
             <div className="leading-tight">
               <div className="flex items-center gap-2">
                 <h1 className="text-sm font-extrabold m-0">MINA</h1>
-                <span className="hidden sm:inline-flex typeui-badge typeui-badge-primary">
-                  2 espacios / hora
-                </span>
               </div>
               <p className="hidden md:block text-[11px] m-0 opacity-85">
-                El valor del movimiento · Lic. Ft. Eduardo
+                El valor del movimiento
               </p>
             </div>
           </div>
@@ -41,20 +38,27 @@ export function Header({
           </nav>
 
           <div className="flex items-center gap-1.5">
-            <select
-              id="typeui-skill-selector"
-              value={designSkill}
-              onChange={(e) => setDesignSkill(e.target.value)}
-              className="header-theme-select"
-              aria-label="Cambiar tema visual"
-              title="Cambiar tema visual"
-            >
-              <option value="craft">Tema: Craft</option>
-              <option value="bento">Tema: Bento</option>
-              <option value="clean">Tema: Clínico</option>
-              <option value="shadcn">Tema: Shadcn</option>
-              <option value="paper">Tema: Papel</option>
-            </select>
+            <details className="relative">
+              <summary className="header-compact-btn list-none cursor-pointer" title="Preferencias de apariencia" aria-label="Apariencia">
+                <Settings2 className="w-4 h-4" />
+              </summary>
+              <div className="absolute right-0 top-full mt-2 z-30 bg-white shadow-lg border border-slate-200 rounded-xl p-3 min-w-44">
+                <label htmlFor="typeui-skill-selector" className="block text-xs font-semibold mb-1 text-slate-600">Apariencia</label>
+                <select
+                  id="typeui-skill-selector"
+                  value={designSkill}
+                  onChange={(e) => setDesignSkill(e.target.value)}
+                  className="header-theme-select w-full"
+                  aria-label="Cambiar tema visual"
+                >
+                  <option value="clean">Clínico</option>
+                  <option value="craft">Craft</option>
+                  <option value="bento">Bento</option>
+                  <option value="shadcn">Shadcn</option>
+                  <option value="paper">Papel</option>
+                </select>
+              </div>
+            </details>
 
             <button
               type="button"
@@ -99,7 +103,7 @@ export function Header({
               className="header-primary-btn"
             >
               <Plus className="w-3.5 h-3.5" />
-              Agendar Cita
+              Nueva cita
             </button>
             )}
           </div>

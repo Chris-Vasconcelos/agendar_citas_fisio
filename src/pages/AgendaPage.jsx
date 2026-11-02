@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, CheckCircle2, Edit3, ClipboardList, MessageCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, CheckCircle2, Edit3, ClipboardList, MessageCircle, XCircle } from 'lucide-react';
 import { addMinutesToTimeStr, getTodayDateString, formatDateHuman, formatTimeShort } from '../utils/date';
 
 export function AgendaPage({
@@ -40,9 +40,6 @@ export function AgendaPage({
           <div className="flex items-center justify-between gap-2 mb-1">
             <span className="text-xs font-semibold uppercase tracking-wider text-[#524634]">
               Sesiones del Día
-            </span>
-            <span className="typeui-badge typeui-badge-primary text-[10px] px-2 py-0.5 rounded-full font-medium">
-              2 espacios / hora
             </span>
           </div>
           <div className="text-xl font-bold text-[#1c160e] mb-0.5 leading-snug">
@@ -135,7 +132,7 @@ export function AgendaPage({
               aria-label="Ir a la semana anterior"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
-              Semana ant.
+              
             </button>
             <button
               type="button"
@@ -143,7 +140,7 @@ export function AgendaPage({
               className="toolbar-btn"
               aria-label="Ir al día anterior"
             >
-              Día ant.
+              Anterior
             </button>
             <button
               type="button"
@@ -158,7 +155,7 @@ export function AgendaPage({
               className="toolbar-btn"
               aria-label="Ir al día siguiente"
             >
-              Día sig.
+              Siguiente
             </button>
             <button
               type="button"
@@ -166,7 +163,7 @@ export function AgendaPage({
               className="toolbar-btn"
               aria-label="Ir a la semana siguiente"
             >
-              Semana sig.
+              
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -193,7 +190,7 @@ export function AgendaPage({
                     : 'toolbar-btn rounded-none border-0'
                 }
               >
-                Vista Semanal
+                Semana
               </button>
               <button
                 type="button"
@@ -204,7 +201,7 @@ export function AgendaPage({
                     : 'toolbar-btn rounded-none border-0'
                 }
               >
-                Vista Día (2 Espacios)
+                Día
               </button>
             </div>
           </div>
