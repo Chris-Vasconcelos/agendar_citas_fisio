@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchPatients, savePatient as apiSavePatient, deletePatient as apiDeletePatient } from '../services/patientService';
 import { INITIAL_DEMO_PATIENTS } from '../utils/constants';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { withTimeout } from '../utils/withTimeout';
+import { readLocalJSON, writeLocalJSON } from '../utils/localJSON';
 
 export function usePatients(session, appendAuditLog, setBannerAlert, appointmentsRef) {
     const [patients, setPatients] = useState(() => {
         if (isSupabaseConfigured) return [];
-        const saved = localStorage.getItem('fisio_patients_v3');
-        return saved ? JSON.parse(saved) : INITIAL_DEMO_PATIENTS;
+        return readLocalJSON('fisio_patients_v3', INITIAL_DEMO_PATIENTS);
     });
 
     const loadPatients = useCallback(async () => {
@@ -32,10 +33,7 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
         setLoadedFor(null);
         setInitialLoadError('');
         if (owner) {
-            Promise.race([
-                fetchPatients(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado')), 15000))
-            ]).then((data) => {
+            withTimeout(fetchPatients(), 15000).then((data) => {
                 if (cancelled) return;
                 if (Array.isArray(data)) setPatients(data);
                 else setInitialLoadError('La respuesta de patients no es válida.');
@@ -53,7 +51,7 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
 
     useEffect(() => {
         if (!isSupabaseConfigured) {
-          localStorage.setItem('fisio_patients_v3', JSON.stringify(patients));
+          writeLocalJSON('fisio_patients_v3', patients);
         }
     }, [patients]);
 

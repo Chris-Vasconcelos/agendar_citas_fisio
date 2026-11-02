@@ -1,9 +1,9 @@
+import { readLocalJSON } from '../utils/localJSON';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export const fetchAvailability = async () => {
   if (!isSupabaseConfigured || !supabase) {
-      const saved = localStorage.getItem('fisio_availability_v3');
-      return saved ? JSON.parse(saved) : [];
+      return readLocalJSON('fisio_availability_v3', []);
   }
   const { data, error } = await supabase.from('availability').select('*').order('day_of_week');
   if (error) throw error;

@@ -3,12 +3,14 @@ import { fetchAppointments, saveAppointment as apiSaveAppointment, cancelAppoint
 import { getTodayDateString, formatTimeShort } from '../utils/date';
 import { DEFAULT_PROFESSIONAL } from '../utils/constants';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { withTimeout } from '../utils/withTimeout';
+import { readLocalJSON, writeLocalJSON } from '../utils/localJSON';
 
 export function useAppointments(session, appendAuditLog, setBannerAlert, patientsById) {
     const [appointments, setAppointments] = useState(() => {
         if (isSupabaseConfigured) return [];
-        const saved = localStorage.getItem('fisio_appointments_v3');
-        if (saved) return JSON.parse(saved);
+        const stored = readLocalJSON('fisio_appointments_v3', null);
+        if (stored !== null) return stored;
         const today = getTodayDateString();
         const s1 = new Date(`${today}T09:00:00`).toISOString();
         const e1 = new Date(`${today}T10:00:00`).toISOString();
@@ -74,10 +76,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
         setLoadedFor(null);
         setInitialLoadError('');
         if (owner) {
-            Promise.race([
-                fetchAppointments(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado')), 15000))
-            ]).then((data) => {
+            withTimeout(fetchAppointments(), 15000).then((data) => {
                 if (cancelled) return;
                 if (Array.isArray(data)) setAppointments(data);
                 else setInitialLoadError('La respuesta de citas no es válida.');
@@ -95,7 +94,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
 
     useEffect(() => {
         if (!isSupabaseConfigured) {
-          localStorage.setItem('fisio_appointments_v3', JSON.stringify(appointments));
+          writeLocalJSON('fisio_appointments_v3', appointments);
         }
     }, [appointments]);
 
@@ -145,7 +144,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
             .map((a) => `${patientsById.get(a.patient_id)?.full_name || 'Paciente'} (Espacio ${a.slot_number || 1})`)
             .join(' y ');
           const sqlErrorMsg = `Horario lleno: Los Espacios 1 y 2 ya están ocupados en ese horario por ${names}. Selecciona otra hora.`;
-          console.error(sqlErrorMsg);
+          // Avoid logging identifiable patient names to the browser console.
           appendAuditLog('AGENDA', sqlErrorMsg);
           return {
             valid: false,

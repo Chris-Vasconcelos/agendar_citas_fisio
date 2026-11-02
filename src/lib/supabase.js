@@ -12,6 +12,9 @@ export const isSupabaseConfigured = Boolean(
     !supabaseAnonKey.includes('tu-anon-key-publica')
 );
 
+// Never fall back to unencrypted local clinical storage in a production build.
+export const missingProdConfig = import.meta.env.PROD && !isSupabaseConfigured;
+
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {

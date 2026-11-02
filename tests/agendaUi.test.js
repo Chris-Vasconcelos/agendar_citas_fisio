@@ -83,3 +83,31 @@ test('entry transition avoids an unstyled visible skip link and keeps keyboard a
   assert.match(css, /mina-skip-link:focus-visible/);
   assert.match(app, /onRevealStart=\{handleSplashReveal\}/);
 });
+
+test('initial clinical data failures block the calendar instead of showing empty slots', () => {
+  const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+  assert.match(app, /const loadFailed = startupReady && startupErrors.length > 0/);
+  assert.match(app, /\{loadFailed \? \(/);
+  assert.match(app, /Por seguridad, la agenda y los expedientes no se muestran/);
+  assert.match(app, /Reintentar carga/);
+});
+
+test('production without Supabase stops before mounting the clinical app', () => {
+  const main = readFileSync(new URL('../src/main.jsx', import.meta.url), 'utf8');
+  const client = readFileSync(new URL('../src/lib/supabase.js', import.meta.url), 'utf8');
+  assert.match(client, /import\.meta\.env\.PROD && !isSupabaseConfigured/);
+  assert.match(main, /missingProdConfig \?/);
+  assert.match(main, /No es seguro guardar expedientes/);
+});
+
+test('auth and all three initial loads release errors or timeout timers', () => {
+  const auth = readFileSync(new URL('../src/hooks/useAuth.js', import.meta.url), 'utf8');
+  const helper = readFileSync(new URL('../src/utils/withTimeout.js', import.meta.url), 'utf8');
+  assert.match(auth, /if \(nextSession\) setAuthInitError\(''\)/);
+  assert.match(helper, /clearTimeout\(timer\)/);
+  for (const name of ['usePatients', 'useAppointments', 'useAvailability']) {
+    const source = readFileSync(new URL(`../src/hooks/${name}.js`, import.meta.url), 'utf8');
+    assert.match(source, /withTimeout\(fetch/);
+    assert.match(source, /\[session\?\.user\?\.id\]/);
+  }
+});
