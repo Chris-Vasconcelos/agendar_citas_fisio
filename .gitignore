@@ -20,3 +20,16 @@ backup_fisio_*.csv
 node_modules/
 dist/
 dist-ssr/
+
+# Archivos temporales locales del editor y diagnósticos
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*.tmp
+*.log
+.vscode/
+.idea/
+coverage/
+playwright-report/
+test-results/
