@@ -45,33 +45,28 @@ test('patient duplicate notice and save guidance are kept in the form', () => {
   assert.match(patientModal, /confirmedDifferentPerson/);
 });
 
-test('startup waits for the session and all data resources before removing the splash', () => {
+test('startup readiness waits for authenticated data while splash uses isolated original animation', () => {
   const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
   const auth = readFileSync(new URL('../src/hooks/useAuth.js', import.meta.url), 'utf8');
   const splash = readFileSync(new URL('../src/components/layout/Splash.jsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
   assert.match(app, /<Splash ready=\{startupReady\}/);
   assert.match(app, /patientsLoadedFor === owner/);
   assert.match(app, /appointmentsLoadedFor === owner/);
   assert.match(app, /availabilityLoadedFor === owner/);
   assert.match(auth, /authLoading/);
+  assert.match(splash, /srcDoc=\{logoDocument\}/);
   assert.match(splash, /pathLength="1"/);
-  const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
-  assert.match(css, /mina-original-trace 6s linear/);
-  assert.match(css, /prefers-reduced-motion/);
-});
-
-test('splash draws original paths on every reload using measured length', () => {
-  const splash = readFileSync(new URL('../src/components/layout/Splash.jsx', import.meta.url), 'utf8');
-  const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
-  const page = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-  assert.match(splash, /DRAW_DURATION_MS = 6000/);
-  assert.match(splash, /LAST_DELAY_MS = 2000/);
-  assert.doesNotMatch(splash, /sessionStorage/);
-  assert.match(splash, /pathLength="1"/);
+  assert.match(splash, /stroke-dasharray:1 1/);
+  assert.match(splash, /@keyframes trace/);
+  assert.match(splash, /@keyframes paint/);
+  assert.match(splash, /@keyframes caption/);
+  assert.match(splash, /DRAW_MS = 6000/);
+  assert.match(splash, /LAST_PATH_DELAY_MS = 2000/);
+  assert.match(splash, /frameLoaded/);
+  assert.match(splash, /prefers-reduced-motion/);
   assert.match(css, /mina-app-revealing/);
-  assert.match(css, /stroke-dasharray: 1 1/);
-  assert.match(css, /prefers-reduced-motion/);
-  assert.doesNotMatch(page, /Iniciando MINA…/);
+  assert.doesNotMatch(new URL('../index.html', import.meta.url).pathname, /Iniciando MINA…/);
 });
 
 test('entry transition avoids an unstyled visible skip link and keeps keyboard access', () => {
@@ -112,16 +107,3 @@ test('auth and all three initial loads release errors or timeout timers', () => 
   }
 });
 
-test('MINA original animation preserves 8 paths, 6-second trace and source delays', () => {
-  const splash = readFileSync(new URL('../src/components/layout/Splash.jsx', import.meta.url), 'utf8');
-  const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
-  assert.equal((splash.match(/d: '/g) || []).length, 8);
-  for (const delay of ['0', '0.22', '0.6', '1.2', '1.4', '1.6', '1.8', '2']) {
-    assert.ok(splash.includes(`delay: ${delay},`), `Original stagger missing: ${delay}`);
-  }
-  assert.match(css, /mina-original-trace 6s linear 1 both/);
-  assert.match(css, /mina-original-paint 6s linear 1 both/);
-  assert.match(css, /mina-original-caption 6s linear 1 both/);
-  assert.match(css, /stroke-dasharray: 1 1/);
-  assert.match(css, /28%,64%,72%,100%/);
-});
