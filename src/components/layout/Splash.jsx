@@ -19,7 +19,7 @@ export default function Splash({ ready }) {
   const [minimumDone, setMinimumDone] = useState(false);
   const [removed, setRemoved] = useState(false);
 
-  // Measure real SVG path lengths, not normalized pathLength="1".
+  // Measure real SVG lengths instead of assuming normalized lengths.
   // This prevents partial/instant rendering on browsers with different SVG behavior.
   useLayoutEffect(() => {
     const container = pathsRef.current;
