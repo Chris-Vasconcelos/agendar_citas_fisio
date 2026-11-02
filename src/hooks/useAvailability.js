@@ -22,17 +22,30 @@ export function useAvailability(session, setBannerAlert) {
         }
     }, []);
 
+    const [loadedFor, setLoadedFor] = useState(null);
+    const [initialLoadError, setInitialLoadError] = useState('');
     useEffect(() => {
         if (!isSupabaseConfigured) return;
-
-        // Invalidate the previous user's data and any outstanding request.
         let cancelled = false;
+        const owner = session?.user?.id;
         setAvailability([]);
-        if (session?.user?.id) {
-            fetchAvailability().then((data) => {
-                if (!cancelled && Array.isArray(data)) setAvailability(data);
+        setLoadedFor(null);
+        setInitialLoadError('');
+        if (owner) {
+            Promise.race([
+                fetchAvailability(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado')), 15000))
+            ]).then((data) => {
+                if (cancelled) return;
+                if (Array.isArray(data)) setAvailability(data);
+                else setInitialLoadError('La respuesta de horarios no es válida.');
             }).catch((error) => {
-                if (!cancelled) console.error('[Supabase load error]:', error);
+                if (!cancelled) {
+                    console.error('[MINA] Error al cargar horarios', error);
+                    setInitialLoadError('No se pudieron cargar horarios. Revisa la conexión y recarga.');
+                }
+            }).finally(() => {
+                if (!cancelled) setLoadedFor(owner);
             });
         }
         return () => { cancelled = true; };
@@ -89,6 +102,8 @@ export function useAvailability(session, setBannerAlert) {
         setAvailability,
         loadAvailability,
         handleEnableDayNow,
-        saveAvailabilityDay
+        saveAvailabilityDay,
+        loadedFor,
+        initialLoadError
     };
 }

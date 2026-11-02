@@ -13,6 +13,7 @@ import { useAppointments } from './hooks/useAppointments';
 import { Lock } from 'lucide-react';
 // Layout
 import { Header } from './components/layout/Header';
+import Splash from './components/layout/Splash';
 import { BottomNav } from './components/layout/BottomNav';
 
 // Pages
@@ -50,7 +51,7 @@ export default function App() {
   }, [designSkill]);
 
   // Autenticación Supabase
-  const { session } = useAuth();
+  const { session, authLoading, authInitError } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
@@ -77,16 +78,16 @@ export default function App() {
   }, []);
 
   // 1. Availability no tiene dependencias entre hooks
-  const { availability, setAvailability, handleEnableDayNow, saveAvailabilityDay } = useAvailability(session, setBannerAlert);
+  const { availability, setAvailability, handleEnableDayNow, saveAvailabilityDay, loadedFor: availabilityLoadedFor, initialLoadError: availabilityLoadError } = useAvailability(session, setBannerAlert);
 
   // 2. Patients depende solo indirectamente de appointments (para validación en borrado)
   // Pasaremos una referencia en lugar de un estado directo para no forzar renderizados cruzados:
   const appointmentsRef = React.useRef([]);
 
-  const { patients, setPatients, patientsById, savePatient, deletePatient } = usePatients(session, appendAuditLog, setBannerAlert, appointmentsRef);
+  const { patients, setPatients, patientsById, savePatient, deletePatient, loadedFor: patientsLoadedFor, initialLoadError: patientsLoadError } = usePatients(session, appendAuditLog, setBannerAlert, appointmentsRef);
 
   // 3. Appointments necesita patientsById puramente (no crea ciclo infinito si lo usamos directamente)
-  const { appointments, setAppointments, validateAppointmentConstraints, saveAppointment, cancelAppointment } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById);
+  const { appointments, setAppointments, validateAppointmentConstraints, saveAppointment, cancelAppointment, loadedFor: appointmentsLoadedFor, initialLoadError: appointmentsLoadError } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById);
 
   useEffect(() => {
     appointmentsRef.current = appointments;
@@ -429,7 +430,15 @@ export default function App() {
     (a) => a.treatment_notes && a.treatment_notes.trim().length > 0
   ).length;
 
+  // Do not display the login screen until the persisted session has been checked.
+  // Never treat an empty asynchronous result as a successful initial load.
+  const owner = session?.user?.id;
+  const startupReady = !authLoading && (!isSupabaseConfigured || !owner ||
+    (patientsLoadedFor === owner && appointmentsLoadedFor === owner && availabilityLoadedFor === owner));
+  const startupErrors = [authInitError, patientsLoadError, appointmentsLoadError, availabilityLoadError].filter(Boolean);
   return (
+    <>
+      <Splash ready={startupReady} />
     <div className="dash-main mina-app-shell pb-24 md:pb-8" data-theme={designSkill}>
       <Header
         designSkill={designSkill}
@@ -451,6 +460,13 @@ export default function App() {
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main id="main-content" className="space-y-6">
+        {startupReady && startupErrors.length > 0 && (
+          <div role="alert" className="mx-auto max-w-3xl rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
+            <strong>No se pudieron cargar todos los datos de MINA.</strong>
+            <p className="mt-1 text-sm">{startupErrors.join(' ')}</p>
+            <button type="button" className="toolbar-btn mt-2" onClick={() => window.location.reload()}>Reintentar carga</button>
+          </div>
+        )}
         <div aria-live="polite">
           {bannerAlert && (
             <article role="status" className={`mina-toast ${bannerAlert.type === 'error' ? 'mina-toast-error' : ''}`}>
@@ -609,5 +625,6 @@ export default function App() {
       />
 
     </div>
+    </>
   );
 }
