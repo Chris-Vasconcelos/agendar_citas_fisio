@@ -618,6 +618,7 @@ export default function App() {
         setSelectedPatientForRecord={setSelectedPatientForRecord}
         appointments={appointments}
         openEditAppointmentModal={openEditAppointmentModal}
+        userId={session?.user?.id ?? null}
       />
 
       <PrivacyModal

@@ -118,3 +118,13 @@ test('splash reduces idle hold without accelerating original path drawing', () =
   assert.match(splash, /HOLD_MS = 500/);
   assert.equal(Math.max(2000 + .28 * 6000, .62 * 6000) + 500, 4220);
 });
+
+test('signed consent image uploader is reachable from authenticated record', () => {
+  const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+  const record = readFileSync(new URL('../src/components/modals/RecordModal.jsx', import.meta.url), 'utf8');
+  const consent = readFileSync(new URL('../src/components/modals/ConsentPhotoSection.jsx', import.meta.url), 'utf8');
+  assert.ok(app.includes('userId={session?.user?.id ?? null}'));
+  assert.ok(record.includes('<ConsentPhotoSection patient={selectedPatientForRecord} userId={userId} />'));
+  assert.ok(consent.includes('Guardar fotografía privada'));
+  assert.ok(consent.includes('uploadSignedConsent'));
+});
