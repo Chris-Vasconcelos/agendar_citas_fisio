@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Clock, CheckCircle2, Eye, Edit3, ClipboardList, MessageCircle, XCircle } from 'lucide-react';
 import { addMinutesToTimeStr, getTodayDateString, formatDateHuman, formatTimeShort } from '../utils/date';
+import { formatPatientName } from '../utils/name';
 
 export function AgendaPage({
   selectedDate,
@@ -176,9 +177,7 @@ export function AgendaPage({
                             >
                               {wd.shortName.toUpperCase()} {wd.dayNumber}
                             </button>
-                            <span className="mina-grid-day-count">
-                              {wd.activeCount}
-                            </span>
+                            {wd.activeCount > 0 && <span className="mina-grid-day-count">{wd.activeCount} citas</span>}
                           </div>
                           {wd.isActive ? null : (
                             <div className="flex items-center justify-between gap-1 mt-1">
@@ -270,12 +269,13 @@ export function AgendaPage({
                                       !['ninguna', 'ninguna conocida'].includes(pt.allergies.trim().toLowerCase());
                                     return (
                                       <div key={`slot-${slotNum}`}
-                                        className={`mina-week-appointment ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}>
+                                        className={`mina-week-appointment mina-space-${slotNum} ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}>
                                         <button type="button" className="mina-week-appointment-main"
                                           onClick={() => openEditAppointmentModal(apt)}
-                                          title={`Abrir cita de ${pt?.full_name || 'Paciente'}`}
-                                          aria-label={`Abrir cita de ${pt?.full_name || 'Paciente'} a las ${hourStr}`}>
-                                          <span className="mina-week-appointment-name">{pt?.full_name || 'Paciente'}</span>
+                                          title={`Abrir cita de ${formatPatientName(pt?.full_name) || 'Paciente'}`}
+                                          aria-label={`Abrir cita de ${formatPatientName(pt?.full_name) || 'Paciente'} a las ${hourStr}`}>
+                                          <span className="mina-space-chip" title={`Espacio ${slotNum}`}>E{slotNum}</span>
+                                          <span className="mina-week-appointment-name">{formatPatientName(pt?.full_name) || 'Paciente'}</span>
                                           <span className="mina-week-appointment-state">{apt.status === 'completed' ? 'Atendida' : apt.status === 'no_show' ? 'No asistió' : 'Programada'}</span>
                                           {hasAllergy && <span className="mina-week-allergy" title={`Alergia: ${pt.allergies}`}>⚠ Alergia</span>}
                                         </button>
@@ -314,16 +314,8 @@ export function AgendaPage({
       {calendarViewMode === 'day' && (
         <div className="mina-day-table min-w-0 max-w-full">
           <div className="mina-calendar-day-title">
-            <h2 className="capitalize">
-              {formatDateHuman(selectedDate)}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setCalendarViewMode('week')}
-              className="toolbar-btn"
-            >
-              Ver semana
-            </button>
+
+
           </div>
 
           {dailyHourlySlots.length === 0 ? (
@@ -398,7 +390,7 @@ export function AgendaPage({
                       <tr key={hourStr}>
                         <th scope="row" className="calendar-hour-col">
                           <div className="text-sm font-bold text-[#222222]">{hourStr}</div>
-                          <div className="text-xs font-normal text-slate-600">
+                          <div className="sr-only">
                             a {nextHourStr}
                           </div>
                         </th>
@@ -417,12 +409,9 @@ export function AgendaPage({
                                       selectedDate
                                     )
                                   }
-                                  className="calendar-empty-slot py-2.5"
+                                  className="mina-day-empty-slot"
                                 >
-                                  <span>+ Agendar en Espacio {slotNum}</span>
-                                  <span className="text-xs font-normal opacity-80">
-                                    {hourStr} – {nextHourStr}
-                                  </span>
+                                  <span>+ Agendar</span>
                                 </button>
                               </td>
                             );
@@ -445,7 +434,7 @@ export function AgendaPage({
                               <div className={`calendar-booked-slot ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}>
                                 <div className="slot-card-header">
                                   <span className="text-sm font-bold text-[#222222]">
-                                    {patient?.full_name || 'Paciente'}
+                                    {formatPatientName(patient?.full_name) || 'Paciente'}
                                   </span>
                                   <span className="mina-status-pill">
                                     {apt.status === 'completed'

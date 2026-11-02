@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Plus, FileText, Edit3, Trash2 } from 'lucide-react';
 import { matchesPatient } from '../utils/patientSearch';
+import { formatPatientName } from '../utils/name';
 
 export function PatientsPage({
   patients,
@@ -24,7 +25,7 @@ export function PatientsPage({
       <article className="craft-card">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="heading-patients" className="text-sm font-bold m-0">
-            Expedientes Clínicos ({patients.length})
+            Expedientes
           </h2>
           <button
             type="button"
@@ -32,7 +33,7 @@ export function PatientsPage({
             className="toolbar-btn-active"
           >
             <Plus className="w-3.5 h-3.5" />
-            Alta de Paciente
+            Nuevo paciente
           </button>
         </div>
 
@@ -51,9 +52,9 @@ export function PatientsPage({
         </div>
       </article>
 
-      <p className="text-xs text-slate-600" role="status">{filteredPatients.length} pacientes encontrados</p>
+      <p className="text-xs text-slate-600" role="status">{filteredPatients.length} {filteredPatients.length === 1 ? 'paciente encontrado' : 'pacientes encontrados'}</p>
       {filteredPatients.length === 0 && <p className="craft-card">Sin coincidencias. Verifica los datos antes de crear otro expediente.</p>}
-      <div className="space-y-4">
+      <div className="mina-patient-list">
         {filteredPatients.slice(0, visibleCount).map((pt) => {
           const ptSessions = appointments
             .filter((a) => a.patient_id === pt.id && a.status !== 'cancelled')
@@ -66,13 +67,13 @@ export function PatientsPage({
           return (
             <article
               key={pt.id}
-              className="craft-card"
+              className="mina-patient-row"
             >
-              <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="space-y-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-base font-bold text-[#222222] m-0">
-                      {pt.full_name} · {pt.age ?? '-'} años
+                      {formatPatientName(pt.full_name)} · {pt.age ?? '-'} años
                     </h3>
                     {hasAllergies && (
                       <span className="text-xs font-bold text-white bg-[#b30000] px-2 py-0.5 rounded-sm">
@@ -86,7 +87,7 @@ export function PatientsPage({
                     )}
                   </div>
                   <p className="text-xs text-slate-700 m-0">
-                    Teléfono: <strong>{pt.phone}</strong>{' '}
+                    Teléfono: <strong>{pt.phone?.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1 $2 $3')}</strong>{' '}
                     {pt.email ? `· Correo: ${pt.email}` : ''}
                   </p>
                 </div>
@@ -98,7 +99,7 @@ export function PatientsPage({
                     className="toolbar-btn-active"
                   >
                     <FileText className="w-3.5 h-3.5" />
-                    Ver Historial ({ptSessions.length})
+                    Historial ({ptSessions.length})
                   </button>
                   <button
                     type="button"
@@ -110,8 +111,9 @@ export function PatientsPage({
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDeletePatient(pt.id)}
-                    className="toolbar-btn"
+                    onClick={() => { if (window.confirm(ptSessions.length ? `Este expediente tiene ${ptSessions.length} citas. No se puede eliminar hasta conservar su historial clínico.` : `¿Eliminar el expediente de ${pt.full_name}? Esta acción no se puede deshacer.`)) handleDeletePatient(pt.id); }}
+                    className="mina-delete-trigger"
+                    title="Eliminar expediente sin citas"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     Eliminar
@@ -119,7 +121,9 @@ export function PatientsPage({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white/85 border border-slate-300 p-3 rounded-md">
+              <details className="mina-patient-details">
+                <summary>Más información</summary>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-white/85 border border-slate-300 p-3 rounded-md">
                 <div>
                   <strong>Motivo de consulta:</strong> {pt.consultation_reason || '-'}
                 </div>
@@ -133,6 +137,7 @@ export function PatientsPage({
                   <strong>Antecedentes familiares:</strong> {pt.family_history || '-'}
                 </div>
               </div>
+              </details>
             </article>
           );
         })}

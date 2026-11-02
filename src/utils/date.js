@@ -35,10 +35,8 @@ export function formatTimeShort(isoString) {
 export function formatDateHuman(dateStr) {
   const [y, m, d] = dateStr.split('-').map(Number);
   const dateObj = new Date(y, m - 1, d);
-  return new Intl.DateTimeFormat('es-MX', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+  const formatted = new Intl.DateTimeFormat('es-MX', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   }).format(dateObj);
+  return formatted.charAt(0).toLocaleUpperCase('es-MX') + formatted.slice(1);
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { getTodayDateString, formatTimeShort, addMinutesToTimeStr } from './utils/date';
 import { DEFAULT_PROFESSIONAL } from './utils/constants';
+import { formatPatientName } from './utils/name';
 
 // Hooks
 import { useAuth } from './hooks/useAuth';
@@ -245,7 +246,7 @@ export default function App() {
     setPatientFormError('');
     setPatientFieldErrors({});
 
-    const cleanName = form.full_name.trim();
+    const cleanName = formatPatientName(form.full_name);
     const cleanPhone = form.phone.trim();
     const cleanEmail = form.email?.trim() || null;
     const numericAge = form.age !== '' ? Number(form.age) : null;
