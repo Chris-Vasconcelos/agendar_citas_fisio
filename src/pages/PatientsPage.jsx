@@ -109,15 +109,18 @@ export function PatientsPage({
                     <Edit3 className="w-3.5 h-3.5" />
                     Editar
                   </button>
-                  <button
+                  <details className="mina-patient-more">
+                    <summary aria-label={`Más acciones para ${pt.full_name}`} title="Más acciones">⋯</summary>
+                                      <button
                     type="button"
-                    onClick={() => { if (window.confirm(ptSessions.length ? `Este expediente tiene ${ptSessions.length} citas. No se puede eliminar hasta conservar su historial clínico.` : `¿Eliminar el expediente de ${pt.full_name}? Esta acción no se puede deshacer.`)) handleDeletePatient(pt.id); }}
+                    onClick={() => { if (window.confirm(ptSessions.length ? `El expediente de ${pt.full_name} tiene ${ptSessions.length} citas; MINA impedirá eliminarlo para proteger su historial.` : `¿Eliminar el expediente de ${pt.full_name}? No tiene citas registradas y esta acción no se puede deshacer.`)) handleDeletePatient(pt.id); }}
                     className="mina-delete-trigger"
                     title="Eliminar expediente sin citas"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     Eliminar
                   </button>
+                  </details>
                 </div>
               </div>
 

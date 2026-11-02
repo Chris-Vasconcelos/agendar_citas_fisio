@@ -481,3 +481,63 @@ html[data-size="lg"] { font-size: 112.5%; }
 .mina-app-shell .mina-week-appointment-state { font-size: var(--mina-fs-sm); }
 .mina-app-shell .mina-brand-subtitle { line-height: 1.2; }
 .mina-app-shell .mina-week-appointment-state { max-width: 100%; }
+
+/* Calendar legibility follow-up: fixed 16px normal, controlled growth, readable 7-day grid. */
+html[data-size="sm"] { font-size: 100%; }
+html[data-size="md"] { font-size: 100%; }
+html[data-size="lg"] { font-size: 100%; }
+.mina-app-shell { --mina-zoom: 1; --mina-main-text: 16px; --mina-secondary-text: 14px; }
+html[data-size="sm"] .mina-app-shell { --mina-zoom: .9375; --mina-main-text: 15px; }
+html[data-size="lg"] .mina-app-shell { --mina-zoom: 1.1875; --mina-main-text: 19px; --mina-secondary-text: 16px; }
+.mina-app-shell .mina-brand-title { font-size: 20px; font-weight: 800; }
+.mina-app-shell .mina-brand-subtitle { font-size: 14px; font-weight: 400; color: #475569; }
+.mina-app-shell .mina-text-size-button { font-size: 14px; background: transparent; color: #475569; }
+.mina-app-shell .mina-text-size-button.active { background: #dcecff; color: #134c84; box-shadow: inset 0 0 0 1px #89bdeb; }
+.mina-app-shell .mina-agenda .mina-week-table { min-width: 0; width: 100%; }
+.mina-app-shell .mina-agenda .mina-week-table .calendar-scroll-wrapper { width:100%; max-width:100%; overflow-x:auto; overscroll-behavior-x: contain; }
+.mina-app-shell .mina-agenda .mina-compact-week-grid {
+  width:100% !important; min-width: 1050px !important;
+  table-layout: fixed; border-spacing: 0;
+  font-size: var(--mina-main-text);
+}
+.mina-app-shell .mina-agenda .mina-compact-week-grid thead th { font-size: 16px; }
+.mina-app-shell .mina-agenda .mina-compact-week-grid th.calendar-hour-col { width:64px; }
+.mina-app-shell .mina-agenda .mina-compact-week-grid thead th.calendar-hour-col { font-size: 14px; }
+.mina-app-shell .mina-agenda .mina-compact-week-grid thead th.calendar-hour-col span { font-size:14px; }
+.mina-app-shell .mina-agenda .mina-compact-week-grid thead th.calendar-hour-col div { font-size:14px; }
+.mina-app-shell .mina-agenda .mina-compact-week-grid .mina-grid-day-button { font-size: var(--mina-main-text); }
+.mina-app-shell .mina-agenda .mina-compact-week-grid .mina-grid-day-count { font-size: var(--mina-secondary-text); }
+.mina-app-shell .mina-agenda .mina-compact-week-grid tbody th.calendar-hour-col div { font-size:15px; font-weight:500; }
+.mina-app-shell .mina-agenda .mina-hour-lanes { grid-template-rows: repeat(2,minmax(44px,auto)); gap: 4px; min-height:92px; }
+.mina-app-shell .mina-agenda .mina-week-appointment { height:44px; min-height:44px; overflow:hidden; }
+.mina-app-shell .mina-agenda .mina-week-appointment-main { height:44px; min-height:44px; flex-wrap:nowrap; align-content:center; gap:4px; padding:3px 4px; }
+.mina-app-shell .mina-agenda .mina-week-appointment-name { display:block; flex:1 1 auto; min-width:0; font-size: var(--mina-main-text); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.25; }
+.mina-app-shell .mina-agenda .mina-space-chip { flex:none; font-size:14px; padding:2px 3px; line-height:1.1; }
+.mina-app-shell .mina-agenda .mina-week-appointment-state { flex:none; font-size:var(--mina-secondary-text); font-weight:600; padding:2px 4px; line-height:1.2; white-space:nowrap; }
+.mina-app-shell .mina-agenda .mina-week-allergy { font-size:var(--mina-secondary-text); }
+.mina-app-shell .mina-agenda .mina-week-empty-lane { min-height:44px; height:44px; }
+.mina-app-shell .mina-agenda .mina-week-appointment:hover .mina-week-record,
+.mina-app-shell .mina-agenda .mina-week-appointment:focus-within .mina-week-record { z-index:2; }
+.mina-app-shell .mina-agenda .mina-day-empty-slot { font-size:var(--mina-main-text); }
+.mina-app-shell .mina-agenda .mina-day-table .calendar-grid-table td { height:72px; }
+.mina-app-shell .mina-agenda .mina-calendar-period { font-size:var(--mina-secondary-text); }
+@media (min-width:1050px) and (max-width:1400px) {
+ .mina-app-shell .mina-agenda .mina-compact-week-grid { min-width:1050px !important; }
+}
+html[data-size="lg"] .mina-app-shell .mina-agenda .mina-compact-week-grid { min-width: 1320px !important; }
+@media (max-width:1049px) {
+ .mina-app-shell .mina-agenda .mina-compact-week-grid { min-width:1050px !important; }
+}
+
+.mina-app-shell .mina-patient-more { position:relative; }
+.mina-app-shell .mina-patient-more summary {
+  display:grid;place-items:center; list-style:none;cursor:pointer;
+  font-size:22px;line-height:1;min-width:40px;min-height:40px;
+  border:1px solid #d9e5f0;border-radius:8px;color:#475569;background:#fff;
+}
+.mina-app-shell .mina-patient-more summary::-webkit-details-marker { display:none; }
+.mina-app-shell .mina-patient-more[open] summary { background:#e9f3ff; border-color:#98c5ee; }
+.mina-app-shell .mina-patient-more .mina-delete-trigger {
+  position:absolute;right:0;top:calc(100% + 5px);z-index:12;
+  background:#fff;white-space:nowrap;box-shadow:0 6px 20px rgba(20,40,60,.12);
+}
