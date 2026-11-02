@@ -14,23 +14,27 @@ const paths = [
 ];
 
 const ORIGINAL_CYCLE_MS = 6000;
-const LAST_DELAY_MS = 2000;
-const HOLD_MS = 450;
+const HOLD_MS = 500;
 const EXIT_MS = 650;
+// All visible drawing finishes well before the source cycle's 100%.
+// Last delayed stroke ends at 2s + 28% of 6s = 3.68s.
+// Tagline is fully visible at 62% of 6s = 3.72s.
+// Keep the original path speeds; eliminate only the 4+ seconds of idle waiting.
+const LAST_STROKE_COMPLETE_MS = Math.max(...paths.map(({ delay }) => delay * 1000)) + .28 * ORIGINAL_CYCLE_MS;
+const TAGLINE_COMPLETE_MS = .62 * ORIGINAL_CYCLE_MS;
+const DRAW_COMPLETE_MS = Math.max(LAST_STROKE_COMPLETE_MS, TAGLINE_COMPLETE_MS) + HOLD_MS;
 const clamp01 = (value) => Math.max(0, Math.min(1, value));
 const progress = (value, begin, end) => clamp01((value - begin) / (end - begin));
 
 export default function Splash({ ready, onRevealStart }) {
   const svgRef = useRef(null);
   const onRevealRef = useRef(onRevealStart);
-  const readyRef = useRef(ready);
   const [exiting, setExiting] = useState(false);
   const [drawingDone, setDrawingDone] = useState(false);
   const [removed, setRemoved] = useState(false);
   const exitingRef = useRef(false);
   const rafRef = useRef(0);
   onRevealRef.current = onRevealStart;
-  readyRef.current = ready;
 
   // Imperatively animate every SVG stroke: no iframe, CSS keyframe,
   // pathLength normalization or OS reduced-motion override can skip the drawing.
@@ -64,7 +68,7 @@ export default function Splash({ ready, onRevealStart }) {
         if (isShape) node.style.setProperty('fill-opacity', String(progress(local, .22, .34)), 'important');
       }
       if (tagline) tagline.style.setProperty('opacity', String(progress(elapsed / ORIGINAL_CYCLE_MS, .54, .62)), 'important');
-      if (elapsed >= ORIGINAL_CYCLE_MS + LAST_DELAY_MS + HOLD_MS) {
+      if (elapsed >= DRAW_COMPLETE_MS) {
         setDrawingDone(true);
         return;
       }

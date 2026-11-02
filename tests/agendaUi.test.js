@@ -61,7 +61,9 @@ test('splash draws all MINA paths directly before releasing the app', () => {
   assert.match(splash, /stroke-dashoffset/);
   assert.match(splash, /fill-opacity/);
   assert.match(splash, /ORIGINAL_CYCLE_MS = 6000/);
-  assert.match(splash, /LAST_DELAY_MS = 2000/);
+  assert.match(splash, /LAST_STROKE_COMPLETE_MS/);
+  assert.match(splash, /TAGLINE_COMPLETE_MS/);
+  assert.match(splash, /DRAW_COMPLETE_MS/);
   assert.match(splash, /!ready \|\| !drawingDone/);
   assert.doesNotMatch(splash, /<iframe|srcDoc=|matchMedia\(/);
   assert.match(css, /mina-app-revealing/);
@@ -105,3 +107,14 @@ test('auth and all three initial loads release errors or timeout timers', () => 
   }
 });
 
+
+test('splash reduces idle hold without accelerating original path drawing', () => {
+  const splash = readFileSync(new URL('../src/components/layout/Splash.jsx', import.meta.url), 'utf8');
+  assert.match(splash, /ORIGINAL_CYCLE_MS = 6000/);
+  assert.match(splash, /progress\(local, \.04, \.28\)/);
+  assert.match(splash, /progress\(local, \.22, \.34\)/);
+  assert.match(splash, /progress\(elapsed \/ ORIGINAL_CYCLE_MS, \.54, \.62\)/);
+  assert.match(splash, /if \(elapsed >= DRAW_COMPLETE_MS\)/);
+  assert.match(splash, /HOLD_MS = 500/);
+  assert.equal(Math.max(2000 + .28 * 6000, .62 * 6000) + 500, 4220);
+});
