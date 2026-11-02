@@ -1,79 +1,29 @@
-/* MINA: original 6-second trace / paint / caption animation, one cycle.
-   The final keyframe holds the completed logo until initial data is ready. */
+/* The logo runs in a sandboxed, isolated HTML document.
+   Application styles cannot override its eight SVG paths or keyframes. */
 .mina-splash {
-  position: fixed; inset: 0; z-index: 9999;
-  display: grid; place-items: center;
-  background: #fff; opacity: 1; pointer-events: auto;
-  transition: opacity .65s cubic-bezier(.2,.7,.2,1);
+ position:fixed;inset:0;z-index:9999;display:grid;place-items:center;
+ background:#fff;opacity:1;pointer-events:auto;
+ transition:opacity .65s cubic-bezier(.2,.7,.2,1);
 }
-.mina-splash-leaving { opacity: 0; pointer-events: none; }
-.mina-splash-content {
-  width: min(88vw,540px); transform: translateY(0) scale(1);
-  transition: transform .65s cubic-bezier(.2,.7,.2,1),filter .65s ease;
+.mina-splash-leaving{opacity:0;pointer-events:none}
+.mina-splash-content{
+ width:min(88vw,540px);aspect-ratio:930/810;
+ transition:transform .65s cubic-bezier(.2,.7,.2,1),filter .65s ease;
 }
-.mina-splash-leaving .mina-splash-content {
-  transform: translateY(-14px) scale(.97); filter: blur(1px);
+.mina-splash-leaving .mina-splash-content{transform:translateY(-14px) scale(.97);filter:blur(1px)}
+.mina-splash-frame{display:block;width:100%;height:100%;border:0;background:#fff;pointer-events:none}
+.mina-app-shell.mina-app-starting{opacity:0;pointer-events:none;transform:translateY(18px)}
+.mina-app-shell.mina-app-revealing{
+ opacity:1;transform:translateY(0);
+ transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);
 }
-.mina-splash svg { display: block; width: 100%; height: auto; max-width: none; overflow: visible; }
-.mina-splash .blue { --ink: #052743; }
-.mina-splash .gray { --ink: #748da0; }
-/* Keep the EXACT stroke geometry, normalized length, animation and stagger from the user's HTML. */
-.mina-splash .draw {
-  stroke: var(--ink);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  fill: none;
-  stroke-dasharray: 1 1;
-  stroke-dashoffset: 1;
-  animation: mina-original-trace 6s linear 1 both;
-  animation-delay: var(--delay);
+.mina-skip-link{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.mina-skip-link:focus-visible{
+ position:fixed;top:10px;left:10px;z-index:10001;
+ width:auto;height:auto;clip-path:none;overflow:visible;
+ padding:10px 16px;border:2px solid #052743;border-radius:8px;background:#fff;color:#052743;font-size:16px
 }
-.mina-splash .shape {
-  fill: var(--ink);
-  fill-opacity: 0;
-  animation: mina-original-trace 6s linear 1 both, mina-original-paint 6s linear 1 both;
-  animation-delay: var(--delay),var(--delay);
-}
-.mina-splash .letter { stroke-width: 16; stroke-linecap: butt; stroke-linejoin: miter; }
-.mina-splash .line { stroke-width: 3; }
-.mina-splash .tagline {
-  fill: #748da0; font: 500 33px Arial,sans-serif; letter-spacing: 5.4px;
-  opacity: 0; animation: mina-original-caption 6s linear 1 both;
-}
-/* Same phases as the source. Only the disappearing last segment is changed
-   to hold the completed logo for the real app-ready fade. */
-@keyframes mina-original-trace {
-  0%,4% { stroke-dashoffset: 1; opacity: 1; }
-  28%,64%,72%,100% { stroke-dashoffset: 0; opacity: 1; }
-}
-@keyframes mina-original-paint {
-  0%,22% { fill-opacity: 0; }
-  34%,64%,72%,100% { fill-opacity: 1; }
-}
-@keyframes mina-original-caption {
-  0%,54% { opacity: 0; }
-  62%,76%,84%,100% { opacity: 1; }
-}
-.mina-app-shell.mina-app-starting {
-  opacity: 0; pointer-events: none; transform: translateY(18px);
-}
-.mina-app-shell.mina-app-revealing {
-  opacity: 1; transform: translateY(0);
-  transition: opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);
-}
-.mina-skip-link { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.mina-skip-link:focus-visible {
-  position: fixed; top: 10px; left: 10px; z-index: 10001;
-  width: auto; height: auto; clip-path: none; overflow: visible;
-  padding: 10px 16px; border: 2px solid #052743; border-radius: 8px;
-  background: #fff; color: #052743; font-size: 16px;
-}
-@media (prefers-reduced-motion: reduce) {
-  .mina-splash,.mina-splash-content,.mina-app-shell.mina-app-revealing { transition: none !important; }
-  .mina-splash-leaving .mina-splash-content { transform: none; filter: none; }
-  .mina-splash .draw,.mina-splash .shape,.mina-splash .tagline { animation: none !important; }
-  .mina-splash .draw { stroke-dashoffset: 0; opacity: 1; }
-  .mina-splash .shape { fill-opacity: 1; }
-  .mina-splash .tagline { opacity: 1; }
+@media(prefers-reduced-motion:reduce){
+ .mina-splash,.mina-splash-content,.mina-app-shell.mina-app-revealing{transition:none!important}
+ .mina-splash-leaving .mina-splash-content{transform:none;filter:none}
 }
