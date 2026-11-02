@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import './Splash.css';
 
 // Uses the original MINA SVG paths supplied for the animated logo.
@@ -14,22 +14,33 @@ const paths = [
 ];
 
 export default function Splash({ ready }) {
-  const [seen] = useState(() => {
-    try { return sessionStorage.getItem('mina_splash_seen_v1') === '1'; }
-    catch { return false; }
-  });
+  const pathsRef = useRef(null);
+  const [drawingReady, setDrawingReady] = useState(false);
   const [minimumDone, setMinimumDone] = useState(false);
   const [removed, setRemoved] = useState(false);
 
+  // Measure real SVG lengths instead of assuming normalized lengths.
+  // This prevents partial/instant rendering on browsers with different SVG behavior.
+  useLayoutEffect(() => {
+    const container = pathsRef.current;
+    if (!container) return;
+    for (const path of container.querySelectorAll('path')) {
+      const length = Math.ceil(path.getTotalLength()) + 2;
+      path.style.setProperty('--mina-path-length', `${length}px`);
+    }
+    setDrawingReady(true);
+  }, []);
+
   useEffect(() => {
-    const t = setTimeout(() => setMinimumDone(true), seen ? 0 : 2700);
+    // The requested drawing should replay on F5; reduced-motion users get the still logo.
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const t = setTimeout(() => setMinimumDone(true), reduceMotion ? 0 : 2700);
     return () => clearTimeout(t);
-  }, [seen]);
+  }, []);
 
   const leaving = ready && minimumDone;
   useEffect(() => {
     if (!leaving) return;
-    try { sessionStorage.setItem('mina_splash_seen_v1', '1'); } catch { /* storage unavailable */ }
     const t = setTimeout(() => setRemoved(true), 360);
     return () => clearTimeout(t);
   }, [leaving]);
@@ -37,13 +48,13 @@ export default function Splash({ ready }) {
   if (removed) return null;
 
   return (
-    <div className={`mina-splash ${seen ? 'mina-splash-seen' : ''} ${leaving ? 'mina-splash-leaving' : ''}`}
+    <div className={`mina-splash ${drawingReady ? 'mina-splash-drawing' : ''} ${leaving ? 'mina-splash-leaving' : ''}`}
       role="status" aria-live="polite" aria-label="Cargando MINA">
       <div className="mina-splash-content">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="70 140 930 810"
+        <svg ref={pathsRef} xmlns="http://www.w3.org/2000/svg" viewBox="70 140 930 810"
           role="img" aria-label="MINA — El valor del movimiento">
           {paths.map(({ cls, delay, d }, i) => (
-            <path key={i} className={`mina-splash-draw ${cls}`} pathLength="1"
+            <path key={i} className={`mina-splash-draw ${cls}`}
               style={{ '--delay': `${delay}s` }} d={d} />
           ))}
           <text className="mina-splash-tagline" x="540" y="903" textAnchor="middle">

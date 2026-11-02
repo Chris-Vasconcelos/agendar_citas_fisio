@@ -54,7 +54,21 @@ test('startup waits for the session and all data resources before removing the s
   assert.match(app, /appointmentsLoadedFor === owner/);
   assert.match(app, /availabilityLoadedFor === owner/);
   assert.match(auth, /authLoading/);
-  assert.match(splash, /sessionStorage\.getItem/);
+  assert.match(splash, /getTotalLength/);
   const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
   assert.match(css, /prefers-reduced-motion/);
+});
+
+test('splash draws original paths on every reload using measured length', () => {
+  const splash = readFileSync(new URL('../src/components/layout/Splash.jsx', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
+  const page = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.match(splash, /getTotalLength\(\)/);
+  assert.match(splash, /setDrawingReady\(true\)/);
+  assert.doesNotMatch(splash, /sessionStorage/);
+  assert.doesNotMatch(splash, /pathLength="1"/);
+  assert.match(css, /mina-splash-drawing/);
+  assert.match(css, /stroke-dashoffset:var\(--mina-path-length/);
+  assert.match(css, /prefers-reduced-motion/);
+  assert.doesNotMatch(page, /Iniciando MINA…/);
 });
