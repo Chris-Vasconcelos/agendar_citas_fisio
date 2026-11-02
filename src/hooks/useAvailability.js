@@ -3,13 +3,13 @@ import { fetchAvailability, updateAvailability as apiUpdateAvailability } from '
 import { INITIAL_DEMO_AVAILABILITY } from '../utils/constants';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { withTimeout } from '../utils/withTimeout';
+import { readLocalJSON, writeLocalJSON } from '../utils/localJSON';
 import { DAYS_OF_WEEK } from '../utils/constants';
 
 export function useAvailability(session, setBannerAlert) {
     const [availability, setAvailability] = useState(() => {
         if (isSupabaseConfigured) return [];
-        const saved = localStorage.getItem('fisio_availability_v3');
-        return saved ? JSON.parse(saved) : INITIAL_DEMO_AVAILABILITY;
+        return readLocalJSON('fisio_availability_v3', INITIAL_DEMO_AVAILABILITY);
     });
 
     const loadAvailability = useCallback(async () => {
@@ -51,7 +51,7 @@ export function useAvailability(session, setBannerAlert) {
 
     useEffect(() => {
         if (!isSupabaseConfigured) {
-          localStorage.setItem('fisio_availability_v3', JSON.stringify(availability));
+          writeLocalJSON('fisio_availability_v3', availability);
         }
     }, [availability]);
 

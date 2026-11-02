@@ -4,12 +4,13 @@ import { getTodayDateString, formatTimeShort } from '../utils/date';
 import { DEFAULT_PROFESSIONAL } from '../utils/constants';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { withTimeout } from '../utils/withTimeout';
+import { readLocalJSON, writeLocalJSON } from '../utils/localJSON';
 
 export function useAppointments(session, appendAuditLog, setBannerAlert, patientsById) {
     const [appointments, setAppointments] = useState(() => {
         if (isSupabaseConfigured) return [];
-        const saved = localStorage.getItem('fisio_appointments_v3');
-        if (saved) return JSON.parse(saved);
+        const stored = readLocalJSON('fisio_appointments_v3', null);
+        if (stored !== null) return stored;
         const today = getTodayDateString();
         const s1 = new Date(`${today}T09:00:00`).toISOString();
         const e1 = new Date(`${today}T10:00:00`).toISOString();
@@ -93,7 +94,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
 
     useEffect(() => {
         if (!isSupabaseConfigured) {
-          localStorage.setItem('fisio_appointments_v3', JSON.stringify(appointments));
+          writeLocalJSON('fisio_appointments_v3', appointments);
         }
     }, [appointments]);
 
