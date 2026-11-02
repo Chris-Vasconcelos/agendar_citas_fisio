@@ -47,12 +47,12 @@ export function AppointmentModal({
       aria-modal="true"
       aria-labelledby="modal-apt-title"
     >
-      <div className="form-container my-6 max-h-[92vh] overflow-y-auto">
+      <div className="form-container mina-appointment-modal my-6 max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 id="modal-apt-title" className="text-lg font-bold text-[#222222]">
             {editingAppointmentId
-              ? 'Atender Cita / Nota de Sesión'
-              : 'Agendar Cita (Bloque de 60 min)'}
+              ? 'Atender cita / nota de sesión'
+              : 'Agendar cita · 60 min'}
           </h2>
           <button
             type="button"
@@ -60,7 +60,7 @@ export function AppointmentModal({
             className="secondary-button text-xs py-1 px-2.5"
             disabled={isSaving}
           >
-            Cerrar
+            ×
           </button>
         </div>
 
@@ -86,7 +86,7 @@ export function AppointmentModal({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-slate-600">Verifica nombre, edad y teléfono. Máximo 100 resultados por búsqueda.</p>
+            <p className="text-xs text-slate-600">Verifica el paciente antes de agendar.</p>
             {selected && <p className="text-xs font-semibold text-[#004070]">Paciente seleccionado: {selected.full_name} · {selected.age ?? '-'} años · Tel: {selected.phone ?? '-'}</p>}
             <div aria-live="polite">
               {aptFieldErrors.patient_id && (
@@ -97,10 +97,10 @@ export function AppointmentModal({
 
           <fieldset className="form-fieldset">
             <legend className="form-legend">
-              Espacio de atención (máx. 2 pacientes por hora){' '}
+              Espacio de atención{' '}
               <span className="required-asterisk" aria-hidden="true">*</span>
             </legend>
-            <div className="space-y-2 mt-1">
+            <div className="mina-slot-selector mt-1">
               <div className="flex items-center gap-2">
                 <input
                   id="slot-option-auto"
@@ -112,7 +112,7 @@ export function AppointmentModal({
                   className="radio-input h-4 w-4"
                 />
                 <label htmlFor="slot-option-auto" className="text-sm font-medium text-[#222222]">
-                  Automático (Asignar Espacio 1 o 2 libre)
+                  Automático
                 </label>
               </div>
 
@@ -127,7 +127,7 @@ export function AppointmentModal({
                   className="radio-input h-4 w-4"
                 />
                 <label htmlFor="slot-option-1" className="text-sm font-medium text-[#222222]">
-                  Espacio 1
+                  1
                 </label>
               </div>
 
@@ -142,7 +142,7 @@ export function AppointmentModal({
                   className="radio-input h-4 w-4"
                 />
                 <label htmlFor="slot-option-2" className="text-sm font-medium text-[#222222]">
-                  Espacio 2
+                  2
                 </label>
               </div>
             </div>
@@ -190,25 +190,7 @@ export function AppointmentModal({
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="apt-end-time" className="form-label">
-              Hora de término <span className="required-asterisk" aria-hidden="true">*</span>
-            </label>
-            <input
-              id="apt-end-time"
-              type="time"
-              value={aptForm.endTime}
-              onChange={(e) => setAptForm((prev) => ({ ...prev, endTime: e.target.value }))}
-              aria-invalid={Boolean(aptFieldErrors.endTime)}
-              className="form-input"
-              required
-            />
-            <div aria-live="polite">
-              {aptFieldErrors.endTime && (
-                <span className="error-message active">{aptFieldErrors.endTime}</span>
-              )}
-            </div>
-          </div>
+          <p className="mina-duration-hint">Duración: 60 minutos · Termina a las {aptForm.endTime}</p>
 
           {editingAppointmentId && (
             <>
@@ -291,17 +273,10 @@ export function AppointmentModal({
             {aptFormError && <div className="error-message active">{aptFormError}</div>}
           </div>
 
-          <div className="flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="secondary-button"
-              disabled={isSaving}
-            >
-              Cancelar
-            </button>
+          <div className="mina-modal-footer">
+
             <button type="submit" className="submit-button" disabled={isSaving}>
-              {isSaving ? 'Guardando...' : (editingAppointmentId ? 'Guardar Nota de Sesión y Cambios' : 'Confirmar y Agendar Cita')}
+              {isSaving ? 'Guardando...' : (editingAppointmentId ? 'Guardar cambios' : 'Agendar cita')}
             </button>
           </div>
         </form>

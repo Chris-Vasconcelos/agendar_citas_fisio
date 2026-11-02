@@ -1,134 +1,73 @@
 import React from 'react';
 import { DAYS_OF_WEEK } from '../utils/constants';
 
-export function AvailabilityPage({
-  availability,
-  setAvailability,
-  saveAvailabilityDay,
-  setActiveTab
-}) {
+export function AvailabilityPage({ availability, appointments = [], saveAvailabilityDay }) {
+  const [feedback, setFeedback] = React.useState('');
+  const validTime = (time) => String(time || '08:00').slice(0,5);
+  const update = async (row, changes) => {
+    const next = { ...row, ...changes };
+    if (next.start_time >= next.end_time) {
+      setFeedback('La hora de cierre debe ser posterior a la apertura.');
+      return;
+    }
+    if (row.is_active && changes.is_active === false) {
+      const now = Date.now();
+      const futureCount = appointments.filter((apt) =>
+        apt.status !== 'cancelled' &&
+        new Date(apt.start_time).getTime() >= now &&
+        new Date(apt.start_time).getDay() === row.day_of_week
+      ).length;
+      if (futureCount > 0 && !window.confirm(`Hay ${futureCount} cita(s) futuras para este día de la semana. Deshabilitarlo no cancela esas citas. ¿Quieres continuar?`)) {
+        return;
+      }
+    }
+    setFeedback('');
+    const result = await saveAvailabilityDay(next);
+    if (!result?.success) setFeedback(result?.error || 'No se pudo guardar el horario.');
+  };
+
   return (
-    <section className="space-y-3" aria-label="Configuración de horarios por día">
-      <div className="flex items-center justify-end">
-        <button
-          type="button"
-          onClick={() => setActiveTab('agenda')}
-          className="toolbar-btn"
-        >
-          ← Volver a la Agenda
-        </button>
+    <section aria-labelledby="mina-hours-title" className="mina-hours-page">
+      <div className="mina-section-heading">
+        <h2 id="mina-hours-title">Horarios</h2>
+        <p>Configura los días y horas de atención del consultorio.</p>
       </div>
-
-      <div className="schedule-responsive-grid">
-        {DAYS_OF_WEEK.map((dayObj) => {
-          const row = availability.find((a) => a.day_of_week === dayObj.value) || {
-            day_of_week: dayObj.value,
-            start_time: '08:00',
-            end_time: '19:00',
-            slot_duration_minutes: 60,
-            is_active: false,
+      {feedback && <p role="alert" className="mina-inline-error">{feedback}</p>}
+      <div className="mina-hours-list">
+        {DAYS_OF_WEEK.map((day) => {
+          const row = availability.find((a) => a.day_of_week === day.value) || {
+            day_of_week: day.value, start_time:'08:00', end_time:'19:00',
+            slot_duration_minutes:60, is_active:false
           };
-          const isActive = Boolean(row.is_active);
-          const checkboxId = `day-active-${dayObj.value}`;
-          const startId = `day-start-${dayObj.value}`;
-          const endId = `day-end-${dayObj.value}`;
-
-          const startH = Number((row.start_time || '08:00').split(':')[0]);
-          const endH = Number((row.end_time || '19:00').split(':')[0]);
-          const totalBlocks = isActive && endH > startH ? endH - startH : 0;
-
+          const active = Boolean(row.is_active);
+          const start = validTime(row.start_time);
+          const end = validTime(row.end_time);
+          const blocks = active ? Math.max(0, (Number(end.slice(0,2))*60 + Number(end.slice(3,5)) - Number(start.slice(0,2))*60 - Number(start.slice(3,5))) / 60) : 0;
           return (
-            <article key={dayObj.value} className="craft-card">
-              <div className="flex items-center justify-between gap-2 pb-2 border-b border-black/15">
-                <span className="text-sm font-bold text-[#1c160e]">
-                  {dayObj.label}
-                </span>
-                <span
-                  className={`typeui-badge ${
-                    isActive ? 'typeui-badge-success' : 'typeui-badge-neutral'
-                  }`}
-                >
-                  {isActive ? 'ABIERTO' : 'CERRADO'}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  id={checkboxId}
-                  type="checkbox"
-                  checked={isActive}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    saveAvailabilityDay({ ...row, is_active: checked });
-                  }}
-                  className="h-4 w-4 cursor-pointer"
-                />
-                <label
-                  htmlFor={checkboxId}
-                  className="text-xs font-bold text-[#1c160e] cursor-pointer"
-                >
-                  {isActive ? 'Día habilitado' : 'Habilitar día'}
+            <div key={day.value} className={`mina-hours-row ${active ? '' : 'mina-hours-row-closed'}`}>
+              <label className="mina-hours-toggle">
+                <input type="checkbox" checked={active} onChange={(e) => update(row, { is_active:e.target.checked })} />
+                <span>{day.label}</span>
+              </label>
+              <div className="mina-hours-times">
+                <label>
+                  <span className="sr-only">Apertura de {day.label}</span>
+                  <input type="time" step="3600" value={start} disabled={!active}
+                    onChange={(e) => update(row,{start_time:e.target.value})} />
+                </label>
+                <span aria-hidden="true">–</span>
+                <label>
+                  <span className="sr-only">Cierre de {day.label}</span>
+                  <input type="time" step="3600" value={end} disabled={!active}
+                    onChange={(e) => update(row,{end_time:e.target.value})} />
                 </label>
               </div>
-
-              {isActive ? (
-                <div className="space-y-2.5">
-                  <div>
-                    <label
-                      htmlFor={startId}
-                      className="block text-xs font-semibold text-[#524634] mb-1"
-                    >
-                      Apertura:
-                    </label>
-                    <input
-                      id={startId}
-                      type="time"
-                      value={row.start_time}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        saveAvailabilityDay({ ...row, start_time: val });
-                      }}
-                      className="form-input py-1.5 px-2 text-xs font-bold"
-                    />
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor={endId}
-                      className="block text-xs font-semibold text-[#524634] mb-1"
-                    >
-                      Cierre:
-                    </label>
-                    <input
-                      id={endId}
-                      type="time"
-                      value={row.end_time}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        saveAvailabilityDay({ ...row, end_time: val });
-                      }}
-                      className="form-input py-1.5 px-2 text-xs font-bold"
-                    />
-                  </div>
-
-                  <div className="rounded-md bg-white/85 border border-black/15 p-2 text-[11px] text-[#1c160e] space-y-0.5">
-                    <div className="font-bold text-[#004070]">
-                      {totalBlocks} bloques de 60 min
-                    </div>
-                    <div>
-                      Capacidad: <strong>{totalBlocks * 2} citas</strong>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="py-4 text-center text-xs font-medium text-[#5c4f3b]">
-                  Sin consulta este día
-                </div>
-              )}
-            </article>
+              <span className="mina-hours-capacity">{active ? `${Number.isInteger(blocks)?blocks:blocks.toFixed(1)} h · ${blocks*2} espacios` : 'Sin atención'}</span>
+            </div>
           );
         })}
       </div>
+      <p className="mina-hours-note">Los horarios son reglas semanales. Antes de cerrar un día con citas existentes, revisa la agenda. Las pausas y excepciones por fecha requieren una función adicional.</p>
     </section>
   );
 }
