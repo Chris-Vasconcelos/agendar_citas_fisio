@@ -207,3 +207,6 @@
 @media (max-width: 790px) {
   .mina-calendar-period { font-size: 12px; }
 }
+
+.mina-agenda .calendar-booked-slot.no-show { background: #fff8f0; border-color: #f3ddc7; border-left-color: #d69b59; }
+.mina-agenda .calendar-booked-slot.no-show .mina-status-pill { color: #945b27; border-color: #f3ddc7; }

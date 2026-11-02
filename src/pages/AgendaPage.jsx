@@ -113,7 +113,7 @@ export function AgendaPage({
           })}
         </div>
 
-        {dailyHourlySlots.length === 0 && (
+        {calendarViewMode === 'week' && dailyHourlySlots.length === 0 && (
           <div className="mina-calendar-closed">
             <p className="m-0 text-sm text-slate-600"><strong>{formatDateHuman(selectedDate)}:</strong> día sin horario activo.</p>
             <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
@@ -292,16 +292,14 @@ export function AgendaPage({
                                     return (
                                       <div
                                         key={`slot-${slotNum}`}
-                                        className={`calendar-booked-slot ${apt.status === 'completed' ? 'completed' : ''}`}
+                                        className={`calendar-booked-slot ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}
                                       >
                                         <div className="slot-card-header">
                                           <span className="text-[11px] font-bold text-[#004070]">
                                             Espacio {slotNum}
                                           </span>
                                           <span className="mina-status-pill">
-                                            {apt.status === 'completed' || hasNotes
-                                              ? '✓ Nota'
-                                              : 'Programada'}
+                                            {apt.status === 'completed' ? 'Completada' : apt.status === 'no_show' ? 'No asistió' : hasNotes ? '✓ Nota' : 'Programada'}
                                           </span>
                                         </div>
 
@@ -509,7 +507,7 @@ export function AgendaPage({
 
                           return (
                             <td key={`day-slot-${slotNum}`} className="bg-white">
-                              <div className="calendar-booked-slot">
+                              <div className={`calendar-booked-slot ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}>
                                 <div className="slot-card-header">
                                   <span className="text-sm font-bold text-[#222222]">
                                     {patient?.full_name || 'Paciente'}
