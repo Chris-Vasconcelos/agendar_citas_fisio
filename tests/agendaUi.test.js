@@ -55,8 +55,8 @@ test('startup waits for the session and all data resources before removing the s
   assert.match(app, /availabilityLoadedFor === owner/);
   assert.match(auth, /authLoading/);
   assert.match(splash, /pathLength="1"/);
-  assert.match(css, /mina-original-trace 6s linear/);
   const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
+  assert.match(css, /mina-original-trace 6s linear/);
   assert.match(css, /prefers-reduced-motion/);
 });
 
