@@ -21,17 +21,31 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
         }
     }, []);
 
+    // Track which account finished loading; a previous account's data cannot unlock the UI.
+    const [loadedFor, setLoadedFor] = useState(null);
+    const [initialLoadError, setInitialLoadError] = useState('');
     useEffect(() => {
         if (!isSupabaseConfigured) return;
-
-        // Invalidate the previous user's data and any outstanding request.
         let cancelled = false;
+        const owner = session?.user?.id;
         setPatients([]);
-        if (session?.user?.id) {
-            fetchPatients().then((data) => {
-                if (!cancelled && Array.isArray(data)) setPatients(data);
+        setLoadedFor(null);
+        setInitialLoadError('');
+        if (owner) {
+            Promise.race([
+                fetchPatients(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado')), 15000))
+            ]).then((data) => {
+                if (cancelled) return;
+                if (Array.isArray(data)) setPatients(data);
+                else setInitialLoadError('La respuesta de patients no es válida.');
             }).catch((error) => {
-                if (!cancelled) console.error('[Supabase load error]:', error);
+                if (!cancelled) {
+                    console.error('[MINA] No se pudo cargar patients:', error);
+                    setInitialLoadError('No se pudieron cargar patients. Revisa la conexión e inténtalo de nuevo.');
+                }
+            }).finally(() => {
+                if (!cancelled) setLoadedFor(owner);
             });
         }
         return () => { cancelled = true; };
@@ -90,6 +104,8 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
         patientsById,
         savePatient,
         deletePatient,
-        loadPatients
+        loadPatients,
+        loadedFor,
+        initialLoadError
     };
 }

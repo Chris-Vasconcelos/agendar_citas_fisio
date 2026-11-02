@@ -44,3 +44,17 @@ test('patient duplicate notice and save guidance are kept in the form', () => {
   assert.match(patientModal, /mina-patient-save-hint/);
   assert.match(patientModal, /confirmedDifferentPerson/);
 });
+
+test('startup waits for the session and all data resources before removing the splash', () => {
+  const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+  const auth = readFileSync(new URL('../src/hooks/useAuth.js', import.meta.url), 'utf8');
+  const splash = readFileSync(new URL('../src/components/layout/Splash.jsx', import.meta.url), 'utf8');
+  assert.match(app, /<Splash ready=\{startupReady\}/);
+  assert.match(app, /patientsLoadedFor === owner/);
+  assert.match(app, /appointmentsLoadedFor === owner/);
+  assert.match(app, /availabilityLoadedFor === owner/);
+  assert.match(auth, /authLoading/);
+  assert.match(splash, /sessionStorage\.getItem/);
+  const css = readFileSync(new URL('../src/components/layout/Splash.css', import.meta.url), 'utf8');
+  assert.match(css, /prefers-reduced-motion/);
+});

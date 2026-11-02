@@ -64,17 +64,30 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
         }
     }, []);
 
+    const [loadedFor, setLoadedFor] = useState(null);
+    const [initialLoadError, setInitialLoadError] = useState('');
     useEffect(() => {
         if (!isSupabaseConfigured) return;
-
-        // Invalidate the previous user's data and any outstanding request.
         let cancelled = false;
+        const owner = session?.user?.id;
         setAppointments([]);
-        if (session?.user?.id) {
-            fetchAppointments().then((data) => {
-                if (!cancelled && Array.isArray(data)) setAppointments(data);
+        setLoadedFor(null);
+        setInitialLoadError('');
+        if (owner) {
+            Promise.race([
+                fetchAppointments(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado')), 15000))
+            ]).then((data) => {
+                if (cancelled) return;
+                if (Array.isArray(data)) setAppointments(data);
+                else setInitialLoadError('La respuesta de citas no es válida.');
             }).catch((error) => {
-                if (!cancelled) console.error('[Supabase load error]:', error);
+                if (!cancelled) {
+                    console.error('[MINA] Error al cargar citas', error);
+                    setInitialLoadError('No se pudieron cargar citas. Revisa la conexión y recarga.');
+                }
+            }).finally(() => {
+                if (!cancelled) setLoadedFor(owner);
             });
         }
         return () => { cancelled = true; };
@@ -208,6 +221,8 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
         loadAppointments,
         validateAppointmentConstraints,
         saveAppointment,
-        cancelAppointment
+        cancelAppointment,
+        loadedFor,
+        initialLoadError
     };
 }
