@@ -517,6 +517,7 @@ export default function App() {
 
         {activeTab === 'availability' && (
           <AvailabilityPage
+            appointments={appointments}
             availability={availability}
             setAvailability={setAvailability}
             saveAvailabilityDay={saveAvailabilityDay}

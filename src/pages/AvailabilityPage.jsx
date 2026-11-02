@@ -1,7 +1,7 @@
 import React from 'react';
 import { DAYS_OF_WEEK } from '../utils/constants';
 
-export function AvailabilityPage({ availability, saveAvailabilityDay }) {
+export function AvailabilityPage({ availability, appointments = [], saveAvailabilityDay }) {
   const [feedback, setFeedback] = React.useState('');
   const validTime = (time) => String(time || '08:00').slice(0,5);
   const update = async (row, changes) => {
@@ -10,8 +10,20 @@ export function AvailabilityPage({ availability, saveAvailabilityDay }) {
       setFeedback('La hora de cierre debe ser posterior a la apertura.');
       return;
     }
+    if (row.is_active && changes.is_active === false) {
+      const now = Date.now();
+      const futureCount = appointments.filter((apt) =>
+        apt.status !== 'cancelled' &&
+        new Date(apt.start_time).getTime() >= now &&
+        new Date(apt.start_time).getDay() === row.day_of_week
+      ).length;
+      if (futureCount > 0 && !window.confirm(`Hay ${futureCount} cita(s) futuras para este día de la semana. Deshabilitarlo no cancela esas citas. ¿Quieres continuar?`)) {
+        return;
+      }
+    }
     setFeedback('');
-    await saveAvailabilityDay(next);
+    const result = await saveAvailabilityDay(next);
+    if (!result?.success) setFeedback(result?.error || 'No se pudo guardar el horario.');
   };
 
   return (
