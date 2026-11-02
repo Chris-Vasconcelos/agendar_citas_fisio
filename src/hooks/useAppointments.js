@@ -3,6 +3,7 @@ import { fetchAppointments, saveAppointment as apiSaveAppointment, cancelAppoint
 import { getTodayDateString, formatTimeShort } from '../utils/date';
 import { DEFAULT_PROFESSIONAL } from '../utils/constants';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { withTimeout } from '../utils/withTimeout';
 
 export function useAppointments(session, appendAuditLog, setBannerAlert, patientsById) {
     const [appointments, setAppointments] = useState(() => {
@@ -74,10 +75,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
         setLoadedFor(null);
         setInitialLoadError('');
         if (owner) {
-            Promise.race([
-                fetchAppointments(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado')), 15000))
-            ]).then((data) => {
+            withTimeout(fetchAppointments(), 15000).then((data) => {
                 if (cancelled) return;
                 if (Array.isArray(data)) setAppointments(data);
                 else setInitialLoadError('La respuesta de citas no es válida.');
@@ -145,7 +143,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
             .map((a) => `${patientsById.get(a.patient_id)?.full_name || 'Paciente'} (Espacio ${a.slot_number || 1})`)
             .join(' y ');
           const sqlErrorMsg = `Horario lleno: Los Espacios 1 y 2 ya están ocupados en ese horario por ${names}. Selecciona otra hora.`;
-          console.error(sqlErrorMsg);
+          // Avoid logging identifiable patient names to the browser console.
           appendAuditLog('AGENDA', sqlErrorMsg);
           return {
             valid: false,

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchAvailability, updateAvailability as apiUpdateAvailability } from '../services/availabilityService';
 import { INITIAL_DEMO_AVAILABILITY } from '../utils/constants';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { withTimeout } from '../utils/withTimeout';
 import { DAYS_OF_WEEK } from '../utils/constants';
 
 export function useAvailability(session, setBannerAlert) {
@@ -32,10 +33,7 @@ export function useAvailability(session, setBannerAlert) {
         setLoadedFor(null);
         setInitialLoadError('');
         if (owner) {
-            Promise.race([
-                fetchAvailability(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado')), 15000))
-            ]).then((data) => {
+            withTimeout(fetchAvailability(), 15000).then((data) => {
                 if (cancelled) return;
                 if (Array.isArray(data)) setAvailability(data);
                 else setInitialLoadError('La respuesta de horarios no es válida.');

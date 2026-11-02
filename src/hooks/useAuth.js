@@ -23,6 +23,7 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (cancelled) return;
       setSession(nextSession);
+      if (nextSession) setAuthInitError('');
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') finish(nextSession);
     });
     supabase.auth.getSession().then(({ data, error }) => {

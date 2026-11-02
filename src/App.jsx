@@ -438,6 +438,16 @@ export default function App() {
   const startupReady = !authLoading && (!isSupabaseConfigured || !owner ||
     (patientsLoadedFor === owner && appointmentsLoadedFor === owner && availabilityLoadedFor === owner));
   const startupErrors = [authInitError, patientsLoadError, appointmentsLoadError, availabilityLoadError].filter(Boolean);
+  const loadFailed = startupReady && startupErrors.length > 0;
+  const loadingData = !startupReady;
+  const startupIssue = (
+    <section role="alert" className="mx-auto max-w-3xl rounded-xl border border-amber-300 bg-amber-50 p-5 text-amber-950">
+      <h2 className="font-bold">No se pudieron cargar los datos de MINA.</h2>
+      <p className="mt-2 text-sm">Por seguridad, la agenda y los expedientes no se muestran hasta confirmar una carga correcta.</p>
+      <p className="mt-2 text-sm">{startupErrors.join(' ')}</p>
+      <button type="button" className="toolbar-btn mt-3" onClick={() => window.location.reload()}>Reintentar carga</button>
+    </section>
+  );
   return (
     <>
       <Splash ready={startupReady} onRevealStart={handleSplashReveal} />
@@ -463,13 +473,6 @@ export default function App() {
       <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main id="main-content" className="space-y-6">
-        {startupReady && startupErrors.length > 0 && (
-          <div role="alert" className="mx-auto max-w-3xl rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-950">
-            <strong>No se pudieron cargar todos los datos de MINA.</strong>
-            <p className="mt-1 text-sm">{startupErrors.join(' ')}</p>
-            <button type="button" className="toolbar-btn mt-2" onClick={() => window.location.reload()}>Reintentar carga</button>
-          </div>
-        )}
         <div aria-live="polite">
           {bannerAlert && (
             <article role="status" className={`mina-toast ${bannerAlert.type === 'error' ? 'mina-toast-error' : ''}`}>
@@ -486,7 +489,11 @@ export default function App() {
           )}
         </div>
 
-        {(!session && isSupabaseConfigured) ? (
+        {loadFailed ? (
+          startupIssue
+        ) : loadingData ? (
+          <p role="status" className="p-12 text-center text-slate-600">Cargando tu agenda…</p>
+        ) : (!session && isSupabaseConfigured) ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
             {import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL ? (
               <img src={import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL}

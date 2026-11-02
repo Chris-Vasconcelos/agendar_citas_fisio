@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchPatients, savePatient as apiSavePatient, deletePatient as apiDeletePatient } from '../services/patientService';
 import { INITIAL_DEMO_PATIENTS } from '../utils/constants';
 import { isSupabaseConfigured } from '../lib/supabase';
+import { withTimeout } from '../utils/withTimeout';
 
 export function usePatients(session, appendAuditLog, setBannerAlert, appointmentsRef) {
     const [patients, setPatients] = useState(() => {
@@ -32,10 +33,7 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
         setLoadedFor(null);
         setInitialLoadError('');
         if (owner) {
-            Promise.race([
-                fetchPatients(),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('Tiempo de espera agotado')), 15000))
-            ]).then((data) => {
+            withTimeout(fetchPatients(), 15000).then((data) => {
                 if (cancelled) return;
                 if (Array.isArray(data)) setPatients(data);
                 else setInitialLoadError('La respuesta de patients no es válida.');
