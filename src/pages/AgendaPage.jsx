@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Clock, CheckCircle2, Edit3, ClipboardList, MessageCircle, XCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, CheckCircle2, Eye, Edit3, ClipboardList, MessageCircle, XCircle } from 'lucide-react';
 import { addMinutesToTimeStr, getTodayDateString, formatDateHuman, formatTimeShort } from '../utils/date';
 
 export function AgendaPage({
@@ -36,13 +36,13 @@ export function AgendaPage({
     <section aria-labelledby="heading-agenda" className="mina-agenda">
       <div className="mina-agenda-heading">
         <h2 id="heading-agenda">Agenda</h2>
-        <p>Calendario de citas</p>
+
       </div>
 
       <div className="mina-agenda-overview" aria-label="Resumen de agenda">
-        <span><strong>{activeDayAppointments.length}</strong> citas del día</span>
-        <span><strong>{weeklyTotalActive}</strong> esta semana</span>
-        <span><strong>{completedNotesTodayCount}</strong> notas registradas</span>
+        <span><strong>{activeDayAppointments.length}</strong> citas del día seleccionado</span>
+        <span><strong>{weeklyTotalActive}</strong> citas esta semana</span>
+        <span><strong>{completedNotesTodayCount}</strong> notas del día seleccionado</span>
         {allergyAlertsTodayCount > 0 && (
           <span className="mina-agenda-alert" role="status">
             <strong>⚠ {allergyAlertsTodayCount}</strong> {allergyAlertsTodayCount === 1 ? 'alerta de alergia' : 'alertas de alergia'}
@@ -69,7 +69,7 @@ export function AgendaPage({
             </div>
             <span className="mina-calendar-period">
               {calendarViewMode === 'week'
-                ? `${weekDays[0]?.dayNumber} ${weekDays[0]?.monthShort} – ${weekDays[6]?.dayNumber} ${weekDays[6]?.monthShort}`
+                ? `${weekDays[0]?.dayNumber} ${weekDays[0]?.monthShort} – ${weekDays[6]?.dayNumber} ${weekDays[6]?.monthShort} ${weekDays[6]?.dateStr?.slice(0, 4)}`
                 : formatDateHuman(selectedDate)}
             </span>
           </div>
@@ -90,7 +90,7 @@ export function AgendaPage({
           </div>
         </div>
 
-        <div className="mina-week-strip" aria-label="Elegir día de la semana">
+        {calendarViewMode === 'day' && <div className="mina-week-strip" aria-label="Elegir día de la semana">
           {weekDays.map((wd) => {
             const isSelected = wd.dateStr === selectedDate;
             const isToday = wd.dateStr === getTodayDateString();
@@ -105,13 +105,13 @@ export function AgendaPage({
                   {isToday && <span className="mina-day-today" title="Hoy" aria-label="Hoy" />}
                 </span>
                 <span className="mina-day-meta">
-                  {wd.isActive ? `${wd.rule.start_time}–${wd.rule.end_time}` : 'Cerrado'}
+                  {wd.isActive ? `${wd.rule.start_time.slice(0,5)}–${wd.rule.end_time.slice(0,5)}` : 'Cerrado'}
                 </span>
                 <span className="mina-day-count">{wd.activeCount} {wd.activeCount === 1 ? 'cita' : 'citas'}</span>
               </button>
             );
           })}
-        </div>
+        </div>}
 
         {calendarViewMode === 'week' && dailyHourlySlots.length === 0 && (
           <div className="mina-calendar-closed">
@@ -136,7 +136,7 @@ export function AgendaPage({
         <div className="mina-week-table min-w-0 max-w-full">
           <div className="calendar-scroll-wrapper">
             <table
-              className="calendar-grid-table"
+              className="calendar-grid-table mina-compact-week-grid"
               aria-label="Calendario semanal horizontal de citas por día y hora"
             >
               <thead>
@@ -172,31 +172,20 @@ export function AgendaPage({
                                 setSelectedDate(wd.dateStr);
                                 setCalendarViewMode('day');
                               }}
-                              className="text-left text-sm font-bold text-[#004070] hover:underline truncate"
+                              className="mina-grid-day-button"
                             >
-                              {wd.fullName} {wd.dayNumber}/{wd.dateStr.slice(5, 7)}
+                              {wd.shortName.toUpperCase()} {wd.dayNumber}
                             </button>
-                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white border border-slate-400 text-[#222222] shrink-0">
+                            <span className="mina-grid-day-count">
                               {wd.activeCount}
                             </span>
                           </div>
-                          {wd.isActive ? (
-                            <div className="text-[11px] font-medium text-slate-600 mt-1 truncate">
-                              {wd.rule.start_time} – {wd.rule.end_time} 
-                            </div>
-                          ) : (
+                          {wd.isActive ? null : (
                             <div className="flex items-center justify-between gap-1 mt-1">
                               <span className="text-[11px] font-medium text-slate-500 truncate">
                                 Cerrado
                               </span>
-                              <button
-                                type="button"
-                                onClick={() => handleEnableDayNow(wd.dayOfWeek)}
-                                className="slot-btn-primary flex-none"
-                                title={`Activar ${wd.fullName}`}
-                              >
-                                + Activar día
-                              </button>
+
                             </div>
                           )}
                         </th>
@@ -213,9 +202,7 @@ export function AgendaPage({
                     <tr key={hourStr}>
                       <th scope="row" className="calendar-hour-col">
                         <div className="text-sm font-bold text-[#222222]">{hourStr}</div>
-                        <div className="text-[11px] font-medium text-slate-600">
-                          a {nextHourStr}
-                        </div>
+
                       </th>
 
                       {weekDays
@@ -260,11 +247,9 @@ export function AgendaPage({
                             return (
                               <td
                                 key={`${wd.dateStr}-${hourStr}`}
-                                className="bg-slate-100/90 text-center align-middle"
+                                className="mina-closed-cell"
                               >
-                                <span className="text-xs text-slate-500 font-semibold">
-                                  Cerrado
-                                </span>
+
                               </td>
                             );
                           }
@@ -276,89 +261,39 @@ export function AgendaPage({
                                 wd.dateStr === selectedDate ? 'bg-[#f8fbff]' : 'bg-white'
                               }
                             >
-                              <div className="space-y-1.5">
+                              <div className="mina-hour-lanes">
                                 {[1, 2].map((slotNum) => {
                                   const apt = slotNum === 1 ? slot1Apt : slot2Apt;
                                   if (apt) {
                                     const pt = patientsById.get(apt.patient_id);
-                                    const hasAllergy =
-                                      pt?.allergies &&
-                                      pt.allergies.toLowerCase() !== 'ninguna' &&
-                                      pt.allergies.toLowerCase() !== 'ninguna conocida';
-                                    const hasNotes = Boolean(
-                                      apt.treatment_notes && apt.treatment_notes.trim()
-                                    );
-
+                                    const hasAllergy = pt?.allergies &&
+                                      !['ninguna', 'ninguna conocida'].includes(pt.allergies.trim().toLowerCase());
                                     return (
-                                      <div
-                                        key={`slot-${slotNum}`}
-                                        className={`calendar-booked-slot ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}
-                                      >
-                                        <div className="slot-card-header">
-                                          <span className="text-[11px] font-bold text-[#004070]">
-                                            Espacio {slotNum}
-                                          </span>
-                                          <span className="mina-status-pill">
-                                            {apt.status === 'completed' ? 'Completada' : apt.status === 'no_show' ? 'No asistió' : hasNotes ? '✓ Nota' : 'Programada'}
-                                          </span>
-                                        </div>
-
-                                        <div className="slot-card-patient">
-                                          {pt?.full_name || 'Paciente'}
-                                        </div>
-
-                                        {hasAllergy && (
-                                          <div className="slot-card-allergy">
-                                            ⚠️ {pt.allergies}
-                                          </div>
-                                        )}
-
-                                        <div className="slot-card-actions">
-                                          <button
-                                            type="button"
-                                            onClick={() => openEditAppointmentModal(apt)}
-                                            className="slot-btn-primary"
-                                            title={
-                                              hasNotes
-                                                ? 'Ver o editar nota de sesión'
-                                                : 'Atender cita y registrar nota'
-                                            }
-                                          >
-                                            {hasNotes ? 'Ver / Nota' : 'Atender'}
-                                          </button>
-                                          {pt && (
-                                            <button
-                                              type="button"
-                                              onClick={() => setSelectedPatientForRecord(pt)}
-                                              className="slot-btn-secondary"
-                                              title="Ver expediente clínico"
-                                            >
-                                              Ficha
-                                            </button>
-                                          )}
-                                        </div>
+                                      <div key={`slot-${slotNum}`}
+                                        className={`mina-week-appointment ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}>
+                                        <button type="button" className="mina-week-appointment-main"
+                                          onClick={() => openEditAppointmentModal(apt)}
+                                          title={`Abrir cita de ${pt?.full_name || 'Paciente'}`}
+                                          aria-label={`Abrir cita de ${pt?.full_name || 'Paciente'} a las ${hourStr}`}>
+                                          <span className="mina-week-appointment-name">{pt?.full_name || 'Paciente'}</span>
+                                          <span className="mina-week-appointment-state">{apt.status === 'completed' ? 'Atendida' : apt.status === 'no_show' ? 'No asistió' : 'Programada'}</span>
+                                          {hasAllergy && <span className="mina-week-allergy" title={`Alergia: ${pt.allergies}`}>⚠ Alergia</span>}
+                                        </button>
+                                        {pt && <button type="button" className="mina-week-record"
+                                          onClick={() => setSelectedPatientForRecord(pt)}
+                                          aria-label={`Expediente de ${pt.full_name}`} title="Expediente">
+                                          <Eye className="w-3.5 h-3.5" aria-hidden="true" />
+                                        </button>}
                                       </div>
                                     );
                                   }
-
                                   return (
-                                    <button
-                                      key={`slot-${slotNum}`}
-                                      type="button"
-                                      onClick={() =>
-                                        openCreateAppointmentModal(
-                                          hourStr,
-                                          String(slotNum),
-                                          wd.dateStr
-                                        )
-                                      }
-                                      className="calendar-empty-slot"
-                                      title={`Agendar en Espacio ${slotNum} a las ${hourStr}`}
-                                    >
-                                      <span>+ Espacio {slotNum}</span>
-                                      <span className="text-[11px] font-normal opacity-75 shrink-0">
-                                        {hourStr}
-                                      </span>
+                                    <button key={`slot-${slotNum}`} type="button"
+                                      onClick={() => openCreateAppointmentModal(hourStr, String(slotNum), wd.dateStr)}
+                                      className="mina-week-empty-lane"
+                                      title={`Nueva cita: ${hourStr}, espacio ${slotNum}`}
+                                      aria-label={`Agendar ${wd.fullName} a las ${hourStr} en espacio ${slotNum}`}>
+                                      <span aria-hidden="true">+</span>
                                     </button>
                                   );
                                 })}

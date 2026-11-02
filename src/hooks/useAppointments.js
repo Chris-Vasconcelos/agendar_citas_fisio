@@ -87,7 +87,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
     }, [appointments]);
 
 
-    const validateAppointmentConstraints = (startISO, endISO, requestedSlot = 'auto', ignoreAppointmentId = null) => {
+    const validateAppointmentConstraints = (startISO, endISO, requestedSlot = 'auto', ignoreAppointmentId = null, patientId = null) => {
         const startMs = new Date(startISO).getTime();
         const endMs = new Date(endISO).getTime();
 
@@ -110,6 +110,14 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
           const aEnd = new Date(apt.end_time).getTime();
           return startMs < aEnd && aStart < endMs;
         });
+
+        if (patientId && overlappingActive.some((a) => String(a.patient_id) === String(patientId))) {
+          return {
+            valid: false,
+            field: 'patient_id',
+            error: 'Este paciente ya tiene una cita en ese horario. Selecciona otra hora.'
+          };
+        }
 
         const occupiedSlots = new Set(overlappingActive.map((a) => Number(a.slot_number || 1)));
 

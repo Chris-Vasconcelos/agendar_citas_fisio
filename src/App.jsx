@@ -49,6 +49,11 @@ export default function App() {
   // Modales adicionales y alertas
   const [showPrivacyNoticeModal, setShowPrivacyNoticeModal] = useState(false);
   const [bannerAlert, setBannerAlert] = useState(null);
+  useEffect(() => {
+    if (!bannerAlert) return;
+    const timeout = setTimeout(() => setBannerAlert(null), 4000);
+    return () => clearTimeout(timeout);
+  }, [bannerAlert]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [restoreReport, setRestoreReport] = useState(null);
 
@@ -209,7 +214,7 @@ export default function App() {
     const startISO = new Date(`${form.date}T${form.startTime}:00`).toISOString();
     const endISO = new Date(`${form.date}T${form.endTime}:00`).toISOString();
 
-    const validation = validateAppointmentConstraints(startISO, endISO, form.slot_number, editId);
+    const validation = validateAppointmentConstraints(startISO, endISO, form.slot_number, editId, form.patient_id);
     if (!validation.valid) {
       if (validation.field) setAptFieldErrors({ [validation.field]: validation.error });
       setAptFormError(validation.error);
@@ -436,14 +441,15 @@ export default function App() {
       <main id="main-content" className="space-y-6">
         <div aria-live="polite">
           {bannerAlert && (
-            <article className="craft-card flex-row items-center justify-between gap-2 text-sm font-semibold">
-              <span>{bannerAlert.text}</span>
+            <article role="status" className={`mina-toast ${bannerAlert.type === 'error' ? 'mina-toast-error' : ''}`}>
+              <span>{bannerAlert.text.replace(/(\d{2}:\d{2}):\d{2}/g, '$1')}</span>
               <button
                 type="button"
                 onClick={() => setBannerAlert(null)}
-                className="secondary-button text-xs"
+                className="text-xs font-medium ml-3 text-slate-500"
+                aria-label="Cerrar aviso"
               >
-                Cerrar
+                ×
               </button>
             </article>
           )}
