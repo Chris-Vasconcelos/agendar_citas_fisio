@@ -415,7 +415,7 @@ export default function App() {
   ).length;
 
   return (
-    <div className="dash-main pb-24" data-theme={designSkill}>
+    <div className="dash-main mina-app-shell pb-24 md:pb-8" data-theme={designSkill}>
       <Header
         designSkill={designSkill}
         setDesignSkill={setDesignSkill}
@@ -430,6 +430,8 @@ export default function App() {
         patientsCount={patients.length}
         selectedDate={selectedDate}
       />
+
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main id="main-content" className="space-y-6">
         <div aria-live="polite">
@@ -587,7 +589,6 @@ export default function App() {
         setAuthSuccess={setAuthSuccess}
       />
 
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
 }
