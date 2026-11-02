@@ -30,3 +30,17 @@ test('HTML shell does not expose static demo clinical records', () => {
   assert.doesNotMatch(html, /María Fernanda López|Carlos Eduardo Ramírez|Fisio Citas/);
   assert.match(html, /id="root"/);
 });
+
+test('weekly cards retain patient names, full time, and only exceptional statuses', () => {
+  assert.match(agenda, /mina-week-appointment-name/);
+  assert.match(agenda, /mina-week-appointment-time/);
+  assert.match(agenda, /mina-week-allergy-icon/);
+  assert.doesNotMatch(agenda, /'Programada'<\/span>/);
+  assert.match(agenda, /weeklyTotalActive === 1/);
+});
+test('patient duplicate notice and save guidance are kept in the form', () => {
+  const patientModal = readFileSync(new URL('../src/components/modals/PatientModal.jsx', import.meta.url), 'utf8');
+  assert.match(patientModal, /mina-patient-duplicate-alert/);
+  assert.match(patientModal, /mina-patient-save-hint/);
+  assert.match(patientModal, /confirmedDifferentPerson/);
+});

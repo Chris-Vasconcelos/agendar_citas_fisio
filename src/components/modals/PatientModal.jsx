@@ -95,7 +95,7 @@ export function PatientModal({
             </div>
           </div>
 
-          {duplicates.length > 0 && <div role="alert" className="mb-3 rounded-md border border-amber-500 bg-amber-50 p-3 text-xs text-amber-950"><strong>Posible paciente duplicado; verifica antes de guardar.</strong>{duplicates.slice(0, 3).map((p) => <p key={p.id}>{p.full_name} · {p.phone || "Sin teléfono"} · ID: {p.id.slice(0, 8)}</p>)}<p>No se fusionan expedientes automáticamente.</p><label className="flex gap-2 items-center mt-2"><input type="checkbox" checked={confirmedDifferentPerson} onChange={(e) => setConfirmedDifferentPerson(e.target.checked)} />Confirmo que verifiqué y se trata de una persona distinta.</label></div>}
+
           <div className="form-group">
             <label htmlFor="patient-age" className="form-label">
               Edad <span className="required-asterisk" aria-hidden="true">*</span>
@@ -139,7 +139,22 @@ export function PatientModal({
                 <span className="error-message active">{patientFieldErrors.phone}</span>
               )}
             </div>
+
           </div>
+
+          {duplicates.length > 0 && (
+            <div role="alert" className="mina-patient-duplicate-alert">
+              <strong>Posible expediente duplicado</strong>
+              {duplicates.slice(0, 3).map((p) => (
+                <p key={p.id}>{p.full_name} · {p.phone || 'Sin teléfono'}</p>
+              ))}
+              <label>
+                <input type="checkbox" checked={confirmedDifferentPerson}
+                  onChange={(e) => setConfirmedDifferentPerson(e.target.checked)} />
+                Verifiqué que se trata de una persona distinta.
+              </label>
+            </div>
+          )}
 
           </div>
 
@@ -282,6 +297,13 @@ export function PatientModal({
           </div>
 
           <div className="mina-patient-footer">
+            <p className="mina-patient-save-hint" role="status">
+              {!patientForm.privacy_consent
+                ? 'Confirma el aviso de privacidad para guardar.'
+                : duplicates.length > 0 && !confirmedDifferentPerson
+                  ? 'Confirma que no es un paciente duplicado.'
+                  : ' '}
+            </p>
             <button
               type="button"
               onClick={onClose}
@@ -290,7 +312,7 @@ export function PatientModal({
             >
               Cancelar
             </button>
-            <button type="submit" className="submit-button" disabled={isSaving || !patientForm.privacy_consent}>
+            <button type="submit" className="submit-button" disabled={isSaving || !patientForm.privacy_consent || (duplicates.length > 0 && !confirmedDifferentPerson)}>
               {isSaving ? 'Guardando...' : 'Guardar paciente'}
             </button>
           </div>
