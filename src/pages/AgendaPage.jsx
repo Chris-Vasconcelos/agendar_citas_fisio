@@ -266,7 +266,7 @@ export function AgendaPage({
                                   if (apt) {
                                     const pt = patientsById.get(apt.patient_id);
                                     const hasAllergy = pt?.allergies &&
-                                      !['ninguna', 'ninguna conocida'].includes(pt.allergies.trim().toLowerCase());
+                                      !['ninguna', 'ninguna conocida', 'no preguntado'].includes(pt.allergies.trim().toLowerCase());
                                     return (
                                       <div key={`slot-${slotNum}`}
                                         className={`mina-week-appointment mina-space-${slotNum} ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}>
@@ -427,7 +427,8 @@ export function AgendaPage({
                           const hasAllergies =
                             patient?.allergies &&
                             patient.allergies.toLowerCase() !== 'ninguna' &&
-                            patient.allergies.toLowerCase() !== 'ninguna conocida';
+                            patient.allergies.toLowerCase() !== 'ninguna conocida' &&
+                            patient.allergies.toLowerCase() !== 'no preguntado';
 
                           return (
                             <td key={`day-slot-${slotNum}`} className="bg-white">

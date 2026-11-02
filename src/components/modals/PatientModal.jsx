@@ -15,6 +15,12 @@ export function PatientModal({
   patients = []
 }) {
   const [isSaving, setIsSaving] = useState(false);
+  const [showClinicalDetails, setShowClinicalDetails] = useState(false);
+  const allergyValue = String(patientForm.allergies || '').trim();
+  const allergyMode = !allergyValue || allergyValue.toLocaleLowerCase('es-MX') === 'no preguntado'
+    ? 'unknown' : allergyValue.toLocaleLowerCase('es-MX') === 'ninguna conocida' ? 'none' : 'yes';
+  const setAllergies = (value) => setPatientForm((previous) => ({ ...previous, allergies: value }));
+  React.useEffect(() => setShowClinicalDetails(false), [editingPatientId, isOpen]);
   const duplicates = possibleDuplicatePatients(patients, patientForm, editingPatientId);
   const [confirmedDifferentPerson, setConfirmedDifferentPerson] = useState(false);
   React.useEffect(() => setConfirmedDifferentPerson(false), [patientForm.full_name, patientForm.phone, editingPatientId]);
@@ -23,6 +29,8 @@ export function PatientModal({
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (!patientForm.consultation_reason?.trim()) setShowClinicalDetails(true);
+    if (allergyValue === 'Por especificar') { setShowClinicalDetails(true); setPatientFormError('Describe las alergias antes de guardar.'); return; }
     if (duplicates.length > 0 && !confirmedDifferentPerson) {
       setPatientFormError('Confirma que no se trata de un expediente duplicado.');
       return;
@@ -48,22 +56,23 @@ export function PatientModal({
       aria-modal="true"
       aria-labelledby="modal-patient-title"
     >
-      <div className="form-container my-6 max-h-[92vh] overflow-y-auto">
+      <div className="form-container mina-patient-modal my-6 max-h-[94dvh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 id="modal-patient-title" className="text-lg font-bold text-[#222222]">
-            {editingPatientId ? 'Editar Expediente del Paciente' : 'Alta de Paciente y Expediente'}
+            {editingPatientId ? 'Editar paciente' : 'Nuevo paciente'}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="secondary-button text-xs py-1 px-2.5"
+            className="mina-modal-close" aria-label="Cerrar formulario"
             disabled={isSaving}
           >
-            Cerrar
+            ×
           </button>
         </div>
 
         <form onSubmit={handleSave} noValidate>
+          <div className="mina-patient-basics">
           <div className="form-group">
             <label htmlFor="patient-full-name" className="form-label">
               Nombre completo <span className="required-asterisk" aria-hidden="true">*</span>
@@ -122,7 +131,7 @@ export function PatientModal({
               value={patientForm.phone}
               onChange={(e) => setPatientForm((prev) => ({ ...prev, phone: e.target.value }))}
               aria-invalid={Boolean(patientFieldErrors.phone)}
-              placeholder="Ej. 5512345678"
+              placeholder="Ej. 551 234 5678"
               className="form-input"
             />
             <div aria-live="polite">
@@ -132,13 +141,18 @@ export function PatientModal({
             </div>
           </div>
 
+          </div>
+
+          <details className="mina-clinical-details" open={showClinicalDetails} onToggle={(e) => setShowClinicalDetails(e.currentTarget.open)}>
+            <summary>Datos clínicos (motivo de consulta requerido)</summary>
+            <div className="mina-clinical-details-content">
           <div className="form-group">
             <label htmlFor="patient-reason" className="form-label">
               Motivo de consulta <span className="required-asterisk" aria-hidden="true">*</span>
             </label>
             <textarea
               id="patient-reason"
-              rows={2}
+              rows={3}
               required
               value={patientForm.consultation_reason}
               onChange={(e) =>
@@ -159,16 +173,21 @@ export function PatientModal({
 
           <div className="form-group">
             <label htmlFor="patient-allergies" className="form-label">
-              Alergias (Destacadas en alerta visual durante la consulta)
+              Alergias
             </label>
-            <input
-              id="patient-allergies"
-              type="text"
-              value={patientForm.allergies}
-              onChange={(e) => setPatientForm((prev) => ({ ...prev, allergies: e.target.value }))}
-              placeholder="Ej. Ninguna conocida, AINEs, Penicilina, Látex..."
-              className="form-input"
-            />
+            <div className="mina-allergy-options" role="group" aria-label="Estado de alergias">
+              <label><input type="radio" name="allergy-state" checked={allergyMode === 'unknown'}
+                onChange={() => setAllergies('No preguntado')} /> No preguntado</label>
+              <label><input type="radio" name="allergy-state" checked={allergyMode === 'none'}
+                onChange={() => setAllergies('Ninguna conocida')} /> Ninguna conocida</label>
+              <label><input type="radio" name="allergy-state" checked={allergyMode === 'yes'}
+                onChange={() => setAllergies('Por especificar')} /> Sí</label>
+            </div>
+            {allergyMode === 'yes' && <input id="patient-allergies" type="text"
+              value={allergyValue === 'Por especificar' ? '' : allergyValue}
+              onChange={(e) => setAllergies(e.target.value || 'Por especificar')}
+              placeholder="Ej. Penicilina, látex" className="form-input" aria-label="Descripción de alergias" />}
+            <p className="mina-field-help">Las alergias registradas generan una alerta visible en la agenda.</p>
           </div>
 
           <div className="form-group">
@@ -203,6 +222,9 @@ export function PatientModal({
             />
           </div>
 
+          </div>
+          </details>
+
           <div className="form-group">
             <label htmlFor="patient-email" className="form-label">
               Correo electrónico (opcional)
@@ -220,10 +242,10 @@ export function PatientModal({
 
           <fieldset className="form-fieldset">
             <legend className="form-legend">
-              Consentimiento de Privacidad{' '}
+              Consentimiento de privacidad{' '}
               <span className="required-asterisk" aria-hidden="true">*</span>
             </legend>
-            <div className="flex items-start gap-2 mt-1">
+            <div className="mina-consent-row">
               <input
                 id="patient-privacy-consent"
                 type="checkbox"
@@ -232,16 +254,16 @@ export function PatientModal({
                   setPatientForm((prev) => ({ ...prev, privacy_consent: e.target.checked }))
                 }
                 aria-invalid={Boolean(patientFieldErrors.privacy_consent)}
-                className="h-4 w-4 mt-1"
+                className="mina-consent-checkbox"
               />
-              <label htmlFor="patient-privacy-consent" className="text-xs text-[#222222]">
+              <label htmlFor="patient-privacy-consent" className="mina-consent-label">
                 El paciente aceptó el{' '}
                 <button
                   type="button"
-                  onClick={() => setShowPrivacyNoticeModal(true)}
+                  onClick={(event) => { event.preventDefault(); setShowPrivacyNoticeModal(true); }}
                   className="underline font-bold text-[#004070] cursor-pointer"
                 >
-                  Aviso de Privacidad
+                  Aviso de privacidad
                 </button>{' '}
                 para el registro de su expediente clínico.
               </label>
@@ -259,7 +281,7 @@ export function PatientModal({
             {patientFormError && <div className="error-message active">{patientFormError}</div>}
           </div>
 
-          <div className="flex justify-end gap-2">
+          <div className="mina-patient-footer">
             <button
               type="button"
               onClick={onClose}
@@ -268,8 +290,8 @@ export function PatientModal({
             >
               Cancelar
             </button>
-            <button type="submit" className="submit-button" disabled={isSaving}>
-              {isSaving ? 'Guardando...' : 'Guardar Expediente'}
+            <button type="submit" className="submit-button" disabled={isSaving || !patientForm.privacy_consent}>
+              {isSaving ? 'Guardando...' : 'Guardar paciente'}
             </button>
           </div>
         </form>

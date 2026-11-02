@@ -287,7 +287,7 @@ export default function App() {
       age: numericAge,
       phone: cleanPhone,
       email: cleanEmail,
-      allergies: form.allergies.trim() || 'Ninguna conocida',
+      allergies: form.allergies?.trim() || 'No preguntado',
       previous_studies: form.previous_studies.trim() || 'Sin estudios previos',
       family_history: form.family_history.trim() || 'Sin antecedentes familiares registrados',
       consultation_reason: cleanReason,
@@ -421,7 +421,8 @@ export default function App() {
     return (
       pt?.allergies &&
       pt.allergies.toLowerCase() !== 'ninguna' &&
-      pt.allergies.toLowerCase() !== 'ninguna conocida'
+      pt.allergies.toLowerCase() !== 'ninguna conocida' &&
+      pt.allergies.toLowerCase() !== 'no preguntado'
     );
   }).length;
   const completedNotesTodayCount = activeDayAppointments.filter(

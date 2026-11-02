@@ -62,7 +62,8 @@ export function PatientsPage({
           const hasAllergies =
             pt.allergies &&
             pt.allergies.toLowerCase() !== 'ninguna' &&
-            pt.allergies.toLowerCase() !== 'ninguna conocida';
+            pt.allergies.toLowerCase() !== 'ninguna conocida' &&
+            pt.allergies.toLowerCase() !== 'no preguntado';
 
           return (
             <article
@@ -131,7 +132,7 @@ export function PatientsPage({
                   <strong>Motivo de consulta:</strong> {pt.consultation_reason || '-'}
                 </div>
                 <div>
-                  <strong>Alergias:</strong> {pt.allergies || 'Ninguna conocida'}
+                  <strong>Alergias:</strong> {pt.allergies || 'No preguntado'}
                 </div>
                 <div>
                   <strong>Estudios previos:</strong> {pt.previous_studies || '-'}
