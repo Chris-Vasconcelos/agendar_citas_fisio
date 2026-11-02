@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Clock, CheckCircle2, Edit3, ClipboardList, MessageCircle, XCircle } from 'lucide-react';
 import { addMinutesToTimeStr, getTodayDateString, formatDateHuman, formatTimeShort } from '../utils/date';
 
@@ -33,108 +33,81 @@ export function AgendaPage({
   };
 
   return (
-    <section aria-labelledby="heading-agenda" className="mina-agenda">
-      <div className="mina-agenda-heading">
-        <h2 id="heading-agenda">Agenda</h2>
-        <p>Calendario de citas</p>
-      </div>
+    <section aria-labelledby="heading-agenda" className="mina-agenda space-y-4">
 
-      <div className="mina-agenda-overview" aria-label="Resumen de agenda">
-        <span><strong>{activeDayAppointments.length}</strong> citas del día</span>
-        <span><strong>{weeklyTotalActive}</strong> esta semana</span>
-        <span><strong>{completedNotesTodayCount}</strong> notas registradas</span>
-        {allergyAlertsTodayCount > 0 && (
-          <span className="mina-agenda-alert" role="status">
-            <strong>⚠ {allergyAlertsTodayCount}</strong> {allergyAlertsTodayCount === 1 ? 'alerta de alergia' : 'alertas de alergia'}
-          </span>
-        )}
+      <div className="mina-page-heading">
+        <div>
+          <h2 id="heading-agenda" className="mina-page-title">Agenda</h2>
+          <p className="mina-date-subtitle capitalize">{formatDateHuman(selectedDate)}</p>
+        </div>
+        <div className="mina-compact-metrics" aria-label="Resumen de citas">
+          <span><strong>{activeDayAppointments.length}</strong> hoy</span>
+          <span><strong>{weeklyTotalActive}</strong> esta semana</span>
+          {allergyAlertsTodayCount > 0 && (
+            <span className="mina-metric-alert" role="status">⚠ {allergyAlertsTodayCount} con alergias</span>
+          )}
+        </div>
       </div>
-
-      <article className="mina-calendar-panel" aria-label="Calendario del consultorio">
-        <div className="mina-calendar-toolbar">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="mina-calendar-navigation" aria-label="Mover fecha">
-              <button type="button" className="toolbar-btn"
-                onClick={() => changeSelectedDateByDays(calendarViewMode === 'week' ? -7 : -1)}
-                aria-label={calendarViewMode === 'week' ? 'Semana anterior' : 'Día anterior'}>
-                <ChevronLeft className="w-4 h-4" aria-hidden="true" />
-              </button>
-              <button type="button" className="toolbar-btn"
-                onClick={() => setSelectedDate(getTodayDateString())}>Hoy</button>
-              <button type="button" className="toolbar-btn"
-                onClick={() => changeSelectedDateByDays(calendarViewMode === 'week' ? 7 : 1)}
-                aria-label={calendarViewMode === 'week' ? 'Semana siguiente' : 'Día siguiente'}>
-                <ChevronRight className="w-4 h-4" aria-hidden="true" />
-              </button>
-            </div>
-            <span className="mina-calendar-period">
-              {calendarViewMode === 'week'
-                ? `${weekDays[0]?.dayNumber} ${weekDays[0]?.monthShort} – ${weekDays[6]?.dayNumber} ${weekDays[6]?.monthShort}`
-                : formatDateHuman(selectedDate)}
+      <article className="mina-agenda-panel">
+        <div className="mina-agenda-toolbar">
+          <div className="mina-date-controls">
+            <button type="button" className="mina-date-arrow"
+              onClick={() => changeSelectedDateByDays(calendarViewMode === 'week' ? -7 : -1)}
+              aria-label={calendarViewMode === 'week' ? 'Semana anterior' : 'Día anterior'}>
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button type="button" className="mina-today-btn" onClick={() => setSelectedDate(getTodayDateString())}>Hoy</button>
+            <button type="button" className="mina-date-arrow"
+              onClick={() => changeSelectedDateByDays(calendarViewMode === 'week' ? 7 : 1)}
+              aria-label={calendarViewMode === 'week' ? 'Semana siguiente' : 'Día siguiente'}>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+            <span className="mina-week-label">
+              {weekDays[0]?.dayNumber} {weekDays[0]?.monthShort} – {weekDays[6]?.dayNumber} {weekDays[6]?.monthShort}
             </span>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor="agenda-date-picker" className="sr-only">Ir a una fecha</label>
+          <div className="mina-toolbar-right">
+            <label htmlFor="agenda-date-picker" className="sr-only">Elegir fecha</label>
             <input id="agenda-date-picker" type="date" value={selectedDate}
               onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-              className="mina-calendar-date" aria-label="Seleccionar fecha" />
-            <div className="mina-calendar-views" role="group" aria-label="Vista del calendario">
-              <button type="button" onClick={() => setCalendarViewMode('week')}
-                aria-pressed={calendarViewMode === 'week'}
-                className={calendarViewMode === 'week' ? 'toolbar-btn-active' : 'toolbar-btn'}>Semana</button>
-              <button type="button" onClick={() => setCalendarViewMode('day')}
-                aria-pressed={calendarViewMode === 'day'}
-                className={calendarViewMode === 'day' ? 'toolbar-btn-active' : 'toolbar-btn'}>Día</button>
+              className="mina-date-input" />
+            <div className="mina-view-switch" role="group" aria-label="Vista del calendario">
+              <button type="button" aria-pressed={calendarViewMode === 'week'}
+                className={calendarViewMode === 'week' ? 'is-active' : ''}
+                onClick={() => setCalendarViewMode('week')}>Semana</button>
+              <button type="button" aria-pressed={calendarViewMode === 'day'}
+                className={calendarViewMode === 'day' ? 'is-active' : ''}
+                onClick={() => setCalendarViewMode('day')}>Día</button>
             </div>
           </div>
         </div>
-
-        <div className="mina-week-strip" aria-label="Elegir día de la semana">
+        <div className="mina-day-strip" role="group" aria-label="Seleccionar día de la semana">
           {weekDays.map((wd) => {
             const isSelected = wd.dateStr === selectedDate;
             const isToday = wd.dateStr === getTodayDateString();
             return (
-              <button type="button" key={wd.dateStr}
-                onClick={() => setSelectedDate(wd.dateStr)}
-                aria-pressed={isSelected}
-                aria-label={`${wd.fullName} ${wd.dayNumber}, ${wd.activeCount} citas`}
-                className={`calendar-day-pill ${isSelected ? 'calendar-day-pill-active' : ''}`}>
-                <span className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wide">{wd.shortName} {wd.dayNumber}</span>
-                  {isToday && <span className="mina-day-today" title="Hoy" aria-label="Hoy" />}
-                </span>
-                <span className="mina-day-meta">
-                  {wd.isActive ? `${wd.rule.start_time}–${wd.rule.end_time}` : 'Cerrado'}
-                </span>
-                <span className="mina-day-count">{wd.activeCount} {wd.activeCount === 1 ? 'cita' : 'citas'}</span>
+              <button key={wd.dateStr} type="button" onClick={() => setSelectedDate(wd.dateStr)}
+                aria-pressed={isSelected} aria-label={`${wd.fullName} ${wd.dayNumber}, ${wd.activeCount} citas`}
+                className={`mina-day-pill ${isSelected ? 'is-selected' : ''} ${isToday ? 'is-today' : ''} ${!wd.isActive ? 'is-closed' : ''}`}>
+                <span className="mina-day-name">{wd.shortName}</span>
+                <span className="mina-day-number">{wd.dayNumber}</span>
+                <span className="mina-day-count">{wd.isActive ? (wd.activeCount ? `${wd.activeCount} citas` : 'Libre') : 'Cerrado'}</span>
               </button>
             );
           })}
         </div>
-
-        {dailyHourlySlots.length === 0 && (
-          <div className="mina-calendar-closed">
-            <p className="m-0 text-sm text-slate-600"><strong>{formatDateHuman(selectedDate)}:</strong> día sin horario activo.</p>
-            <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
-              <button type="button" className="toolbar-btn-active"
-                onClick={() => {
-                  const [y,m,d] = selectedDate.split('-').map(Number);
-                  handleEnableDayNow(new Date(y,m-1,d).getDay());
-                }}>
-                <CheckCircle2 className="w-4 h-4" aria-hidden="true" />Activar día
-              </button>
-              <button type="button" className="toolbar-btn" onClick={() => setActiveTab('availability')}>
-                <Clock className="w-4 h-4" aria-hidden="true" />Configurar horario
-              </button>
-            </div>
+        {calendarViewMode === 'week' && dailyHourlySlots.length === 0 && (
+          <div className="mina-closed-hint">
+            <span>Este día está cerrado.</span>
+            <button type="button" className="mina-text-action" onClick={() => setActiveTab('availability')}>Revisar horarios</button>
           </div>
         )}
+      </article>
 
       {/* MODO 1: CALENDARIO SEMANAL HORIZONTAL (Columnas = Días Lunes a Sábado/Domingo, Filas = Horas) */}
       {calendarViewMode === 'week' && (
-        <div className="mina-week-table min-w-0 max-w-full">
-          <div className="calendar-scroll-wrapper">
+        <div className="space-y-2 min-w-0 max-w-full">
+          <div className="calendar-scroll-wrapper mina-calendar-week" tabIndex={0} aria-label="Calendario semanal: desplazar horizontalmente para ver otros días">
             <table
               className="calendar-grid-table"
               aria-label="Calendario semanal horizontal de citas por día y hora"
@@ -162,7 +135,7 @@ export function AgendaPage({
                           key={wd.dateStr}
                           scope="col"
                           className={
-                            isSelected ? 'mina-selected-day' : ''
+                            isSelected ? 'bg-[#eef5fb]' : 'bg-[#e8eef3]'
                           }
                         >
                           <div className="flex items-center justify-between gap-2">
@@ -182,7 +155,7 @@ export function AgendaPage({
                           </div>
                           {wd.isActive ? (
                             <div className="text-[11px] font-medium text-slate-600 mt-1 truncate">
-                              {wd.rule.start_time} – {wd.rule.end_time} 
+                              {wd.rule.start_time} – {wd.rule.end_time} · 2 espacios
                             </div>
                           ) : (
                             <div className="flex items-center justify-between gap-1 mt-1">
@@ -292,13 +265,13 @@ export function AgendaPage({
                                     return (
                                       <div
                                         key={`slot-${slotNum}`}
-                                        className={`calendar-booked-slot ${apt.status === 'completed' ? 'completed' : ''}`}
+                                        className="calendar-booked-slot mina-booked-week" data-status={apt.status}
                                       >
                                         <div className="slot-card-header">
                                           <span className="text-[11px] font-bold text-[#004070]">
                                             Espacio {slotNum}
                                           </span>
-                                          <span className="mina-status-pill">
+                                          <span className="mina-slot-status">
                                             {apt.status === 'completed' || hasNotes
                                               ? '✓ Nota'
                                               : 'Programada'}
@@ -379,22 +352,11 @@ export function AgendaPage({
 
       {/* MODO 2: VISTA DÍA EN CALENDARIO HORIZONTAL DE 2 COLUMNAS (Hora | Espacio 1 | Espacio 2) */}
       {calendarViewMode === 'day' && (
-        <div className="mina-day-table min-w-0 max-w-full">
-          <div className="mina-calendar-day-title">
-            <h2 className="capitalize">
-              {formatDateHuman(selectedDate)}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setCalendarViewMode('week')}
-              className="toolbar-btn"
-            >
-              Ver semana
-            </button>
-          </div>
+        <div className="space-y-3 min-w-0 max-w-full">
+          <div className="mina-day-note">Dos espacios por horario · sesiones de 60 minutos</div>
 
           {dailyHourlySlots.length === 0 ? (
-            <div className="mina-calendar-closed">
+            <div className="mina-closed-day p-6 text-center space-y-3">
               <Calendar className="w-8 h-8 text-[#004070] mx-auto" />
               <h3 className="text-base font-bold text-[#222222]">
                 Consultorio cerrado ({formatDateHuman(selectedDate)})
@@ -423,7 +385,7 @@ export function AgendaPage({
               </div>
             </div>
           ) : (
-            <div className="calendar-scroll-wrapper">
+            <div className="calendar-scroll-wrapper mina-calendar-day" tabIndex={0} aria-label="Calendario diario: desplazar horizontalmente para ver los espacios">
               <table
                 className="calendar-grid-table"
                 aria-label="Calendario diario de 2 espacios simultáneos"
@@ -484,9 +446,9 @@ export function AgendaPage({
                                       selectedDate
                                     )
                                   }
-                                  className="calendar-empty-slot py-2.5"
+                                  className="calendar-empty-slot"
                                 >
-                                  <span>+ Agendar en Espacio {slotNum}</span>
+                                  <span>+ Agendar</span>
                                   <span className="text-xs font-normal opacity-80">
                                     {hourStr} – {nextHourStr}
                                   </span>
@@ -509,12 +471,12 @@ export function AgendaPage({
 
                           return (
                             <td key={`day-slot-${slotNum}`} className="bg-white">
-                              <div className="calendar-booked-slot">
+                              <div className="calendar-booked-slot mina-booked-day" data-status={apt.status}>
                                 <div className="slot-card-header">
                                   <span className="text-sm font-bold text-[#222222]">
                                     {patient?.full_name || 'Paciente'}
                                   </span>
-                                  <span className="mina-status-pill">
+                                  <span className="mina-slot-status">
                                     {apt.status === 'completed'
                                       ? 'Completada'
                                       : apt.status === 'no_show'
@@ -524,51 +486,35 @@ export function AgendaPage({
                                 </div>
 
                                 {hasAllergies && (
-                                   <div className="slot-card-allergy">⚠️ Alergia: {patient.allergies}</div>
-                                 )}
-                                 {Boolean(apt.treatment_notes?.trim()) && (
-                                   <p className="mina-note-status">Nota de sesión registrada</p>
-                                 )}
+                                  <div className="slot-card-allergy">⚠ Alergia: {patient.allergies}</div>
+                                )}
 
-                                 <div className="card-actions-responsive pt-1">
-                                  <button
-                                    type="button"
-                                    onClick={() => openEditAppointmentModal(apt)}
-                                    className="toolbar-btn-active"
-                                  >
-                                    <Edit3 className="w-3.5 h-3.5" />
-                                    Atender / nota
+
+                                <div className="mina-appointment-primary-actions">
+                                  <button type="button" onClick={() => openEditAppointmentModal(apt)} className="toolbar-btn-active">
+                                    <Edit3 className="w-3.5 h-3.5" /> Atender / Nota
                                   </button>
                                   {patient && (
-                                    <button
-                                      type="button"
-                                      onClick={() => setSelectedPatientForRecord(patient)}
-                                      className="toolbar-btn"
-                                    >
-                                      <ClipboardList className="w-3.5 h-3.5" />
-                                      Expediente
+                                    <button type="button" onClick={() => setSelectedPatientForRecord(patient)} className="toolbar-btn">
+                                      <ClipboardList className="w-3.5 h-3.5" /> Expediente
                                     </button>
                                   )}
-                                  {cleanPhone && (
-                                    <a
-                                      href={`https://wa.me/52${cleanPhone}?text=${whatsappMsg}`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="toolbar-btn no-underline"
-                                    >
-                                      <MessageCircle className="w-3.5 h-3.5" />
-                                      WhatsApp
-                                    </a>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCancelAppointment(apt)}
-                                    className="toolbar-btn"
-                                  >
-                                    <XCircle className="w-3.5 h-3.5" />
-                                    Cancelar
-                                  </button>
                                 </div>
+                                <details className="mina-appointment-more">
+                                  <summary>Detalles y opciones</summary>
+                                  <div className="mina-appointment-extra">
+                                    {patient?.consultation_reason && <p><strong>Motivo:</strong> {patient.consultation_reason}</p>}
+                                    {apt.treatment_notes && <p><strong>Nota:</strong> {apt.treatment_notes}</p>}
+                                    {cleanPhone && (
+                                      <a href={`https://wa.me/52${cleanPhone}?text=${whatsappMsg}`} target="_blank" rel="noreferrer" className="toolbar-btn no-underline">
+                                        <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                                      </a>
+                                    )}
+                                    <button type="button" onClick={() => handleCancelAppointment(apt)} className="toolbar-btn">
+                                      <XCircle className="w-3.5 h-3.5" /> Cancelar cita
+                                    </button>
+                                  </div>
+                                </details>
                               </div>
                             </td>
                           );
@@ -582,7 +528,6 @@ export function AgendaPage({
           )}
         </div>
       )}
-      </article>
     </section>
   );
 }
