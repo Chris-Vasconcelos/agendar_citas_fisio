@@ -45,7 +45,7 @@ test('patient duplicate notice and save guidance are kept in the form', () => {
   assert.match(patientModal, /confirmedDifferentPerson/);
 });
 
-test('startup readiness waits for authenticated data while splash uses isolated original animation', () => {
+test('splash draws all MINA paths directly before releasing the app', () => {
   const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
   const auth = readFileSync(new URL('../src/hooks/useAuth.js', import.meta.url), 'utf8');
   const splash = readFileSync(new URL('../src/components/layout/Splash.jsx', import.meta.url), 'utf8');
@@ -55,18 +55,16 @@ test('startup readiness waits for authenticated data while splash uses isolated 
   assert.match(app, /appointmentsLoadedFor === owner/);
   assert.match(app, /availabilityLoadedFor === owner/);
   assert.match(auth, /authLoading/);
-  assert.match(splash, /srcDoc=\{logoDocument\}/);
-  assert.match(splash, /pathLength="1"/);
-  assert.match(splash, /stroke-dasharray:1 1/);
-  assert.match(splash, /@keyframes trace/);
-  assert.match(splash, /@keyframes paint/);
-  assert.match(splash, /@keyframes caption/);
-  assert.match(splash, /DRAW_MS = 6000/);
-  assert.match(splash, /LAST_PATH_DELAY_MS = 2000/);
-  assert.match(splash, /frameLoaded/);
-  assert.match(splash, /prefers-reduced-motion/);
+  assert.equal((splash.match(/d: '/g) || []).length, 8);
+  assert.match(splash, /getTotalLength\(\)/);
+  assert.match(splash, /requestAnimationFrame\(frame\)/);
+  assert.match(splash, /stroke-dashoffset/);
+  assert.match(splash, /fill-opacity/);
+  assert.match(splash, /ORIGINAL_CYCLE_MS = 6000/);
+  assert.match(splash, /LAST_DELAY_MS = 2000/);
+  assert.match(splash, /!ready \|\| !drawingDone/);
+  assert.doesNotMatch(splash, /<iframe|srcDoc=|matchMedia\(/);
   assert.match(css, /mina-app-revealing/);
-  assert.doesNotMatch(new URL('../index.html', import.meta.url).pathname, /Iniciando MINA…/);
 });
 
 test('entry transition avoids an unstyled visible skip link and keeps keyboard access', () => {
