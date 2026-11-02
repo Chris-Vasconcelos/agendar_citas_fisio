@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Clock, CheckCircle2, Edit3, ClipboardList, MessageCircle, XCircle } from 'lucide-react';
 import { addMinutesToTimeStr, getTodayDateString, formatDateHuman, formatTimeShort } from '../utils/date';
 
@@ -33,279 +33,107 @@ export function AgendaPage({
   };
 
   return (
-    <section aria-labelledby="heading-agenda" className="space-y-6">
-      {/* Grícula #overview.dash-stat-grid con Diseño Compacto y Minimalista (Opción 1) */}
-      <div id="overview" className="dash-stat-grid" aria-label="Resumen operativo del consultorio">
-        <article className="craft-card craft-kpi-card">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#524634]">
-              Sesiones del Día
-            </span>
-          </div>
-          <div className="text-xl font-bold text-[#1c160e] mb-0.5 leading-snug">
-            {activeDayAppointments.length}{' '}
-            <span className="text-xs font-normal text-[#524634]">
-              / {dailyHourlySlots.length * 2} espacios
-            </span>
-          </div>
-          <p className="text-[11px] font-medium text-[#5c4f3b] capitalize m-0">
-            {formatDateHuman(selectedDate)}
-          </p>
-        </article>
-
-        <article className="craft-card craft-kpi-card">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#524634]">
-              Total en la Semana
-            </span>
-            <span className="typeui-badge typeui-badge-neutral text-[10px] px-2 py-0.5 rounded-full font-medium">
-              Lun – Sáb
-            </span>
-          </div>
-          <div className="text-xl font-bold text-[#1c160e] mb-0.5 leading-snug">
-            {weeklyTotalActive}{' '}
-            <span className="text-xs font-normal text-[#524634]">
-              citas activas
-            </span>
-          </div>
-          <p className="text-[11px] font-medium text-[#5c4f3b] m-0">
-            Semana del {weekDays[0]?.dayNumber} {weekDays[0]?.monthShort} al{' '}
-            {weekDays[6]?.dayNumber} {weekDays[6]?.monthShort}
-          </p>
-        </article>
-
-        <article className="craft-card craft-kpi-card">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#524634]">
-              Alertas de Alergia
-            </span>
-            {allergyAlertsTodayCount > 0 ? (
-              <span className="typeui-badge typeui-badge-danger text-[10px] px-2 py-0.5 rounded-full font-medium">
-                ⚠️ {allergyAlertsTodayCount} en agenda hoy
-              </span>
-            ) : (
-              <span className="typeui-badge typeui-badge-success text-[10px] px-2 py-0.5 rounded-full font-medium">
-                ✓ Sin alertas
-              </span>
-            )}
-          </div>
-          <div className="text-xl font-bold text-[#1c160e] mb-0.5 leading-snug">
-            {allergyAlertsTodayCount}{' '}
-            <span className="text-xs font-normal text-[#524634]">
-              paciente(s)
-            </span>
-          </div>
-          <p className="text-[11px] font-medium text-[#5c4f3b] m-0">
-            Verificación clínica previa a agentes físicos
-          </p>
-        </article>
-
-        <article className="craft-card craft-kpi-card">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[#524634]">
-              Notas de Sesión Hoy
-            </span>
-            <span className="typeui-badge typeui-badge-success text-[10px] px-2 py-0.5 rounded-full font-medium">
-              Evolución
-            </span>
-          </div>
-          <div className="text-xl font-bold text-[#1c160e] mb-0.5 leading-snug">
-            {completedNotesTodayCount}{' '}
-            <span className="text-xs font-normal text-[#524634]">
-              / {activeDayAppointments.length} registradas
-            </span>
-          </div>
-          <p className="text-[11px] font-medium text-[#5c4f3b] m-0">
-            Se llenan al atender o finalizar cada sesión
-          </p>
-        </article>
+    <section aria-labelledby="heading-agenda" className="mina-agenda">
+      <div className="mina-agenda-heading">
+        <h2 id="heading-agenda">Agenda</h2>
+        <p>Calendario de citas</p>
       </div>
 
-      {/* Barra superior de control del Calendario con estilo article.craft-card */}
-      <article className="craft-card">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => changeSelectedDateByDays(-7)}
-              className="toolbar-btn"
-              aria-label="Ir a la semana anterior"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-              
-            </button>
-            <button
-              type="button"
-              onClick={() => changeSelectedDateByDays(-1)}
-              className="toolbar-btn"
-              aria-label="Ir al día anterior"
-            >
-              Anterior
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedDate(getTodayDateString())}
-              className="toolbar-btn font-bold"
-            >
-              Hoy
-            </button>
-            <button
-              type="button"
-              onClick={() => changeSelectedDateByDays(1)}
-              className="toolbar-btn"
-              aria-label="Ir al día siguiente"
-            >
-              Siguiente
-            </button>
-            <button
-              type="button"
-              onClick={() => changeSelectedDateByDays(7)}
-              className="toolbar-btn"
-              aria-label="Ir a la semana siguiente"
-            >
-              
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+      <div className="mina-agenda-overview" aria-label="Resumen de agenda">
+        <span><strong>{activeDayAppointments.length}</strong> citas del día</span>
+        <span><strong>{weeklyTotalActive}</strong> esta semana</span>
+        <span><strong>{completedNotesTodayCount}</strong> notas registradas</span>
+        {allergyAlertsTodayCount > 0 && (
+          <span className="mina-agenda-alert" role="status">
+            <strong>⚠ {allergyAlertsTodayCount}</strong> {allergyAlertsTodayCount === 1 ? 'alerta de alergia' : 'alertas de alergia'}
+          </span>
+        )}
+      </div>
+
+      <article className="mina-calendar-panel" aria-label="Calendario del consultorio">
+        <div className="mina-calendar-toolbar">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="mina-calendar-navigation" aria-label="Mover fecha">
+              <button type="button" className="toolbar-btn"
+                onClick={() => changeSelectedDateByDays(calendarViewMode === 'week' ? -7 : -1)}
+                aria-label={calendarViewMode === 'week' ? 'Semana anterior' : 'Día anterior'}>
+                <ChevronLeft className="w-4 h-4" aria-hidden="true" />
+              </button>
+              <button type="button" className="toolbar-btn"
+                onClick={() => setSelectedDate(getTodayDateString())}>Hoy</button>
+              <button type="button" className="toolbar-btn"
+                onClick={() => changeSelectedDateByDays(calendarViewMode === 'week' ? 7 : 1)}
+                aria-label={calendarViewMode === 'week' ? 'Semana siguiente' : 'Día siguiente'}>
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+            <span className="mina-calendar-period">
+              {calendarViewMode === 'week'
+                ? `${weekDays[0]?.dayNumber} ${weekDays[0]?.monthShort} – ${weekDays[6]?.dayNumber} ${weekDays[6]?.monthShort}`
+                : formatDateHuman(selectedDate)}
+            </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <label htmlFor="agenda-date-picker" className="text-xs font-bold text-[#111827]">
-              Ir a fecha:
-            </label>
-            <input
-              id="agenda-date-picker"
-              type="date"
-              value={selectedDate}
+            <label htmlFor="agenda-date-picker" className="sr-only">Ir a una fecha</label>
+            <input id="agenda-date-picker" type="date" value={selectedDate}
               onChange={(e) => e.target.value && setSelectedDate(e.target.value)}
-              className="form-input w-auto font-bold text-xs py-1 px-2"
-            />
-
-            <div className="inline-flex rounded-md border border-[#52525b] overflow-hidden">
-              <button
-                type="button"
-                onClick={() => setCalendarViewMode('week')}
-                className={
-                  calendarViewMode === 'week'
-                    ? 'toolbar-btn-active rounded-none border-0'
-                    : 'toolbar-btn rounded-none border-0'
-                }
-              >
-                Semana
-              </button>
-              <button
-                type="button"
-                onClick={() => setCalendarViewMode('day')}
-                className={
-                  calendarViewMode === 'day'
-                    ? 'toolbar-btn-active rounded-none border-0'
-                    : 'toolbar-btn rounded-none border-0'
-                }
-              >
-                Día
-              </button>
+              className="mina-calendar-date" aria-label="Seleccionar fecha" />
+            <div className="mina-calendar-views" role="group" aria-label="Vista del calendario">
+              <button type="button" onClick={() => setCalendarViewMode('week')}
+                aria-pressed={calendarViewMode === 'week'}
+                className={calendarViewMode === 'week' ? 'toolbar-btn-active' : 'toolbar-btn'}>Semana</button>
+              <button type="button" onClick={() => setCalendarViewMode('day')}
+                aria-pressed={calendarViewMode === 'day'}
+                className={calendarViewMode === 'day' ? 'toolbar-btn-active' : 'toolbar-btn'}>Día</button>
             </div>
           </div>
         </div>
 
-        {/* Tira Horizontal de los 7 días de la semana (Lunes a Domingo) */}
-        <div>
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <p id="heading-agenda" className="text-xs font-bold text-[#111827] capitalize m-0">
-              Semana del {weekDays[0]?.dayNumber} {weekDays[0]?.monthShort} al{' '}
-              {weekDays[6]?.dayNumber} {weekDays[6]?.monthShort} ·{' '}
-              <span className="text-[#004070]">{formatDateHuman(selectedDate)}</span>
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
-            {weekDays.map((wd) => {
-              const isSelected = wd.dateStr === selectedDate;
-              const isToday = wd.dateStr === getTodayDateString();
-              return (
-                <button
-                  key={wd.dateStr}
-                  type="button"
-                  onClick={() => setSelectedDate(wd.dateStr)}
-                  className={`calendar-day-pill text-left ${
-                    isSelected ? 'calendar-day-pill-active' : ''
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold uppercase tracking-wide">
-                      {wd.shortName} {wd.dayNumber}
-                    </span>
-                    {isToday && (
-                      <span
-                        className={`text-[10px] font-bold px-1.5 py-0.2 rounded-sm ${
-                          isSelected
-                            ? 'bg-white text-[#004070]'
-                            : 'bg-[#004070] text-white'
-                        }`}
-                      >
-                        HOY
-                      </span>
-                    )}
-                  </div>
-                  <div
-                    className={`text-[11px] mt-0.5 ${
-                      isSelected ? 'text-slate-100' : 'text-slate-600'
-                    }`}
-                  >
-                    {wd.isActive
-                      ? `${wd.rule.start_time} – ${wd.rule.end_time}`
-                      : 'Cerrado'}
-                  </div>
-                  <div className="mt-1 flex items-center justify-between">
-                    <span
-                      className={`text-[11px] font-bold ${
-                        isSelected ? 'text-white' : 'text-[#004070]'
-                      }`}
-                    >
-                      {wd.activeCount} cita(s)
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Aviso interactivo con botones directos cuando el día seleccionado está cerrado */}
-          {dailyHourlySlots.length === 0 && (
-            <div className="mt-3 p-3 rounded-lg bg-white/90 border border-[#524634] flex flex-wrap items-center justify-between gap-2">
-              <div className="text-xs text-[#1c160e]">
-                <strong>Día cerrado ({formatDateHuman(selectedDate)}):</strong>{' '}
-                Puedes habilitar este día ahora mismo con un clic o configurar sus horas de apertura.
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const [y, m, d] = selectedDate.split('-').map(Number);
-                    const dow = new Date(y, m - 1, d).getDay();
-                    handleEnableDayNow(dow);
-                  }}
-                  className="toolbar-btn-active"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Activar este día ahora (08:00 – 13:00)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('availability')}
-                  className="toolbar-btn"
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  Ir a pestaña Horarios
-                </button>
-              </div>
-            </div>
-          )}
+        <div className="mina-week-strip" aria-label="Elegir día de la semana">
+          {weekDays.map((wd) => {
+            const isSelected = wd.dateStr === selectedDate;
+            const isToday = wd.dateStr === getTodayDateString();
+            return (
+              <button type="button" key={wd.dateStr}
+                onClick={() => setSelectedDate(wd.dateStr)}
+                aria-pressed={isSelected}
+                aria-label={`${wd.fullName} ${wd.dayNumber}, ${wd.activeCount} citas`}
+                className={`calendar-day-pill ${isSelected ? 'calendar-day-pill-active' : ''}`}>
+                <span className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wide">{wd.shortName} {wd.dayNumber}</span>
+                  {isToday && <span className="mina-day-today" title="Hoy" aria-label="Hoy" />}
+                </span>
+                <span className="mina-day-meta">
+                  {wd.isActive ? `${wd.rule.start_time}–${wd.rule.end_time}` : 'Cerrado'}
+                </span>
+                <span className="mina-day-count">{wd.activeCount} {wd.activeCount === 1 ? 'cita' : 'citas'}</span>
+              </button>
+            );
+          })}
         </div>
-      </article>
+
+        {dailyHourlySlots.length === 0 && (
+          <div className="mina-calendar-closed">
+            <p className="m-0 text-sm text-slate-600"><strong>{formatDateHuman(selectedDate)}:</strong> día sin horario activo.</p>
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+              <button type="button" className="toolbar-btn-active"
+                onClick={() => {
+                  const [y,m,d] = selectedDate.split('-').map(Number);
+                  handleEnableDayNow(new Date(y,m-1,d).getDay());
+                }}>
+                <CheckCircle2 className="w-4 h-4" aria-hidden="true" />Activar día
+              </button>
+              <button type="button" className="toolbar-btn" onClick={() => setActiveTab('availability')}>
+                <Clock className="w-4 h-4" aria-hidden="true" />Configurar horario
+              </button>
+            </div>
+          </div>
+        )}
 
       {/* MODO 1: CALENDARIO SEMANAL HORIZONTAL (Columnas = Días Lunes a Sábado/Domingo, Filas = Horas) */}
       {calendarViewMode === 'week' && (
-        <div className="space-y-2 min-w-0 max-w-full">
+        <div className="mina-week-table min-w-0 max-w-full">
           <div className="calendar-scroll-wrapper">
             <table
               className="calendar-grid-table"
@@ -334,7 +162,7 @@ export function AgendaPage({
                           key={wd.dateStr}
                           scope="col"
                           className={
-                            isSelected ? 'bg-[#eef5fb]' : 'bg-[#e8eef3]'
+                            isSelected ? 'mina-selected-day' : ''
                           }
                         >
                           <div className="flex items-center justify-between gap-2">
@@ -354,7 +182,7 @@ export function AgendaPage({
                           </div>
                           {wd.isActive ? (
                             <div className="text-[11px] font-medium text-slate-600 mt-1 truncate">
-                              {wd.rule.start_time} – {wd.rule.end_time} · 2 espacios
+                              {wd.rule.start_time} – {wd.rule.end_time} 
                             </div>
                           ) : (
                             <div className="flex items-center justify-between gap-1 mt-1">
@@ -464,13 +292,13 @@ export function AgendaPage({
                                     return (
                                       <div
                                         key={`slot-${slotNum}`}
-                                        className="calendar-booked-slot"
+                                        className={`calendar-booked-slot ${apt.status === 'completed' ? 'completed' : ''}`}
                                       >
                                         <div className="slot-card-header">
                                           <span className="text-[11px] font-bold text-[#004070]">
                                             Espacio {slotNum}
                                           </span>
-                                          <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-white/90 border border-slate-400 text-[#222222] shrink-0">
+                                          <span className="mina-status-pill">
                                             {apt.status === 'completed' || hasNotes
                                               ? '✓ Nota'
                                               : 'Programada'}
@@ -551,9 +379,9 @@ export function AgendaPage({
 
       {/* MODO 2: VISTA DÍA EN CALENDARIO HORIZONTAL DE 2 COLUMNAS (Hora | Espacio 1 | Espacio 2) */}
       {calendarViewMode === 'day' && (
-        <div className="space-y-3 min-w-0 max-w-full">
-          <div className="bg-white rounded-md border border-[#595959] px-3 py-2 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-bold text-[#222222] capitalize m-0">
+        <div className="mina-day-table min-w-0 max-w-full">
+          <div className="mina-calendar-day-title">
+            <h2 className="capitalize">
               {formatDateHuman(selectedDate)}
             </h2>
             <button
@@ -561,12 +389,12 @@ export function AgendaPage({
               onClick={() => setCalendarViewMode('week')}
               className="toolbar-btn"
             >
-              ← Volver a Vista Semanal
+              Ver semana
             </button>
           </div>
 
           {dailyHourlySlots.length === 0 ? (
-            <div className="bg-white rounded-md border-2 border-[#595959] p-6 text-center space-y-3">
+            <div className="mina-calendar-closed">
               <Calendar className="w-8 h-8 text-[#004070] mx-auto" />
               <h3 className="text-base font-bold text-[#222222]">
                 Consultorio cerrado ({formatDateHuman(selectedDate)})
@@ -606,10 +434,10 @@ export function AgendaPage({
                       Hora (60m)
                     </th>
                     <th scope="col">
-                      Espacio 1 · Camilla / Cubículo 1
+                      Espacio 1
                     </th>
                     <th scope="col">
-                      Espacio 2 · Camilla / Cubículo 2
+                      Espacio 2
                     </th>
                   </tr>
                 </thead>
@@ -681,13 +509,12 @@ export function AgendaPage({
 
                           return (
                             <td key={`day-slot-${slotNum}`} className="bg-white">
-                              <div className="calendar-booked-slot p-3">
+                              <div className="calendar-booked-slot">
                                 <div className="slot-card-header">
                                   <span className="text-sm font-bold text-[#222222]">
-                                    {patient?.full_name || 'Paciente'}{' '}
-                                    {patient?.age !== undefined ? `(${patient.age} años)` : ''}
+                                    {patient?.full_name || 'Paciente'}
                                   </span>
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-white border border-[#595959]">
+                                  <span className="mina-status-pill">
                                     {apt.status === 'completed'
                                       ? 'Completada'
                                       : apt.status === 'no_show'
@@ -696,38 +523,21 @@ export function AgendaPage({
                                   </span>
                                 </div>
 
-                                {hasAllergies ? (
-                                  <div className="slot-card-allergy">
-                                    ⚠️ ALERGIA: {patient.allergies}
-                                  </div>
-                                ) : (
-                                  <div className="text-xs text-slate-600">
-                                    Sin alergias reportadas
-                                  </div>
-                                )}
+                                {hasAllergies && (
+                                   <div className="slot-card-allergy">⚠️ Alergia: {patient.allergies}</div>
+                                 )}
+                                 {Boolean(apt.treatment_notes?.trim()) && (
+                                   <p className="mina-note-status">Nota de sesión registrada</p>
+                                 )}
 
-                                {patient?.consultation_reason && (
-                                  <p className="text-xs text-[#222222] m-0">
-                                    <strong>Motivo:</strong> {patient.consultation_reason}
-                                  </p>
-                                )}
-
-                                <div className="text-xs bg-white border border-slate-300 p-2 rounded-sm space-y-1">
-                                  <p className="m-0">
-                                    <strong>Lo que se le hizo:</strong>{' '}
-                                    {apt.treatment_notes ||
-                                      'Pendiente de registrar al atender la sesión.'}
-                                  </p>
-                                </div>
-
-                                <div className="card-actions-responsive pt-1">
+                                 <div className="card-actions-responsive pt-1">
                                   <button
                                     type="button"
                                     onClick={() => openEditAppointmentModal(apt)}
                                     className="toolbar-btn-active"
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
-                                    Atender / Nota
+                                    Atender / nota
                                   </button>
                                   {patient && (
                                     <button
@@ -772,6 +582,7 @@ export function AgendaPage({
           )}
         </div>
       )}
+      </article>
     </section>
   );
 }

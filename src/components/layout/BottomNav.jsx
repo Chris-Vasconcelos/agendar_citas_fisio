@@ -1,57 +1,30 @@
 import React from 'react';
 import { Calendar, Users, Clock, Download } from 'lucide-react';
 
+const sections = [
+  { id: 'agenda', label: 'Agenda', Icon: Calendar },
+  { id: 'patients', label: 'Expedientes', Icon: Users },
+  { id: 'availability', label: 'Horarios', Icon: Clock },
+  { id: 'security', label: 'Respaldos', Icon: Download },
+];
+
 export function BottomNav({ activeTab, setActiveTab }) {
   return (
-    <nav
-        aria-label="Navegación principal de MINA"
-        className="fixed bottom-0 inset-x-0 z-20 bg-white border-t-2 border-[#595959]"
-      >
-        <div className="max-w-4xl mx-auto grid grid-cols-4">
+    <nav aria-label="Secciones de MINA" className="mina-nav">
+      <div className="mina-nav-inner">
+        {sections.map(({ id, label, Icon }) => (
           <button
+            key={id}
             type="button"
-            onClick={() => setActiveTab('agenda')}
-            className={`py-2.5 flex flex-col items-center gap-1 text-xs font-bold cursor-pointer ${
-              activeTab === 'agenda' ? 'text-[#004070] bg-slate-100' : 'text-[#222222]'
-            }`}
+            onClick={() => setActiveTab(id)}
+            aria-current={activeTab === id ? 'page' : undefined}
+            className={`mina-nav-item ${activeTab === id ? 'mina-nav-item-active' : ''}`}
           >
-            <Calendar className="w-5 h-5" />
-            Agenda
+            <Icon className="w-4.5 h-4.5" aria-hidden="true" />
+            <span>{label}</span>
           </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('patients')}
-            className={`py-2.5 flex flex-col items-center gap-1 text-xs font-bold cursor-pointer ${
-              activeTab === 'patients' ? 'text-[#004070] bg-slate-100' : 'text-[#222222]'
-            }`}
-          >
-            <Users className="w-5 h-5" />
-            Expedientes
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('availability')}
-            className={`py-2.5 flex flex-col items-center gap-1 text-xs font-bold cursor-pointer ${
-              activeTab === 'availability' ? 'text-[#004070] bg-slate-100' : 'text-[#222222]'
-            }`}
-          >
-            <Clock className="w-5 h-5" />
-            Horarios
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('security')}
-            className={`py-2.5 flex flex-col items-center gap-1 text-xs font-bold cursor-pointer ${
-              activeTab === 'security' ? 'text-[#004070] bg-slate-100' : 'text-[#222222]'
-            }`}
-          >
-            <Download className="w-5 h-5" />
-            Respaldos
-          </button>
-        </div>
-      </nav>
+        ))}
+      </div>
+    </nav>
   );
 }
