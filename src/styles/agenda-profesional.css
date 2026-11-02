@@ -335,3 +335,149 @@
  .mina-app-shell .mina-hours-times input { width:130px; }
  .mina-appointment-modal { max-height:calc(100dvh - 18px); }
 }
+
+/* MINA readability system. Compact layout comes from removing repetition, not tiny letters. */
+:root {
+  --mina-fs-sm: max(14px, .875rem); /* minimum 14px, including A− */
+  --mina-fs-base: 1rem; /* 16px */
+  --mina-fs-lg: 1.125rem;
+  --mina-fs-xl: 1.25rem;
+  --mina-fs-title: 1.75rem;
+  --mina-muted: #475569;
+  --mina-hour-row: 5.5rem; /* 88px */
+  --mina-appt-height: 2.5rem; /* 40px */
+}
+html[data-size="sm"] { font-size: 93.75%; }
+html[data-size="md"] { font-size: 100%; }
+html[data-size="lg"] { font-size: 112.5%; }
+/* Keep all three size options accessible and visually understated. */
+.mina-text-size-control { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border: 1px solid #dae5ee; background: #f7fafe; border-radius: 10px; }
+.mina-text-size-button { appearance: none; cursor: pointer; border: 0; background: transparent; color: #475569; min-width: 2.1rem; min-height: 2.2rem; border-radius: 7px; padding: 0 .4rem; font: 700 .875rem/1 system-ui,sans-serif; }
+.mina-text-size-button.active { color: #1e5d9d; background: #fff; box-shadow: 0 1px 4px #c4d7e588; }
+.mina-text-size-button:focus-visible { outline: 2px solid #2477c7; outline-offset: 2px; }
+/* Titles and main controls consistently sized across sections. */
+.mina-app-shell .mina-agenda-heading h2,
+.mina-app-shell .mina-section-heading h2 { font-size: var(--mina-fs-title); font-weight: 700; line-height: 1.25; }
+.mina-app-shell .mina-calendar-toolbar button,
+.mina-app-shell .mina-calendar-date,
+.mina-app-shell .mina-nav-item,
+.mina-app-shell .mina-new-appointment,
+.mina-app-shell .mina-hours-times input,
+.mina-app-shell .mina-hours-toggle,
+.mina-app-shell .mina-patient-row h3,
+.mina-app-shell .mina-patient-row button,
+.mina-app-shell .mina-patient-row input,
+.mina-app-shell .mina-hours-capacity { font-size: var(--mina-fs-base); }
+.mina-app-shell .mina-agenda-overview,
+.mina-app-shell .mina-agenda-overview strong,
+.mina-app-shell .mina-calendar-period,
+.mina-app-shell .mina-grid-day-count,
+.mina-app-shell .mina-day-meta,
+.mina-app-shell .mina-day-count,
+.mina-app-shell .mina-patient-details summary,
+.mina-app-shell .mina-hours-note,
+.mina-app-shell .mina-section-heading p,
+.mina-app-shell .mina-inline-error,
+.mina-app-shell .mina-duration-hint { font-size: var(--mina-fs-sm); color: var(--mina-muted); }
+.mina-app-shell .mina-hours-row { min-height: 4rem; gap: .875rem; }
+.mina-app-shell .mina-hours-times input { min-height: 2.5rem; width: 9rem; }
+.mina-app-shell .mina-patient-row { min-height: 4rem; }
+.mina-app-shell .mina-patient-row .toolbar-btn,
+.mina-app-shell .mina-patient-row .toolbar-btn-active,
+.mina-app-shell .mina-delete-trigger { font-size: var(--mina-fs-base); min-height: 2.5rem; }
+.mina-app-shell .mina-nav-item { min-height: 2.75rem; }
+.mina-app-shell .mina-calendar-toolbar button,
+.mina-app-shell .mina-new-appointment { min-height: 2.5rem; }
+/* Weekly appointment cells: 2 x 40px and 4px between them. */
+.mina-app-shell .mina-agenda .mina-compact-week-grid {
+  min-width: 75rem !important;
+  table-layout: fixed;
+}
+.mina-app-shell .mina-agenda .mina-compact-week-grid thead th { height: 3.4rem; padding: .4rem; }
+.mina-app-shell .mina-agenda .mina-compact-week-grid .calendar-hour-col { width: 5rem; }
+.mina-app-shell .mina-agenda .mina-compact-week-grid th,
+.mina-app-shell .mina-agenda .mina-compact-week-grid td { padding: .125rem .1875rem; }
+.mina-app-shell .mina-agenda .mina-compact-week-grid tbody th.calendar-hour-col { padding: .35rem .4rem; vertical-align: top; }
+.mina-app-shell .mina-agenda .mina-compact-week-grid tbody th.calendar-hour-col div { font-size: .9375rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.mina-app-shell .mina-grid-day-button { font-size: var(--mina-fs-base); font-weight: 650; padding: .25rem .125rem; white-space: nowrap; }
+.mina-app-shell .mina-grid-day-count { font-weight: 500; white-space: nowrap; }
+.mina-app-shell .mina-hour-lanes {
+  display: grid; grid-template-rows: repeat(2, minmax(var(--mina-appt-height),auto));
+  gap: .25rem; min-height: calc(var(--mina-appt-height) * 2 + .25rem);
+}
+.mina-app-shell .mina-week-appointment,
+.mina-app-shell .mina-week-empty-lane { height: auto; min-height: var(--mina-appt-height); }
+.mina-app-shell .mina-week-appointment {
+  min-width: 0; overflow: visible; border-radius: 6px;
+  border-left-width: 3px; gap: 0;
+}
+.mina-app-shell .mina-week-appointment-main {
+  min-width: 0; min-height: var(--mina-appt-height); gap: .3rem;
+  padding: .2rem .35rem; line-height: 1.15; flex-wrap: wrap; align-content: center;
+  color: inherit; font-size: var(--mina-fs-base);
+}
+.mina-app-shell .mina-week-appointment-name {
+  flex: 1 1 60%; min-width: 0; font-size: var(--mina-fs-base); font-weight: 650;
+  line-height: 1.15; white-space: normal; overflow: visible; text-overflow: clip;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+.mina-app-shell .mina-space-chip {
+  flex: none; padding: .1rem .25rem; border-radius: 4px;
+  font-size: var(--mina-fs-sm); line-height: 1.2; color: #2d537d;
+  font-weight: 700;
+}
+.mina-app-shell .mina-week-appointment-state {
+  flex: 0 0 auto; font-size: var(--mina-fs-sm);
+  font-weight: 600; line-height: 1.1; color: #244d7c; opacity: 1;
+  padding: .15rem .3rem; background: #dceafa; border-radius: 4px;
+}
+.mina-app-shell .mina-week-appointment.completed .mina-week-appointment-state { color: #205b3d; background: #d2eee0; }
+.mina-app-shell .mina-week-appointment.no-show .mina-week-appointment-state { color: #854416; background: #ffe2c1; }
+.mina-app-shell .mina-week-allergy { color: #93391d; font-size: var(--mina-fs-sm); font-weight: 700; }
+.mina-app-shell .mina-week-record { width: 2rem; height: 2rem; right: .15rem; top: .2rem; border-radius: 5px; }
+.mina-app-shell .mina-week-empty-lane { font-size: var(--mina-fs-lg); cursor: pointer; }
+.mina-app-shell .mina-day-empty-slot { font-size: var(--mina-fs-base); min-height: 3rem; }
+/* Appointment modal shares the same readable typography; without expanding the number of fields. */
+.mina-appointment-modal h2 { font-size: var(--mina-fs-xl); }
+.mina-appointment-modal .form-label,
+.mina-appointment-modal .form-legend,
+.mina-appointment-modal label,
+.mina-appointment-modal input,
+.mina-appointment-modal select,
+.mina-appointment-modal textarea,
+.mina-appointment-modal button { font-size: var(--mina-fs-base); }
+.mina-appointment-modal .form-input,
+.mina-appointment-modal button { min-height: 2.5rem; }
+.mina-appointment-modal .mina-duration-hint { font-size: var(--mina-fs-sm); }
+.mina-app-shell .mina-agenda .mina-day-table .calendar-grid-table td { padding: .25rem; }
+.mina-app-shell .mina-agenda .mina-day-table .calendar-grid-table thead th { font-size: var(--mina-fs-base); }
+.mina-app-shell .mina-agenda .mina-day-table .calendar-grid-table .calendar-hour-col { font-size: .9375rem; font-variant-numeric: tabular-nums; }
+@media (max-width: 860px) {
+  .mina-app-shell .mina-agenda .mina-compact-week-grid { min-width: 80rem !important; }
+  .mina-app-shell .mina-nav-item { font-size: var(--mina-fs-sm); }
+  .mina-text-size-control { gap: 0; padding: 2px; }
+  .mina-text-size-button { min-width: 1.7rem; padding: 0 .2rem; }
+}
+@media (max-width: 420px) {
+  .mina-text-size-control { order: 2; }
+  .mina-brand-subtitle { display: none; }
+  .mina-new-appointment { padding-inline: .5rem; }
+}
+
+/* Minimum readable supporting labels in the application shell. */
+.mina-app-shell .mina-brand-subtitle,
+.mina-app-shell .mina-grid-day-count,
+.mina-app-shell .mina-day-count,
+.mina-app-shell .mina-hours-note,
+.mina-app-shell .mina-week-allergy,
+.mina-app-shell .mina-note-status,
+.mina-app-shell .mina-status-pill,
+.mina-app-shell .mina-patient-row p,
+.mina-app-shell .mina-patient-row .text-xs,
+.mina-app-shell .mina-patient-details,
+.mina-app-shell .mina-nav-item,
+.mina-app-shell .mina-agenda-overview,
+.mina-app-shell .mina-week-appointment-state { font-size: var(--mina-fs-sm); }
+.mina-app-shell .mina-brand-subtitle { line-height: 1.2; }
+.mina-app-shell .mina-week-appointment-state { max-width: 100%; }

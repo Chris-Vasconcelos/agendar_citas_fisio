@@ -5,6 +5,8 @@ import { signOutUser, isSupabaseConfigured } from '../../lib/supabase';
 export function Header({
   designSkill,
   setDesignSkill,
+  textSize,
+  setTextSize,
   session,
   setShowPrivacyNoticeModal,
   setAuthError,
@@ -25,6 +27,25 @@ export function Header({
         </div>
 
         <div className="mina-header-actions">
+          <div className="mina-text-size-control" role="group" aria-label="Tamaño del texto">
+            {[
+              { value: 'sm', label: 'A−', title: 'Texto más pequeño' },
+              { value: 'md', label: 'A', title: 'Texto normal' },
+              { value: 'lg', label: 'A+', title: 'Texto más grande' },
+            ].map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                className={`mina-text-size-button ${textSize === item.value ? 'active' : ''}`}
+                aria-pressed={textSize === item.value}
+                aria-label={item.title}
+                title={item.title}
+                onClick={() => setTextSize(item.value)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
           <details className="mina-settings">
             <summary className="mina-icon-button" title="Apariencia" aria-label="Apariencia">
               <Settings2 className="w-4 h-4" aria-hidden="true" />
