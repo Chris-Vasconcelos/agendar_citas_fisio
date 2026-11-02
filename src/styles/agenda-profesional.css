@@ -597,3 +597,84 @@ html[data-size="lg"] .mina-app-shell .mina-agenda .mina-compact-week-grid { min-
   .mina-patient-modal .mina-patient-basics { grid-template-columns:1fr; gap:0; }
   .mina-patient-modal .mina-patient-basics > .form-group:first-child { grid-column:auto; }
 }
+
+/* Calendar appointment hierarchy: name > time > optional state. */
+.mina-app-shell .mina-agenda .mina-compact-week-grid tbody td:has(.mina-hour-lanes) { vertical-align: top; }
+.mina-app-shell .mina-agenda .mina-hour-lanes {
+  grid-template-rows: repeat(2, 32px);
+  gap: 4px; min-height: 68px;
+}
+.mina-app-shell .mina-agenda .mina-hour-lanes:has(.mina-week-appointment) {
+  grid-template-rows: repeat(2, minmax(56px, auto));
+  min-height: 116px;
+}
+.mina-app-shell .mina-agenda .mina-hour-lanes:not(:has(.mina-week-appointment)) .mina-week-empty-lane {
+  min-height: 32px; height: 32px;
+}
+.mina-app-shell .mina-agenda .mina-hour-lanes:has(.mina-week-appointment) .mina-week-empty-lane {
+  min-height: 56px; height: 100%;
+}
+.mina-app-shell .mina-agenda .mina-week-appointment {
+  display: flex; align-items: stretch; width:100%; height:auto; min-height:56px;
+  overflow:hidden; border-radius:7px;
+}
+.mina-app-shell .mina-agenda .mina-week-appointment-main {
+  display:grid; grid-template-columns: auto minmax(0,1fr) auto;
+  grid-template-rows: auto auto;
+  align-items:center; column-gap:6px; row-gap:2px;
+  flex:1 1 auto; width:100%; height:auto; min-height:56px;
+  padding:5px 7px; overflow:hidden; font-size:16px;
+}
+.mina-app-shell .mina-agenda .mina-space-chip {
+  grid-column:1; grid-row:1; align-self:center;
+  padding:3px 4px; font-size:14px; font-weight:750;
+  min-width:24px; text-align:center;
+}
+.mina-app-shell .mina-agenda .mina-week-appointment-details {
+  display:contents;
+}
+.mina-app-shell .mina-agenda .mina-week-appointment-name {
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
+  grid-column:2; grid-row:1; min-width:0; max-width:100%;
+  font-size:16px; line-height:1.2; font-weight:650;
+  white-space:normal; overflow:hidden; text-overflow:clip; overflow-wrap:anywhere;
+}
+.mina-app-shell .mina-agenda .mina-week-appointment-time {
+  grid-column:2 / 4; grid-row:2; min-width:0;
+  font-size:14px; line-height:1.2; font-weight:500;
+  color:#475569; font-variant-numeric:tabular-nums;
+}
+.mina-app-shell .mina-agenda .mina-week-appointment-state {
+  display:inline; font-size:14px; padding:0; background:none;
+  font-weight:650; white-space:normal;
+}
+.mina-app-shell .mina-agenda .mina-week-allergy-icon {
+  grid-column:3; grid-row:1; justify-self:end;
+  color:#b91c1c; font-size:18px; line-height:1; font-weight:750;
+}
+.mina-app-shell .mina-agenda .mina-week-appointment .mina-week-record {
+  right:2px; top:2px; background:#fff;
+}
+.mina-app-shell .mina-calendar-period { font-size:18px !important; font-weight:650; color:#334155 !important; }
+.mina-app-shell .mina-calendar-date { font-size:16px !important; }
+/* Duplicate warning is a full-width row, never a third grid column. */
+.mina-patient-modal .mina-patient-duplicate-alert {
+  grid-column:1 / -1; width:100%;
+  border:1px solid #f4c77a; background:#fff9eb;
+  border-radius:10px; padding:12px 14px; color:#704514;
+  font-size:14px; line-height:1.45;
+  display:grid; gap:6px; margin:3px 0 12px;
+}
+.mina-patient-modal .mina-patient-duplicate-alert p { margin:0; }
+.mina-patient-modal .mina-patient-duplicate-alert label {
+  display:flex; gap:10px; align-items:center; cursor:pointer;
+  font-size:14px;
+}
+.mina-patient-modal .mina-patient-duplicate-alert input { width:20px; height:20px; flex:none; }
+.mina-patient-modal .mina-patient-footer { align-items:center; flex-wrap:wrap; }
+.mina-patient-modal .mina-patient-save-hint {
+  flex:1 1 220px; margin:0; font-size:14px; color:#704514;
+}
+@media (max-width:600px) {
+  .mina-patient-modal .mina-patient-duplicate-alert { grid-column:auto; }
+}

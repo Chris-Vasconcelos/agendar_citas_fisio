@@ -41,8 +41,8 @@ export function AgendaPage({
       </div>
 
       <div className="mina-agenda-overview" aria-label="Resumen de agenda">
-        <span><strong>{activeDayAppointments.length}</strong> citas del día seleccionado</span>
-        <span><strong>{weeklyTotalActive}</strong> citas esta semana</span>
+        <span><strong>{activeDayAppointments.length}</strong> {activeDayAppointments.length === 1 ? 'cita' : 'citas'} del día seleccionado</span>
+        <span><strong>{weeklyTotalActive}</strong> {weeklyTotalActive === 1 ? 'cita' : 'citas'} esta semana</span>
         <span><strong>{completedNotesTodayCount}</strong> notas del día seleccionado</span>
         {allergyAlertsTodayCount > 0 && (
           <span className="mina-agenda-alert" role="status">
@@ -177,7 +177,7 @@ export function AgendaPage({
                             >
                               {wd.shortName.toUpperCase()} {wd.dayNumber}
                             </button>
-                            {wd.activeCount > 0 && <span className="mina-grid-day-count">{wd.activeCount} citas</span>}
+                            {wd.activeCount > 0 && <span className="mina-grid-day-count">{wd.activeCount} {wd.activeCount === 1 ? 'cita' : 'citas'}</span>}
                           </div>
                           {wd.isActive ? null : (
                             <div className="flex items-center justify-between gap-1 mt-1">
@@ -272,12 +272,22 @@ export function AgendaPage({
                                         className={`mina-week-appointment mina-space-${slotNum} ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}>
                                         <button type="button" className="mina-week-appointment-main"
                                           onClick={() => openEditAppointmentModal(apt)}
-                                          title={`Abrir cita de ${formatPatientName(pt?.full_name) || 'Paciente'}`}
-                                          aria-label={`Abrir cita de ${formatPatientName(pt?.full_name) || 'Paciente'} a las ${hourStr}`}>
+                                          title={`${formatPatientName(pt?.full_name) || 'Paciente'} · ${hourStr}–${nextHourStr}`}
+                                          aria-label={`Abrir cita de ${formatPatientName(pt?.full_name) || 'Paciente'}, espacio ${slotNum}, de ${hourStr} a ${nextHourStr}`}>
                                           <span className="mina-space-chip" title={`Espacio ${slotNum}`}>E{slotNum}</span>
-                                          <span className="mina-week-appointment-name">{formatPatientName(pt?.full_name) || 'Paciente'}</span>
-                                          <span className="mina-week-appointment-state">{apt.status === 'completed' ? 'Atendida' : apt.status === 'no_show' ? 'No asistió' : 'Programada'}</span>
-                                          {hasAllergy && <span className="mina-week-allergy" title={`Alergia: ${pt.allergies}`}>⚠ Alergia</span>}
+                                          <span className="mina-week-appointment-details">
+                                            <span className="mina-week-appointment-name">{formatPatientName(pt?.full_name) || 'Paciente'}</span>
+                                            <span className="mina-week-appointment-time">
+                                              {formatTimeShort(apt.start_time)} – {formatTimeShort(apt.end_time)}
+                                              {apt.status === 'completed' && <span className="mina-week-appointment-state"> · ✓ Atendida</span>}
+                                              {apt.status === 'no_show' && <span className="mina-week-appointment-state"> · No asistió</span>}
+                                            </span>
+                                          </span>
+                                          {hasAllergy && (
+                                            <span className="mina-week-allergy-icon"
+                                              title={`Alergia: ${pt.allergies}`}
+                                              aria-label={`Alergia: ${pt.allergies}`}>⚠</span>
+                                          )}
                                         </button>
                                         {pt && <button type="button" className="mina-week-record"
                                           onClick={() => setSelectedPatientForRecord(pt)}
