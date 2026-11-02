@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import './Splash.css';
 
-// The original SVG is rendered in an isolated document. This prevents
-// Tailwind and application CSS from overriding its strokes/animations.
+// Original eight MINA paths and stagger timings (seconds), unchanged.
 const paths = [
   { cls: 'shape blue', delay: 0, d: 'M551 223 A45 46 0 1 1 461 223 A45 46 0 1 1 551 223Z' },
   { cls: 'shape blue', delay: 0.22, d: 'M291 585 C279 551 330 413 369 342 C390 304 412 278 434 284 C464 287 477 348 500 353 C518 364 556 313 600 293 C638 276 676 276 705 291 C651 287 605 332 572 374 C548 404 527 445 503 448 C475 456 467 408 454 385 C443 363 429 377 416 398 C389 442 367 500 346 553 C336 584 320 601 301 600 C295 600 292 596 291 585Z' },
@@ -14,65 +13,91 @@ const paths = [
   { cls: 'line gray', delay: 2, d: 'M467 835 H622' },
 ];
 
-const DRAW_MS = 6000;
-const LAST_PATH_DELAY_MS = 2000;
-const FINISH_HOLD_MS = 500;
+const ORIGINAL_CYCLE_MS = 6000;
+const LAST_DELAY_MS = 2000;
+const HOLD_MS = 450;
 const EXIT_MS = 650;
-
-const logoDocument = `<!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-*{box-sizing:border-box}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#fff}
-body{display:grid;place-items:center;font-family:Arial,sans-serif}
-svg{display:block;width:100%;height:auto;overflow:visible}
-.blue{--ink:#052743}.gray{--ink:#748da0}
-.draw{stroke:var(--ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke-dasharray:1 1;stroke-dashoffset:1;animation:trace 6s linear 1 both;animation-delay:var(--delay)}
-.shape{fill:var(--ink);fill-opacity:0;animation:trace 6s linear 1 both,paint 6s linear 1 both;animation-delay:var(--delay),var(--delay)}
-.letter{stroke-width:16;stroke-linecap:butt;stroke-linejoin:miter}.line{stroke-width:3}
-.tagline{fill:#748da0;font:500 33px Arial,sans-serif;letter-spacing:5.4px;opacity:0;animation:caption 6s linear 1 both}
-@keyframes trace{0%,4%{stroke-dashoffset:1;opacity:1}28%,64%{stroke-dashoffset:0;opacity:1}72%,100%{stroke-dashoffset:0;opacity:1}}
-@keyframes paint{0%,22%{fill-opacity:0}34%,64%,72%,100%{fill-opacity:1}}
-@keyframes caption{0%,54%{opacity:0}62%,76%,84%,100%{opacity:1}}
-@media (prefers-reduced-motion:reduce){.draw,.shape,.tagline{animation:none!important}.draw{stroke-dashoffset:0;opacity:1}.shape{fill-opacity:1}.tagline{opacity:1}}
-</style></head><body>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="70 140 930 810" role="img" aria-label="MINA — El valor del movimiento">
-${paths.map(({cls,delay,d})=>`<path class="draw ${cls}" pathLength="1" style="--delay:${delay}s" d="${d}"/>`).join('')}
-<text class="tagline" x="540" y="903" text-anchor="middle">EL VALOR DEL MOVIMIENTO</text>
-</svg></body></html>`;
+const clamp01 = (value) => Math.max(0, Math.min(1, value));
+const progress = (value, begin, end) => clamp01((value - begin) / (end - begin));
 
 export default function Splash({ ready, onRevealStart }) {
-  const [frameLoaded, setFrameLoaded] = useState(false);
-  const [animationDone, setAnimationDone] = useState(false);
+  const svgRef = useRef(null);
+  const onRevealRef = useRef(onRevealStart);
+  const readyRef = useRef(ready);
+  const [exiting, setExiting] = useState(false);
+  const [drawingDone, setDrawingDone] = useState(false);
   const [removed, setRemoved] = useState(false);
-  const started = useRef(false);
-  const markFrameLoaded = useCallback(() => setFrameLoaded(true), []);
+  const exitingRef = useRef(false);
+  const rafRef = useRef(0);
+  onRevealRef.current = onRevealStart;
+  readyRef.current = ready;
 
-  useEffect(() => {
-    if (!frameLoaded) return undefined;
-    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const timer = setTimeout(() => setAnimationDone(true),
-      reduced ? 0 : DRAW_MS + LAST_PATH_DELAY_MS + FINISH_HOLD_MS);
-    return () => clearTimeout(timer);
-  }, [frameLoaded]);
+  // Imperatively animate every SVG stroke: no iframe, CSS keyframe,
+  // pathLength normalization or OS reduced-motion override can skip the drawing.
+  useLayoutEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return undefined;
+    const strokes = Array.from(svg.querySelectorAll('path')).map((node, index) => {
+      const length = Math.max(1, node.getTotalLength());
+      const isShape = paths[index].cls.includes('shape');
+      const ink = paths[index].cls.includes('gray') ? '#748da0' : '#052743';
+      node.style.setProperty('stroke', ink, 'important');
+      node.style.setProperty('stroke-dasharray', `${length} ${length}`, 'important');
+      node.style.setProperty('stroke-dashoffset', String(length), 'important');
+      node.style.setProperty('opacity', '1', 'important');
+      node.style.setProperty('fill', isShape ? ink : 'none', 'important');
+      if (isShape) node.style.setProperty('fill-opacity', '0', 'important');
+      return { node, length, isShape, delayMs: paths[index].delay * 1000 };
+    });
+    const tagline = svg.querySelector('text');
+    if (tagline) tagline.style.setProperty('opacity', '0', 'important');
+    let stopped = false;
+    let startedAt = null;
+    const frame = (timestamp) => {
+      if (stopped) return;
+      if (startedAt === null) startedAt = timestamp;
+      const elapsed = timestamp - startedAt;
+      for (const {node,length,isShape,delayMs} of strokes) {
+        const local = (elapsed - delayMs) / ORIGINAL_CYCLE_MS;
+        const drawn = progress(local, .04, .28);
+        node.style.setProperty('stroke-dashoffset', String(length * (1 - drawn)), 'important');
+        if (isShape) node.style.setProperty('fill-opacity', String(progress(local, .22, .34)), 'important');
+      }
+      if (tagline) tagline.style.setProperty('opacity', String(progress(elapsed / ORIGINAL_CYCLE_MS, .54, .62)), 'important');
+      if (elapsed >= ORIGINAL_CYCLE_MS + LAST_DELAY_MS + HOLD_MS) {
+        setDrawingDone(true);
+        return;
+      }
+      rafRef.current = requestAnimationFrame(frame);
+    };
+    rafRef.current = requestAnimationFrame(frame);
+    return () => {
+      stopped = true;
+      cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
-  const leaving = ready && animationDone;
-  useEffect(() => {
-    if (!leaving || started.current) return undefined;
-    started.current = true;
-    onRevealStart?.();
+  // Exit only when the complete original drawing AND the data are ready.
+  useLayoutEffect(() => {
+    if (!ready || !drawingDone || exitingRef.current) return undefined;
+    exitingRef.current = true;
+    setExiting(true);
+    onRevealRef.current?.();
     const timer = setTimeout(() => setRemoved(true), EXIT_MS);
     return () => clearTimeout(timer);
-  }, [leaving, onRevealStart]);
+  }, [ready, drawingDone]);
 
   if (removed) return null;
   return (
-    <div className={`mina-splash ${leaving ? 'mina-splash-leaving' : ''}`}
-      role="status" aria-label="Cargando MINA">
+    <div className={`mina-splash ${exiting ? 'mina-splash-leaving' : ''}`} role="status" aria-label="Cargando MINA">
       <div className="mina-splash-content">
-        <iframe className="mina-splash-frame" title="Animación original del logo MINA"
-          aria-hidden="true" tabIndex={-1} sandbox="" loading="eager"
-          srcDoc={logoDocument} onLoad={markFrameLoaded} />
+        <svg ref={svgRef} xmlns="http://www.w3.org/2000/svg" viewBox="70 140 930 810"
+          role="img" aria-label="MINA — El valor del movimiento">
+          {paths.map(({cls,d}, index) => (
+            <path key={index} className={`mina-stroke ${cls}`} d={d} />
+          ))}
+          <text className="mina-tagline" x="540" y="903" textAnchor="middle">EL VALOR DEL MOVIMIENTO</text>
+        </svg>
       </div>
     </div>
   );
