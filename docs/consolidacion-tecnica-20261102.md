@@ -24,7 +24,7 @@
 
 ## Qué NO se debe borrar a ciegas
 - `supabase/schema.sql` y todas las migraciones: contienen requisitos de datos clínicos, seguridad y restauración que requieren staging.
-- `docs/`, `DESIGN.md`, `implementation_plan.md` y el PDF legal: referencias de decisiones de producto, diseño y privacidad.
+- `docs/`, `docs/DESIGN.md`, `docs/implementation_plan.md` y el PDF legal: referencias de decisiones de producto, diseño y privacidad.
 - `package-lock.json`: garantiza dependencias reproducibles con `npm ci`.
 - `src/services/googleCalendar.js`: no se integra en el MVP actual; conservar por ahora para no romper referencias o una integración futura sin verificar todos los consumidores.
 
