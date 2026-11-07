@@ -15,7 +15,7 @@ test('the consultorio login has no public sign-up action', () => {
 test('basic backups are accurately labeled as not including signed photos', () => {
   const security = read('../src/pages/SecurityPage.jsx');
   assert.ok(security.includes('Exportar datos (.JSON, sin fotografías)'));
-  assert.ok(security.includes('Las fotografías de consentimientos guardadas en Storage NO se incluyen'));
+  assert.ok(security.includes('las fotografías de consentimientos guardadas en Storage NO se incluyen'));
   assert.ok(security.includes('Restaurar datos (.JSON, sin fotografías)'));
 });
 
