@@ -21,6 +21,7 @@ import { AgendaPage } from './pages/AgendaPage';
 import { PatientsPage } from './pages/PatientsPage';
 import { AvailabilityPage } from './pages/AvailabilityPage';
 import { SecurityPage } from './pages/SecurityPage';
+import { RemindersPage } from './pages/RemindersPage';
 
 // Modals
 import { AppointmentModal } from './components/modals/AppointmentModal';
@@ -550,6 +551,10 @@ export default function App() {
             setSelectedPatientForRecord={setSelectedPatientForRecord}
             handleDeletePatient={deletePatient}
           />
+        )}
+
+        {activeTab === 'reminders' && (
+          <RemindersPage appointments={appointments} patientsById={patientsById} session={session} />
         )}
 
         {activeTab === 'availability' && (
