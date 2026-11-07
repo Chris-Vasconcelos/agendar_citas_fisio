@@ -7,6 +7,17 @@ export function ConsentPhotoSection({ patient, userId }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [confirm, setConfirm] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl('');
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   useEffect(() => {
     let alive = true;
@@ -59,6 +70,7 @@ export function ConsentPhotoSection({ patient, userId }) {
   return (
     <section className="space-y-3 border-t border-slate-300 pt-3" aria-label="Consentimientos firmados">
       <h3 className="text-sm font-bold">Fotografía del consentimiento firmado</h3>
+      <p className="text-xs text-slate-600">Copia digital de consulta. Conserva el documento original firmado según las indicaciones del responsable.</p>
       <p className="text-xs text-slate-600">
         Paciente: <strong>{patient.full_name}</strong> · Tel: {patient.phone || 'Sin teléfono'}
         <br />ID del expediente: {patient.id.slice(0, 8)}
@@ -72,10 +84,12 @@ export function ConsentPhotoSection({ patient, userId }) {
       {file && (
         <div className="rounded border border-slate-300 p-2 text-xs space-y-2">
           <p>Imagen seleccionada: {file.name} ({Math.ceil(file.size / 1024)} KB)</p>
+          {previewUrl && <img src={previewUrl} alt="Vista previa del consentimiento seleccionado" className="max-h-72 w-full rounded border border-slate-200 bg-white object-contain" />}
+          <p className="text-slate-600">Revisa que nombre, fecha, texto y firma sean legibles antes de guardar. La imagen se almacenará sin compresión adicional.</p>
           <label className="flex gap-2 items-start">
             <input type="checkbox" checked={confirm} disabled={busy}
               onChange={(e) => setConfirm(e.target.checked)} />
-            Confirmo que la fotografía corresponde al expediente de {patient.full_name}.
+            Confirmo que la fotografía corresponde al expediente de {patient.full_name} y que se leen el nombre, la fecha y la firma.
           </label>
           <button type="button" disabled={!confirm || busy} className="submit-button"
             onClick={upload}>{busy ? 'Subiendo...' : 'Guardar fotografía privada'}</button>

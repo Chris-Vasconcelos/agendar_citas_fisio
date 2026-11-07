@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { isSupabaseConfigured, signInWithEmailPassword, signUpWithEmailPassword } from '../../lib/supabase';
+import { isSupabaseConfigured, signInWithEmailPassword } from '../../lib/supabase';
 
 export function AuthModal({
   isOpen,
@@ -9,7 +9,6 @@ export function AuthModal({
   authSuccess,
   setAuthSuccess,
 }) {
-  const [authMode, setAuthMode] = useState('login');
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
 
   if (!isOpen) return null;
@@ -35,22 +34,13 @@ export function AuthModal({
     }
 
     try {
-      if (authMode === 'login') {
-        const { error } = await signInWithEmailPassword(cleanEmail, cleanPass);
-        if (error) {
-          setAuthError(error.message);
-          return;
-        }
-        setAuthForm({ email: '', password: '' });
-        onClose();
-      } else {
-        const { error } = await signUpWithEmailPassword(cleanEmail, cleanPass);
-        if (error) {
-          setAuthError(error.message);
-          return;
-        }
-        setAuthSuccess('Cuenta registrada. Verifica tu correo o inicia sesión.');
+      const { error } = await signInWithEmailPassword(cleanEmail, cleanPass);
+      if (error) {
+        setAuthError(error.message);
+        return;
       }
+      setAuthForm({ email: '', password: '' });
+      onClose();
     } catch (err) {
       setAuthError(err?.message || 'Error de autenticación.');
     }
@@ -66,9 +56,7 @@ export function AuthModal({
       <div className="form-container">
         <div className="flex items-center justify-between mb-4">
           <h2 id="modal-auth-title" className="text-lg font-bold text-[#222222]">
-            {authMode === 'login'
-              ? 'Iniciar Sesión del Fisioterapeuta'
-              : 'Registrar Cuenta del Consultorio'}
+            Iniciar Sesión del Fisioterapeuta
           </h2>
           <button
             type="button"
@@ -121,20 +109,9 @@ export function AuthModal({
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                setAuthMode((prev) => (prev === 'login' ? 'signup' : 'login'))
-              }
-              className="underline text-xs font-bold text-[#004070] cursor-pointer"
-            >
-              {authMode === 'login'
-                ? '¿Primera vez? Crear cuenta'
-                : 'Ya tengo cuenta · Iniciar sesión'}
-            </button>
-
+            <p className="text-xs text-slate-600">Acceso exclusivo del consultorio. Las cuentas son administradas por el responsable del sistema.</p>
             <button type="submit" className="submit-button">
-              {authMode === 'login' ? 'Entrar al Consultorio' : 'Registrar Cuenta'}
+              Entrar al Consultorio
             </button>
           </div>
         </form>
