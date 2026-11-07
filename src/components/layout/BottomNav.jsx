@@ -1,10 +1,11 @@
 import React from 'react';
-import { Calendar, Users, Clock, Download } from 'lucide-react';
+import { Calendar, Users, Clock, Download, MessageCircle } from 'lucide-react';
 
 const sections = [
   { id: 'agenda', label: 'Agenda', Icon: Calendar },
   { id: 'patients', label: 'Expedientes', Icon: Users },
   { id: 'availability', label: 'Horarios', Icon: Clock },
+  { id: 'reminders', label: 'Recordatorios', Icon: MessageCircle },
   { id: 'security', label: 'Respaldos', Icon: Download },
 ];
 
