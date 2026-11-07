@@ -186,7 +186,7 @@ export function SecurityPage({
           Respaldo y Exportación de Expedientes y Citas
         </h2>
         <p className="text-xs m-0">
-          Descarga una copia completa de tus pacientes, citas y notas de sesión en formato Excel (CSV) o JSON, o restaura un respaldo previo cuando cambies de equipo.
+          Exporta los datos de pacientes, citas y notas de sesión como CSV o JSON. IMPORTANTE: las fotografías de consentimientos guardadas en Storage NO se incluyen en estos archivos. La restauración JSON tampoco recupera fotografías. No uses esta exportación como único respaldo clínico.
         </p>
 
         <div className="flex flex-wrap items-center gap-2.5 pt-1">
@@ -196,7 +196,7 @@ export function SecurityPage({
             className="submit-button inline-flex items-center gap-1.5 text-xs"
           >
             <Download className="w-4 h-4" />
-            Descargar Respaldo Completo (.JSON)
+            Exportar datos (.JSON, sin fotografías)
           </button>
 
           <button
@@ -211,7 +211,7 @@ export function SecurityPage({
           <div>
             <label htmlFor="restore-json-input" className="secondary-button inline-flex items-center gap-1.5 text-xs cursor-pointer">
               <Upload className="w-4 h-4" />
-              Importar / Restaurar Respaldo (.JSON)
+              Restaurar datos (.JSON, sin fotografías)
             </label>
             <input
               id="restore-json-input"
