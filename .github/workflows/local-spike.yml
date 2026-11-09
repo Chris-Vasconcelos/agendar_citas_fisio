@@ -1,0 +1,19 @@
+name: MINA Local SQLite spike
+on:
+  push:
+    branches:
+      - feat/mina-local-etapa1-20261108
+    paths:
+      - 'local/spike/**'
+      - '.github/workflows/local-spike.yml'
+  workflow_dispatch:
+jobs:
+  sqlite-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check SQLite schema invariants with fictitious data
+        run: python -m unittest discover -s local/spike -p "test_*.py" -v
