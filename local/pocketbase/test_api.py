@@ -58,7 +58,8 @@ class LocalApiTests(unittest.TestCase):
             cls.patients.append(p["id"])
     def test_anonymous_cannot_list_or_create(self):
         code,data=request("GET",collection("mina_patients"))
-        self.assertNotEqual(code,200)
+        self.assertEqual(code,200)
+        self.assertEqual(data["totalItems"],0)
         code,data=request("POST",collection("mina_operators"),{
           "email":"rogue@example.invalid","password":OWNER_PASSWORD,"passwordConfirm":OWNER_PASSWORD})
         self.assertNotEqual(code,200)
