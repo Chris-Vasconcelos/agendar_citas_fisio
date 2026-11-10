@@ -1,0 +1,26 @@
+name: MINA Local PocketBase prototype
+on:
+  push:
+    branches:
+      - feat/mina-local-etapa1-20261108
+    paths:
+      - 'local/pocketbase/**'
+      - 'src/local/**'
+      - '.github/workflows/local-pocketbase.yml'
+  workflow_dispatch:
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get PocketBase test binary v0.40.6
+        run: |
+          curl --fail --location --retry 3 -o /tmp/pb.zip https://github.com/pocketbase/pocketbase/releases/download/v0.40.6/pocketbase_0.40.6_linux_amd64.zip
+          unzip -q /tmp/pb.zip pocketbase -d /tmp
+          chmod +x /tmp/pocketbase
+      - name: Apply migrations on disposable database
+        run: |
+          mkdir -p /tmp/mina-pb-test
+          /tmp/pocketbase migrate up --dir /tmp/mina-pb-test --migrationsDir "$GITHUB_WORKSPACE/local/pocketbase/pb_migrations"
+      - name: Syntax of experimental API adapter
+        run: node --check src/local/pocketbaseClient.js

@@ -33,3 +33,9 @@ Thumbs.db
 coverage/
 playwright-report/
 test-results/
+
+# PocketBase: nunca publicar archivos clínicos ni credenciales
+pb_data/
+pocketbase
+pocketbase.exe
+local/pocketbase/pb_data/
