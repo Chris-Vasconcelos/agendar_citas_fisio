@@ -32,14 +32,17 @@ jobs:
         run: |
           python scripts/get_pocketbase.py linux_amd64 tools-pb
           python scripts/get_age.py linux-amd64 tools-age
-          MINA_TEST_AGE_DIR=tools-age python scripts/check_local.py tools-pb/pocketbase --browser --backup
+          python scripts/get_caddy.py linux_amd64 tools-caddy
+          MINA_TEST_AGE_DIR=tools-age MINA_TEST_CADDY=tools-caddy/caddy python scripts/check_local.py tools-pb/pocketbase --browser --backup --https
       - name: Windows real-server and browser checks
         if: runner.os == 'Windows'
         run: |
           python scripts/get_pocketbase.py windows_amd64 tools-pb
           python scripts/get_age.py windows-amd64 tools-age
+          python scripts/get_caddy.py windows_amd64 tools-caddy
           $env:MINA_TEST_AGE_DIR = 'tools-age'
-          python scripts/check_local.py tools-pb/pocketbase.exe --browser --backup
+          $env:MINA_TEST_CADDY = 'tools-caddy/caddy.exe'
+          python scripts/check_local.py tools-pb/pocketbase.exe --browser --backup --https
       - run: python -m unittest discover -s local/spike -p "test_*.py" -v
       - name: Package Windows x64
         if: runner.os == 'Windows'

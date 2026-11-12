@@ -20,6 +20,8 @@ with tempfile.TemporaryDirectory(prefix='mina-check-') as tmp:
             subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'local/pocketbase', '-p', 'test_*.py', '-v'], cwd=ROOT, check=True)
             if '--browser' in sys.argv:
                 subprocess.run(['node', 'scripts/check_local_browser.cjs'], cwd=ROOT, check=True)
+            if '--https' in sys.argv:
+                subprocess.run([sys.executable, 'scripts/check_https.py', os.environ['MINA_TEST_CADDY']], cwd=ROOT, check=True)
             print('Local integration checks passed.')
         except Exception:
             log.flush()

@@ -37,6 +37,8 @@ function New-MinaEncryptedBackup {
         $Payload = Join-Path $Work 'contenido'
         [IO.Directory]::CreateDirectory($Payload) | Out-Null
         $Sources = @{ pb_data = $Data; pb_migrations = (Join-Path $AppRoot 'pb_migrations') }
+        # Preserve the private HTTPS CA so restored phones can keep their established trust.
+        if (Test-Path (Join-Path $DataRoot 'https-datos')) { $Sources['https-datos'] = Join-Path $DataRoot 'https-datos' }
         foreach ($Name in $Sources.Keys) {
             $Source = [IO.Path]::GetFullPath($Sources[$Name]).TrimEnd([IO.Path]::DirectorySeparatorChar)
             if (!(Test-Path $Source)) { throw "Falta $Name en la instalacion." }
@@ -53,6 +55,9 @@ function New-MinaEncryptedBackup {
             }
         }
         if (Test-Path (Join-Path $AppRoot 'version.json')) { Copy-Item (Join-Path $AppRoot 'version.json') $Payload }
+        foreach ($Name in @('celular.Caddyfile','destinatario-respaldo.txt')) {
+            if (Test-Path (Join-Path $DataRoot $Name)) { Copy-Item (Join-Path $DataRoot $Name) $Payload }
+        }
         $Files = @()
         foreach ($File in Get-ChildItem $Payload -File -Recurse -Force) {
             $Files += @{ path = $File.FullName.Substring($Payload.Length + 1).Replace('\','/'); sha256 = (Get-FileHash $File.FullName -Algorithm SHA256).Hash; bytes = $File.Length }

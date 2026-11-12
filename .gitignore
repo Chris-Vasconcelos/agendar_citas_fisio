@@ -47,5 +47,6 @@ local-release/
 __pycache__/
 tools-pb/
 tools-age/
+tools-caddy/
 *.zip.age
 *identity*.txt

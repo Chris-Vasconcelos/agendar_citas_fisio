@@ -229,6 +229,7 @@ export function SecurityPage({
         </div>
 
         {isLocalBackend && <p className="text-sm">Los archivos exportados no son un respaldo completo. La recuperación local debe incluir la base y las fotografías del servidor; no se admite importar JSON en esta versión.</p>}
+        {isLocalBackend && <p className="text-sm">Para crear una copia completa cifrada, conecta el disco externo y ejecuta Crear-respaldo.ps1 desde la carpeta de MINA en la PC. Sigue la guía incluida en LEEME.md y comprueba regularmente la recuperación en otra carpeta o equipo.</p>}
         {restoreReport && (
           <div className="rounded-md border-2 border-[#137752] bg-emerald-50 p-3 text-xs space-y-1 text-[#111827]">
             <p className="font-bold text-[#137752] flex items-center gap-1.5">

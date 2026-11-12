@@ -12,6 +12,9 @@ try {
     $Root = Join-Path $Work 'origen'
     $App = Join-Path $Work 'app'
     [IO.Directory]::CreateDirectory($Root) | Out-Null
+    [IO.Directory]::CreateDirectory((Join-Path $Root 'https-datos/pki')) | Out-Null
+    'CA privada ficticia' | Set-Content (Join-Path $Root 'https-datos/pki/root.key')
+    'Configuracion HTTPS ficticia' | Set-Content (Join-Path $Root 'celular.Caddyfile')
     if ($SourceData) { Copy-Item $SourceData (Join-Path $Root 'pb_data') -Recurse }
     else {
         [IO.Directory]::CreateDirectory((Join-Path $Root 'pb_data/storage/expediente')) | Out-Null
@@ -53,4 +56,6 @@ try {
     # Optional external destination used to boot and query a restored real PocketBase in check_local.py.
     if ($env:MINA_TEST_RESTORED) { Copy-Item $Restored $env:MINA_TEST_RESTORED -Recurse }
     Write-Host 'Backup PASS: full round trip, all file hashes, photograph, wrong key, tampering, existing destination, nested output and running-database rejection.'
+    # Expected native age failures above must not become the CI script's exit code.
+    $global:LASTEXITCODE = 0
 } finally { Remove-Item $Work -Recurse -Force }

@@ -1,52 +1,53 @@
-# MINA Local — entrega de cambios locales al PR #30
+# MINA Local — estado real y relevo del PR #30
 
-Este documento describe el trabajo que antes solo existía en el entorno de desarrollo. La rama principal no se modifica ni se fusiona.
+Rama de trabajo: `feat/mina-local-etapa1-20261108`. No fusionar ni cambiar `main`. Destino: PC Windows del consultorio de Lalo; edicion, arquitectura y telefono pendientes de confirmar. Los documentos de etapa 1 y prototipo describen estados historicos; este documento, el codigo y los resultados de CI son la referencia actual.
 
 ## Implementado
 
-- Configuración separada `npm run dev:local` / `npm run build:local`, reutilizando la interfaz original.
-- Servicios PocketBase para pacientes, archivo, citas, horarios, fotografías privadas y seguimiento manual de recordatorios.
-- Sesión con token en sessionStorage (sin expedientes), validación contra auth-refresh, notificación de cierre y descarte de respuestas de sesiones anteriores.
-- Bloqueo de nuevas escrituras cuando una respuesta de guardado se pierde; se exige recargar y comprobar antes de repetir.
-- Migración adicional para fechas de creación, domingo como día cero, validación de horas y recordatorios. Mantiene la migración original.
-- Bloqueo de importación JSON en la versión local: no simular restauración solo actualizando React.
-- Pruebas de cliente, API real y navegador; workflow con Windows y Linux y preparación de paquete Windows x64.
+- Compilacion `npm run build:local` con la interfaz original y servicios PocketBase para acceso, pacientes/archivo, agenda, horarios, notas clinicas, fotografias privadas y seguimiento **manual** de WhatsApp. La compilacion habitual conserva Supabase.
+- Token de sesion en sessionStorage, sin expedientes; validacion contra auth-refresh, vencimiento/cierre y descarte de respuestas anteriores al cambio de sesion.
+- Fallos de carga bloquean la vista; no muestran una agenda vacia como si hubiera cargado. No existe respaldo de expedientes en almacenamiento del navegador. Guardados sin respuesta confirmada bloquean nuevas escrituras hasta recargar y revisar.
+- Migracion aditiva para fechas, domingo 0, validacion de horas y recordatorios. Triggers del servidor rechazan conflictos concurrentes. Los controles de horarios se bloquean durante su guardado.
+- Paquete Windows x64 con PocketBase 0.40.6, age 1.2.1, Caddy 2.10.2, migraciones, version de codigo, interfaz y scripts PowerShell. No requiere Docker, Node ni Python en el consultorio.
+- Arranque/detencion de procesos, inicio al entrar en la cuenta Windows (no antes del inicio de sesion), configuracion opcional de HTTPS en IPv4 privada y regla de firewall restringida. El proxy bloquea panel/API administrativos y no instala confianza en telefonos automaticamente.
+- Respaldo completo cifrado con age: base detenida, fotografias, configuracion, migraciones y CA privada de HTTPS. Identidad de recuperacion cifrada con frase, destinatario publico en la PC. Restauracion en carpeta nueva, autenticacion del cifrado y verificacion SHA256 de todos los archivos antes de publicar. No reemplaza la base activa. Exportacion CSV/JSON sigue siendo parcial y no restaura el servidor.
 
-## Continuación necesaria
+## Pruebas ejecutadas
 
-Estos cambios no equivalen a proyecto listo para producción. Verificar el resultado de CI sobre este commit, completar los flujos del navegador que fallen y validar los scripts en Windows. Faltan HTTPS LAN, respaldo cifrado/restauración y ensayo sobre el equipo real. No incorporar datos clínicos hasta cerrar esas tareas.
+En este entorno Linux: pruebas Node, 7 pruebas SQLite, ambas compilaciones, 10 pruebas de API PocketBase real y recorrido Chromium de la interfaz original aprobados. El recorrido verifica paciente, fotografia privada, domingo y persistencia de horarios, conflicto entre dos sesiones, seguimiento manual de WhatsApp sin enviar mensajes, notas, archivo con historial conservado, recarga, ausencia de expedientes en almacenamiento del navegador, servidor inaccesible y cierre de sesion.
 
-Los documentos de etapa 1 y prototipo reflejan avances anteriores. Este archivo y el código del PR son la referencia para continuar la integración.
+Respaldo probado con PowerShell 7.4.6 y base PocketBase temporal real: coincidencia de todos los archivos, servidor recuperado arrancado, acceso del operador original, pacientes, fotografia privada y nota clinica. Rechazo de clave incorrecta, archivo alterado, destino existente, copia dentro de los datos y base abierta. Tambien se probo de forma interactiva preparar una identidad cifrada y descifrar con ella usando una frase ficticia.
 
-## Comandos de comprobación
+HTTPS probado con CA temporal sin deshabilitar TLS: confianza explicita y validacion de IP, rechazo sin confiar en la CA, interfaz original, acceso por operador, fotografia privada y bloqueo administrativo. Se rechazan IP publicas, escucha general e inyeccion en la configuracion.
 
-```
+CI del commit `579a0f5`: API, navegador, SQLite, compilaciones y respaldo/restauracion aprobados tanto en Linux como Windows; paquete Windows generado. La prueba de PowerShell 5.1 realizo correctamente arranque en ruta con espacios, inicio repetido sin duplicacion, interfaz, detencion y respaldo/restauracion, pero el paso termino con el codigo nativo de una prueba negativa de age. Se corrigio el codigo de salida del arnes. Los cambios posteriores de HTTPS y la correccion deben confirmar nuevamente todos los pasos en CI; no asumir el resultado antes de ver la ejecucion.
+
+## Comandos de desarrollo
+
+```shell
 npm ci
 npm test
 npm run build
 npm run build:local
-python scripts/get_pocketbase.py windows_amd64 tools-pb
-python scripts/check_local.py tools-pb/pocketbase.exe --browser
+npx playwright install chromium
+python scripts/get_pocketbase.py linux_amd64 tools-pb
+python scripts/get_age.py linux-amd64 tools-age
+python scripts/get_caddy.py linux_amd64 tools-caddy
+MINA_TEST_AGE_DIR=tools-age MINA_TEST_CADDY=tools-caddy/caddy python scripts/check_local.py tools-pb/pocketbase --browser --backup --https
+python -m unittest discover -s local/spike -p 'test_*.py' -v
 ```
 
-La última orden requiere Chromium de Playwright en el entorno de desarrollo (`npx playwright install chromium`). Usa una base temporal y cuentas ficticias; nunca apunta a la instalación de Lalo.
+Requiere PowerShell en el entorno de desarrollo (`pwsh`, o ruta en `MINA_TEST_PWSH`). En Windows usar las descargas `windows_amd64` para PocketBase/Caddy, `windows-amd64` para age, ejecutables `.exe` y variables `$env:MINA_TEST_AGE_DIR`/`$env:MINA_TEST_CADDY`. Todas estas pruebas usan bases temporales y datos ficticios; no apuntar a la instalacion de Lalo.
 
-## Continuacion: navegador comprobado (12 de noviembre de 2026)
+`python scripts/package_windows.py` construye `local-release/MINA-Local-Windows-x64.zip`. CI publica el ZIP solo despues de pasar las pruebas Windows, incluida compatibilidad PowerShell 5.1 del paquete y registro de tarea de inicio. No implica que se haya instalado en el consultorio.
 
-Se reprodujo el fallo de CI de `734ffa9`: la prueba intentaba rellenar el motivo de consulta con la seccion clinica cerrada. Se corrigio el recorrido y se amplio, sin forzar elementos ocultos ni omitir comprobaciones.
+## Pendiente imprescindible en el equipo real
 
-Ejecutado en Linux con PocketBase 0.40.6 y Chromium Playwright: 10 pruebas API y el recorrido de la interfaz original aprobados. Este recorrido comprueba acceso, registro de paciente, fotografia privada, domingo 0 y persistencia de horarios, conflicto entre dos sesiones independientes, seguimiento manual de WhatsApp (destino interceptado, sin enviar mensajes), notas clinicas, archivo con historial conservado, recarga, ausencia de expedientes en almacenamiento del navegador, bloqueo ante servidor inaccesible y cierre de sesion. Los controles de horarios se bloquean mientras se confirma un guardado para evitar escrituras superpuestas.
+1. Confirmar edicion/arquitectura Windows y sistema del telefono; el paquete actual es x64.
+2. Verificar arranque tras inicio de sesion/reinicio, recuperacion de energia, UPS y disponibilidad real de la PC.
+3. Reservar IP en router, red interna, firewall privado, instalar/verificar CA en telefono y comprobar HTTPS sin advertencias, citas simultaneas y fotografias desde ambos dispositivos.
+4. Verificar cifrado del disco Windows, cuentas/permisos y custodia de clave/frase. El respaldo utiliza temporales sin cifrar en el directorio de datos, que se eliminan ante errores normales; no promete borrado fisico.
+5. Probar copia al disco externo y restauracion en otro equipo, incluidas fotos y CA; conservar el paquete de la version de cada respaldo y una segunda copia desconectada. El respaldo es manual y tiene limite de 20 GB descomprimidos.
+6. Acordar responsable de mantenimiento, actualizaciones, custodia y frecuencia de pruebas de recuperacion. No migrar expedientes clinicos ni retirar el sistema previo hasta completar estas comprobaciones.
 
-Esto no valida el equipo Windows del consultorio, su telefono ni HTTPS en su red. Las comprobaciones Windows se distinguen en CI; no asumirlas aprobadas a partir de Linux.
-
-## Continuacion: respaldo completo cifrado
-
-Implementados scripts PowerShell para preparar identidad de recuperacion cifrada, respaldar con age 1.2.1 y restaurar por separado sin reemplazar la base activa. El paquete incluye age y version de codigo; el consultorio no necesita Python/Node. El respaldo exige base detenida, incluye todos los archivos de PocketBase y migraciones, y valida manifiesto SHA256 al restaurar. El inicio y el respaldo comparten bloqueo de mantenimiento.
-
-Ejecutado en Linux con PowerShell 7.4.6, age 1.2.1 y PocketBase 0.40.6: cifrado/restauracion de una base real temporal, coincidencia de todos los archivos, inicio del servidor recuperado, acceso con operador original, pacientes, fotografia privada y nota clinica. Rechazo comprobado de clave incorrecta, archivo alterado, destino existente, copia dentro de los datos y base abierta. CI debe ejecutar tambien el procedimiento en Windows. Pendientes: prueba de PowerShell 5.1 y scripts de arranque en Windows, custodia real de la identidad/frase, disco cifrado, disco externo y recuperacion en otro equipo.
-
-Comando adicional de desarrollo: `MINA_TEST_AGE_DIR=tools-age python scripts/check_local.py tools-pb/pocketbase --browser --backup` (requiere age descargado mediante `scripts/get_age.py` y PowerShell en el entorno de desarrollo). En Windows definir `$env:MINA_TEST_AGE_DIR = 'tools-age'` y usar `tools-pb/pocketbase.exe`. No ejecutar contra la base instalada de Lalo.
-
-## Verificación al publicar (12 de noviembre de 2026)
-
-Aprobadas: 29 pruebas Node, 10 pruebas API PocketBase 0.40.6, compilación habitual y compilación local. La prueba automatizada de navegador no llegó a ejecutarse: Chromium se cerró al iniciar por `socket() failed: Operation not permitted` en este entorno. No se declara aprobada. Windows y generación del paquete quedan pendientes de la ejecución de GitHub Actions y del equipo real.
+Procedimiento de instalacion, HTTPS y respaldo: `docs/mina-local-windows.md`. No declarar terminado el proyecto por compilar o por pasar CI: las comprobaciones del consultorio siguen pendientes.

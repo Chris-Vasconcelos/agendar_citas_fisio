@@ -26,5 +26,6 @@ if (!$Running) {
     }
     if (!$Ready) { throw 'No se pudo comprobar el inicio del servidor.' }
 }
+& (Join-Path $Root 'Iniciar-Celular.ps1') -DataRoot $DataRoot
 if (!$SinNavegador) { Start-Process 'http://127.0.0.1:8090' }
 } finally { $MaintenanceLock.Dispose() }
