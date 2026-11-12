@@ -31,6 +31,14 @@ python scripts/check_local.py tools-pb/pocketbase.exe --browser
 
 La última orden requiere Chromium de Playwright en el entorno de desarrollo (`npx playwright install chromium`). Usa una base temporal y cuentas ficticias; nunca apunta a la instalación de Lalo.
 
+## Continuacion: navegador comprobado (12 de noviembre de 2026)
+
+Se reprodujo el fallo de CI de `734ffa9`: la prueba intentaba rellenar el motivo de consulta con la seccion clinica cerrada. Se corrigio el recorrido y se amplio, sin forzar elementos ocultos ni omitir comprobaciones.
+
+Ejecutado en Linux con PocketBase 0.40.6 y Chromium Playwright: 10 pruebas API y el recorrido de la interfaz original aprobados. Este recorrido comprueba acceso, registro de paciente, fotografia privada, domingo 0 y persistencia de horarios, conflicto entre dos sesiones independientes, seguimiento manual de WhatsApp (destino interceptado, sin enviar mensajes), notas clinicas, archivo con historial conservado, recarga, ausencia de expedientes en almacenamiento del navegador, bloqueo ante servidor inaccesible y cierre de sesion. Los controles de horarios se bloquean mientras se confirma un guardado para evitar escrituras superpuestas.
+
+Esto no valida el equipo Windows del consultorio, su telefono ni HTTPS en su red. Las comprobaciones Windows se distinguen en CI; no asumirlas aprobadas a partir de Linux.
+
 ## Verificación al publicar (12 de noviembre de 2026)
 
 Aprobadas: 29 pruebas Node, 10 pruebas API PocketBase 0.40.6, compilación habitual y compilación local. La prueba automatizada de navegador no llegó a ejecutarse: Chromium se cerró al iniciar por `socket() failed: Operation not permitted` en este entorno. No se declara aprobada. Windows y generación del paquete quedan pendientes de la ejecución de GitHub Actions y del equipo real.
