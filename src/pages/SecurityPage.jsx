@@ -1,3 +1,4 @@
+import { isLocalBackend } from '../lib/backendMode';
 import React from 'react';
 import { Download, Upload, CheckCircle2 } from 'lucide-react';
 import { getCompactDateString } from '../utils/date';
@@ -110,6 +111,10 @@ export function SecurityPage({
   };
 
   const handleImportJsonBackup = (e) => {
+    if (isLocalBackend) {
+      setBannerAlert({ type: 'error', text: 'La restauración local se realiza con el respaldo completo del servidor, incluidas las fotografías.' });
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -208,7 +213,7 @@ export function SecurityPage({
             Exportar a Excel (.CSV)
           </button>
 
-          <div>
+          {!isLocalBackend && <div>
             <label htmlFor="restore-json-input" className="secondary-button inline-flex items-center gap-1.5 text-xs cursor-pointer">
               <Upload className="w-4 h-4" />
               Restaurar datos (.JSON, sin fotografías)
@@ -220,9 +225,10 @@ export function SecurityPage({
               onChange={handleImportJsonBackup}
               className="sr-only"
             />
-          </div>
+          </div>}
         </div>
 
+        {isLocalBackend && <p className="text-sm">Los archivos exportados no son un respaldo completo. La recuperación local debe incluir la base y las fotografías del servidor; no se admite importar JSON en esta versión.</p>}
         {restoreReport && (
           <div className="rounded-md border-2 border-[#137752] bg-emerald-50 p-3 text-xs space-y-1 text-[#111827]">
             <p className="font-bold text-[#137752] flex items-center gap-1.5">

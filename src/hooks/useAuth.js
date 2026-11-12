@@ -1,12 +1,28 @@
+import { isLocalBackend } from '../lib/backendMode';
+import { localCurrentUser, localSubscribe, localRestoreSession } from '../local/pocketbaseClient';
 import { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export function useAuth() {
   const [session, setSession] = useState(null);
-  const [authLoading, setAuthLoading] = useState(Boolean(isSupabaseConfigured && supabase));
+  const [authLoading, setAuthLoading] = useState(Boolean(isLocalBackend || (isSupabaseConfigured && supabase)));
   const [authInitError, setAuthInitError] = useState('');
 
   useEffect(() => {
+    if (isLocalBackend) {
+      let active = true;
+      const unsubscribe = localSubscribe((user) => {
+        if (!active) return;
+        setSession(user ? { user } : null);
+        setAuthInitError('');
+      });
+      localRestoreSession().then(() => {
+        if (active) setSession(localCurrentUser() ? { user: localCurrentUser() } : null);
+      }).catch((error) => {
+        if (active) setAuthInitError(error.message);
+      }).finally(() => { if (active) setAuthLoading(false); });
+      return () => { active = false; unsubscribe(); };
+    }
     if (!isSupabaseConfigured || !supabase) { setAuthLoading(false); return; }
     let cancelled = false;
     let resolved = false;

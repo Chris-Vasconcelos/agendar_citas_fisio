@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
+import { supabase, requiresServer, isLocalBackend } from './lib/backend';
 import { getTodayDateString, formatTimeShort, addMinutesToTimeStr } from './utils/date';
 import { DEFAULT_PROFESSIONAL } from './utils/constants';
 import { formatPatientName } from './utils/name';
@@ -113,7 +113,7 @@ export default function App() {
   const [patientSearch, setPatientSearch] = useState('');
   // Close sensitive patient views immediately when authentication disappears.
   useEffect(() => {
-    if (isSupabaseConfigured && !session?.user?.id) {
+    if (requiresServer && !session?.user?.id) {
       setSelectedPatientForRecord(null);
       setIsAppointmentModalOpen(false);
       setIsPatientModalOpen(false);
@@ -436,7 +436,7 @@ export default function App() {
   // Do not display the login screen until the persisted session has been checked.
   // Never treat an empty asynchronous result as a successful initial load.
   const owner = session?.user?.id;
-  const startupReady = !authLoading && (!isSupabaseConfigured || !owner ||
+  const startupReady = !authLoading && (!requiresServer || !owner ||
     (patientsLoadedFor === owner && appointmentsLoadedFor === owner && availabilityLoadedFor === owner));
   const startupErrors = [authInitError, patientsLoadError, appointmentsLoadError, availabilityLoadError].filter(Boolean);
   const loadFailed = startupReady && startupErrors.length > 0;
@@ -494,7 +494,7 @@ export default function App() {
           startupIssue
         ) : loadingData ? (
           <p role="status" className="p-12 text-center text-slate-600">Cargando tu agenda…</p>
-        ) : (!session && isSupabaseConfigured) ? (
+        ) : (!session && requiresServer) ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
             {import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL ? (
               <img src={import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL}
@@ -583,7 +583,7 @@ export default function App() {
                 setAvailability={setAvailability}
                 session={session}
                 supabase={supabase}
-                isSupabaseConfigured={isSupabaseConfigured}
+                isSupabaseConfigured={requiresServer}
               />
             )}
           </>
@@ -600,7 +600,7 @@ export default function App() {
         setAptFieldErrors={setAptFieldErrors}
         aptFormError={aptFormError}
         setAptFormError={setAptFormError}
-        patients={patients}
+        patients={isLocalBackend ? patients.filter((p) => !p.archived_at || p.id === aptForm.patient_id) : patients}
         onSave={handleAppointmentFormSave}
       />
 
@@ -619,7 +619,7 @@ export default function App() {
       />
 
       <RecordModal
-        selectedPatientForRecord={!isSupabaseConfigured || session?.user?.id ? selectedPatientForRecord : null}
+        selectedPatientForRecord={!requiresServer || session?.user?.id ? selectedPatientForRecord : null}
         setSelectedPatientForRecord={setSelectedPatientForRecord}
         appointments={appointments}
         openEditAppointmentModal={openEditAppointmentModal}

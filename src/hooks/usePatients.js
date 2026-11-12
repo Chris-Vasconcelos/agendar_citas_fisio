@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { fetchPatients, savePatient as apiSavePatient, deletePatient as apiDeletePatient } from '../services/patientService';
 import { INITIAL_DEMO_PATIENTS } from '../utils/constants';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { requiresServer, isLocalBackend } from '../lib/backend';
 import { withTimeout } from '../utils/withTimeout';
 import { readLocalJSON, writeLocalJSON } from '../utils/localJSON';
 
 export function usePatients(session, appendAuditLog, setBannerAlert, appointmentsRef) {
     const [patients, setPatients] = useState(() => {
-        if (isSupabaseConfigured) return [];
+        if (requiresServer) return [];
         return readLocalJSON('fisio_patients_v3', INITIAL_DEMO_PATIENTS);
     });
 
@@ -26,7 +26,7 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
     const [loadedFor, setLoadedFor] = useState(null);
     const [initialLoadError, setInitialLoadError] = useState('');
     useEffect(() => {
-        if (!isSupabaseConfigured) return;
+        if (!requiresServer) return;
         let cancelled = false;
         const owner = session?.user?.id;
         setPatients([]);
@@ -50,7 +50,7 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
     }, [session?.user?.id]);
 
     useEffect(() => {
-        if (!isSupabaseConfigured) {
+        if (!requiresServer) {
           writeLocalJSON('fisio_patients_v3', patients);
         }
     }, [patients]);
@@ -80,7 +80,7 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
 
     const deletePatient = async (patientId) => {
         const hasAppointments = (appointmentsRef.current || []).some((a) => a.patient_id === patientId);
-        if (hasAppointments) {
+        if (hasAppointments && !isLocalBackend) {
           const msg = 'No se puede eliminar un paciente que ya tiene sesiones clínicas registradas en su historial.';
           setBannerAlert({ type: 'warning', text: msg });
           appendAuditLog('HISTORIAL', msg);
@@ -88,9 +88,9 @@ export function usePatients(session, appendAuditLog, setBannerAlert, appointment
         }
 
         try {
-            await apiDeletePatient(patientId);
-            setPatients((prev) => prev.filter((p) => p.id !== patientId));
-            appendAuditLog('PACIENTES', `Paciente sin citas (ID ${String(patientId).slice(0, 8)}) eliminado.`);
+            const saved = await apiDeletePatient(patientId);
+            setPatients((prev) => isLocalBackend ? prev.map((p) => p.id === patientId ? saved : p) : prev.filter((p) => p.id !== patientId));
+            appendAuditLog('PACIENTES', isLocalBackend ? `Expediente archivado; se conserva su historial.` : `Paciente sin citas (ID ${String(patientId).slice(0, 8)}) eliminado.`);
         } catch (error) {
             setBannerAlert({ type: 'error', text: error.message });
         }

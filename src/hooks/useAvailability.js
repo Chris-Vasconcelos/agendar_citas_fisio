@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchAvailability, updateAvailability as apiUpdateAvailability } from '../services/availabilityService';
 import { INITIAL_DEMO_AVAILABILITY } from '../utils/constants';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { requiresServer } from '../lib/backend';
 import { withTimeout } from '../utils/withTimeout';
 import { readLocalJSON, writeLocalJSON } from '../utils/localJSON';
 import { DAYS_OF_WEEK } from '../utils/constants';
 
 export function useAvailability(session, setBannerAlert) {
     const [availability, setAvailability] = useState(() => {
-        if (isSupabaseConfigured) return [];
+        if (requiresServer) return [];
         return readLocalJSON('fisio_availability_v3', INITIAL_DEMO_AVAILABILITY);
     });
 
@@ -26,7 +26,7 @@ export function useAvailability(session, setBannerAlert) {
     const [loadedFor, setLoadedFor] = useState(null);
     const [initialLoadError, setInitialLoadError] = useState('');
     useEffect(() => {
-        if (!isSupabaseConfigured) return;
+        if (!requiresServer) return;
         let cancelled = false;
         const owner = session?.user?.id;
         setAvailability([]);
@@ -50,7 +50,7 @@ export function useAvailability(session, setBannerAlert) {
     }, [session?.user?.id]);
 
     useEffect(() => {
-        if (!isSupabaseConfigured) {
+        if (!requiresServer) {
           writeLocalJSON('fisio_availability_v3', availability);
         }
     }, [availability]);

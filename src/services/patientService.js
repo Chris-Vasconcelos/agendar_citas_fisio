@@ -1,7 +1,10 @@
+import { isLocalBackend } from '../lib/backendMode';
+import { localPatientApi } from '../local/pocketbaseClient';
 import { readLocalJSON } from '../utils/localJSON';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export const fetchPatients = async () => {
+  if (isLocalBackend) return localPatientApi.list();
   if (!isSupabaseConfigured || !supabase) {
     return readLocalJSON('fisio_patients_v3', []);
   }
@@ -11,6 +14,7 @@ export const fetchPatients = async () => {
 };
 
 export const savePatient = async (payload, editingPatientId, userId) => {
+  if (isLocalBackend) return localPatientApi.save(payload, editingPatientId);
   if (isSupabaseConfigured && supabase) {
     if (!userId) {
       throw new Error('Operación no autorizada: No hay sesión activa.');
@@ -43,6 +47,7 @@ export const savePatient = async (payload, editingPatientId, userId) => {
 };
 
 export const deletePatient = async (patientId) => {
+    if (isLocalBackend) return localPatientApi.archive(patientId);
     if (isSupabaseConfigured && supabase) {
         const { error } = await supabase.from('patients').delete().eq('id', patientId);
         if (error) throw error;

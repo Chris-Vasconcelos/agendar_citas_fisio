@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
-import { missingProdConfig } from './lib/supabase';
+import { missingBackendConfig as missingProdConfig } from './lib/backend';
 import { AppErrorBoundary } from './components/layout/AppErrorBoundary.jsx';
 import './index.css';
 import './styles/agenda-profesional.css';

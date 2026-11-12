@@ -1,3 +1,5 @@
+import { isLocalBackend } from '../lib/backendMode';
+import { localConsentApi } from '../local/pocketbaseClient';
 import { supabase } from '../lib/supabase';
 
 const BUCKET = 'patient-consents';
@@ -21,6 +23,7 @@ async function verifyImage(file) {
 }
 
 export async function listSignedConsents(patientId) {
+  if (isLocalBackend) return localConsentApi.list(patientId);
   if (!supabase) return [];
   const { data, error } = await supabase.from('patient_documents')
     .select('id, patient_id, uploaded_at, content_type, file_size, storage_path')
@@ -31,6 +34,7 @@ export async function listSignedConsents(patientId) {
 }
 
 export async function uploadSignedConsent({ patientId, file, userId }) {
+  if (isLocalBackend) { await verifyImage(file); return localConsentApi.upload({ patientId, file }); }
   if (!supabase || !userId || !patientId) throw new Error('Debes iniciar sesión.');
   await verifyImage(file);
   const path = `${userId}/${patientId}/${crypto.randomUUID()}.${TYPES[file.type]}`;
@@ -55,6 +59,7 @@ export async function uploadSignedConsent({ patientId, file, userId }) {
 }
 
 export async function openSignedConsent(storagePath) {
+  if (isLocalBackend) return localConsentApi.open(storagePath);
   if (!supabase) throw new Error('Debes iniciar sesión.');
   const { data, error } = await supabase.storage.from(BUCKET)
     .createSignedUrl(storagePath, 60);

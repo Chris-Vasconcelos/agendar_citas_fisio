@@ -1,6 +1,9 @@
+import { isLocalBackend } from '../lib/backendMode';
+import { localReminderApi } from '../local/pocketbaseClient';
 import { supabase } from '../lib/supabase';
 
 export async function fetchReminderRecords() {
+  if (isLocalBackend) return localReminderApi.list();
   if (!supabase) throw new Error('Los recordatorios requieren iniciar sesión en MINA.');
   const { data, error } = await supabase.from('appointment_reminders')
     .select('appointment_id, appointment_start_time, status, opened_at, confirmed_at');
@@ -10,6 +13,7 @@ export async function fetchReminderRecords() {
 
 // Record the real event only: opening WhatsApp does not prove delivery.
 export async function recordReminderEvent(appointmentId, startTime, userId, status) {
+  if (isLocalBackend) return localReminderApi.save(appointmentId, startTime, status);
   if (!supabase || !userId) throw new Error('Inicia sesión antes de registrar recordatorios.');
   if (!['opened', 'confirmed_sent'].includes(status)) throw new Error('Estado no válido.');
   const timestamp = new Date().toISOString();

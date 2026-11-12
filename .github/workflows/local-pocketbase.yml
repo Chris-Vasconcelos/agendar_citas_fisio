@@ -1,44 +1,49 @@
-name: MINA Local PocketBase prototype
+name: MINA Local integration
 on:
   push:
-    branches:
-      - feat/mina-local-etapa1-20261108
-    paths:
-      - 'local/pocketbase/**'
-      - 'src/local/**'
-      - '.github/workflows/local-pocketbase.yml'
+    branches: [feat/mina-local-etapa1-20261108]
+  pull_request:
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
-  migrate:
-    runs-on: ubuntu-latest
+  integration:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Get PocketBase test binary v0.40.6
-        run: |
-          curl --fail --location --retry 3 -o /tmp/pb.zip https://github.com/pocketbase/pocketbase/releases/download/v0.40.6/pocketbase_0.40.6_linux_amd64.zip
-          unzip -q /tmp/pb.zip pocketbase -d /tmp
-          chmod +x /tmp/pocketbase
-      - name: Apply migrations on disposable database
-        run: |
-          mkdir -p /tmp/mina-pb-test
-          /tmp/pocketbase migrate up --dir /tmp/mina-pb-test --migrationsDir "$GITHUB_WORKSPACE/local/pocketbase/pb_migrations"
-      - name: Start isolated localhost PocketBase for integration tests
-        run: |
-          /tmp/pocketbase superuser create admin@example.invalid 'TemporaryTestPassword_12345!' --dir /tmp/mina-pb-test --migrationsDir "$GITHUB_WORKSPACE/local/pocketbase/pb_migrations"
-          /tmp/pocketbase serve --http 127.0.0.1:8090 --dir /tmp/mina-pb-test --migrationsDir "$GITHUB_WORKSPACE/local/pocketbase/pb_migrations" >/tmp/mina-pb-server.log 2>&1 &
-          for i in $(seq 1 40); do
-            if curl -fsS http://127.0.0.1:8090/api/health >/dev/null; then break; fi
-            sleep 0.5
-          done
-      - name: Integration tests with two fictitious operators
-        run: python -m unittest discover -s local/pocketbase -p "test_*.py" -v
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
-      - name: Build isolated React PocketBase preview
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm run build:local
+      - run: npx playwright install chromium
+      - name: Linux real-server and browser checks
+        if: runner.os == 'Linux'
         run: |
-          npm ci
-          npx vite build --config vite.local.config.js
-      - name: Syntax of experimental API adapter
-        run: node --check src/local/pocketbaseClient.js
+          python scripts/get_pocketbase.py linux_amd64 tools-pb
+          python scripts/check_local.py tools-pb/pocketbase --browser
+      - name: Windows real-server and browser checks
+        if: runner.os == 'Windows'
+        run: |
+          python scripts/get_pocketbase.py windows_amd64 tools-pb
+          python scripts/check_local.py tools-pb/pocketbase.exe --browser
+      - run: python -m unittest discover -s local/spike -p "test_*.py" -v
+      - name: Package Windows x64
+        if: runner.os == 'Windows'
+        run: python scripts/package_windows.py
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Windows'
+        with:
+          name: MINA-Local-Windows-x64
+          path: local-release/MINA-Local-Windows-x64.zip
+          retention-days: 14

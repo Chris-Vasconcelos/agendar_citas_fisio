@@ -2,13 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { fetchAppointments, saveAppointment as apiSaveAppointment, cancelAppointment as apiCancelAppointment } from '../services/appointmentService';
 import { getTodayDateString, formatTimeShort } from '../utils/date';
 import { DEFAULT_PROFESSIONAL } from '../utils/constants';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { requiresServer } from '../lib/backend';
 import { withTimeout } from '../utils/withTimeout';
 import { readLocalJSON, writeLocalJSON } from '../utils/localJSON';
 
 export function useAppointments(session, appendAuditLog, setBannerAlert, patientsById) {
     const [appointments, setAppointments] = useState(() => {
-        if (isSupabaseConfigured) return [];
+        if (requiresServer) return [];
         const stored = readLocalJSON('fisio_appointments_v3', null);
         if (stored !== null) return stored;
         const today = getTodayDateString();
@@ -69,7 +69,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
     const [loadedFor, setLoadedFor] = useState(null);
     const [initialLoadError, setInitialLoadError] = useState('');
     useEffect(() => {
-        if (!isSupabaseConfigured) return;
+        if (!requiresServer) return;
         let cancelled = false;
         const owner = session?.user?.id;
         setAppointments([]);
@@ -93,7 +93,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
     }, [session?.user?.id]);
 
     useEffect(() => {
-        if (!isSupabaseConfigured) {
+        if (!requiresServer) {
           writeLocalJSON('fisio_appointments_v3', appointments);
         }
     }, [appointments]);

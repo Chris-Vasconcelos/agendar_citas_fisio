@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { isSupabaseConfigured, signInWithEmailPassword } from '../../lib/supabase';
+import { requiresServer, signInWithEmailPassword } from '../../lib/backend';
 
 export function AuthModal({
   isOpen,
@@ -9,12 +9,14 @@ export function AuthModal({
   authSuccess,
   setAuthSuccess,
 }) {
+  const [busy, setBusy] = useState(false);
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
 
   if (!isOpen) return null;
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
+    if (busy) return;
     setAuthError('');
     setAuthSuccess('');
 
@@ -26,13 +28,14 @@ export function AuthModal({
       return;
     }
 
-    if (!isSupabaseConfigured) {
+    if (!requiresServer) {
       setAuthSuccess(
         'Modo local activo: Para autenticar contra la nube, coloca VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en tu archivo .env.'
       );
       return;
     }
 
+    setBusy(true);
     try {
       const { error } = await signInWithEmailPassword(cleanEmail, cleanPass);
       if (error) {
@@ -43,7 +46,7 @@ export function AuthModal({
       onClose();
     } catch (err) {
       setAuthError(err?.message || 'Error de autenticación.');
-    }
+    } finally { setBusy(false); }
   };
 
   return (
@@ -110,7 +113,7 @@ export function AuthModal({
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-slate-600">Acceso exclusivo del consultorio. Las cuentas son administradas por el responsable del sistema.</p>
-            <button type="submit" className="submit-button">
+            <button type="submit" disabled={busy} className="submit-button">
               Entrar al Consultorio
             </button>
           </div>

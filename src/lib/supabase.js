@@ -1,3 +1,4 @@
+import { isLocalBackend } from './backendMode';
 import { createClient } from '@supabase/supabase-js';
 
 // REQ-SEC-05: El cliente navegador únicamente utiliza la clave pública anon_key
@@ -5,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const isSupabaseConfigured = Boolean(
+export const isSupabaseConfigured = !isLocalBackend && Boolean(
   supabaseUrl &&
     supabaseAnonKey &&
     !supabaseUrl.includes('tu-proyecto.supabase.co') &&

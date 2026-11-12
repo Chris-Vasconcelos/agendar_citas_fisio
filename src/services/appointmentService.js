@@ -1,7 +1,10 @@
+import { isLocalBackend } from '../lib/backendMode';
+import { localAppointmentApi } from '../local/pocketbaseClient';
 import { readLocalJSON } from '../utils/localJSON';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 export const fetchAppointments = async () => {
+  if (isLocalBackend) return localAppointmentApi.list();
   if (!isSupabaseConfigured || !supabase) {
     return readLocalJSON('fisio_appointments_v3', []);
   }
@@ -11,6 +14,7 @@ export const fetchAppointments = async () => {
 };
 
 export const saveAppointment = async (payload, editingAppointmentId, userId) => {
+    if (isLocalBackend) return localAppointmentApi.save(payload, editingAppointmentId);
     if (isSupabaseConfigured && supabase) {
       if (!userId) {
           throw new Error('Operación no autorizada: No hay sesión activa.');
@@ -43,6 +47,7 @@ export const saveAppointment = async (payload, editingAppointmentId, userId) => 
 }
 
 export const cancelAppointment = async (appointmentId) => {
+    if (isLocalBackend) return localAppointmentApi.cancel(appointmentId);
     if (isSupabaseConfigured && supabase) {
         const { error } = await supabase
           .from('appointments')
