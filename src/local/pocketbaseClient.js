@@ -1,55 +1,78 @@
-// Prototype only: not imported by the current Supabase-powered app.
-// PocketBase auth is token-based; keeping the token in memory avoids persistent browser storage.
-const path = '/api/collections/';
+// Experimental PocketBase adapter. No Supabase fallback or browser-persisted clinical data.
+let auth = null;
 let token = '';
-
-export function localSignOut() { token = ''; }
-export function localIsAuthenticated() { return Boolean(token); }
-
-async function api(endpoint, {method = 'GET', data} = {}) {
-  const headers = {Accept:'application/json'};
-  if (token) headers.Authorization = token;
-  if (data !== undefined) headers['Content-Type'] = 'application/json';
-  const response = await fetch(endpoint, {
-    method, headers, cache:'no-store', credentials:'omit',
-    ...(data === undefined ? {} : {body:JSON.stringify(data)})
-  });
-  let body;
-  try { body = await response.json(); } catch { body = null; }
-  if (!response.ok) throw new Error('MINA Local: solicitud rechazada ('+response.status+').');
-  return body;
+const url = '/api/collections/';
+export function localCurrentUser() { return auth; }
+export function localSignOut() { token = ''; auth = null; }
+async function http(path,{method='GET',payload}={}) {
+  const headers={Accept:'application/json'};
+  if(token) headers.Authorization=token;
+  if(payload!==undefined) headers['Content-Type']='application/json';
+  let response;
+  try {
+    response=await fetch(path,{method,headers,cache:'no-store',credentials:'omit',
+      ...(payload===undefined?{}:{body:JSON.stringify(payload)})});
+  } catch { throw new Error('No hay conexión con el servidor local. No se guardó ningún dato.'); }
+  const result=await response.json().catch(()=>null);
+  if(!response.ok) {
+    if(response.status===401) localSignOut();
+    throw new Error(response.status===401||response.status===403
+      ? 'Acceso denegado o sesión expirada.'
+      : 'El servidor rechazó la operación ('+response.status+').');
+  }
+  return result;
 }
-
-export async function localSignIn(email,password) {
-  token = '';
-  const result = await api(path+'mina_operators/auth-with-password', {
-    method:'POST', data:{identity:email,password}
-  });
-  if (!result?.token || !result?.record?.id) throw new Error('Respuesta de inicio de sesión inválida.');
-  token = result.token;
-  return {id:result.record.id,email:result.record.email};
+export async function localSignIn(email,password){
+  localSignOut();
+  const data=await http(url+'mina_operators/auth-with-password',{method:'POST',payload:{identity:email,password}});
+  if(!data?.token||!data?.record?.id)throw new Error('Respuesta de autenticación inválida.');
+  token=data.token;auth={id:data.record.id,email:data.record.email};
+  return auth;
 }
-
-async function list(collection,sort) {
-  if (!token) throw new Error('Inicia sesión para consultar MINA Local.');
-  const qs = new URLSearchParams({page:'1',perPage:'200',sort});
-  const result = await api(path+collection+'/records?'+qs);
-  if (result.totalPages > 1) throw new Error('Falta implementar paginación para más de 200 registros.');
-  return result.items || [];
+async function list(name,sort='created'){
+  if(!auth)throw new Error('Inicia sesión.');
+  const records=[];
+  for(let page=1;page<=100;page++){
+    const params=new URLSearchParams({page:String(page),perPage:'200',sort});
+    const data=await http(url+name+'/records?'+params);
+    if(!Array.isArray(data?.items))throw new Error('Respuesta de datos inválida.');
+    records.push(...data.items);
+    if(page>=(data.totalPages||1))return records;
+  }
+  throw new Error('Demasiados registros para el prototipo.');
 }
-async function write(collection,record,id) {
-  if (!token) throw new Error('Inicia sesión para guardar datos.');
-  return api(path+collection+'/records'+(id?'/'+encodeURIComponent(id):''), {
-    method:id?'PATCH':'POST',data:record
-  });
+async function write(name,payload,id){
+  if(!auth)throw new Error('Inicia sesión.');
+  return http(url+name+'/records'+(id?'/'+encodeURIComponent(id):''),{
+    method:id?'PATCH':'POST',payload});
 }
-
-export const localPatientApi = {
-  list:()=>list('mina_patients','full_name'),
-  save:(owner,record,id)=>write('mina_patients',{...record,owner},id)
+const patientMap=p=>({...p,email:p.email_address||null,user_id:p.owner});
+const appointmentMap=a=>({...a,patient_id:a.patient,user_id:a.owner,
+  start_time:a.start_time.replace(' ','T'),end_time:a.end_time.replace(' ','T')});
+export const localPatientApi={
+  list:async()=> (await list('mina_patients','full_name')).map(patientMap),
+  save:async(p,id)=>{
+    const {email,user_id,...fields}=p;
+    if(fields.owner&&fields.owner!==auth?.id)throw new Error('Operador distinto.');
+    return patientMap(await write('mina_patients',{...fields,owner:auth.id,email_address:email||''},id));
+  }
 };
-export const localAppointmentApi = {
-  list:()=>list('mina_appointments','start_time'),
-  save:(owner,record,id)=>write('mina_appointments',{...record,owner},id),
-  cancel:id=>write('mina_appointments',{status:'cancelled'},id)
+export const localAppointmentApi={
+  list:async()=> (await list('mina_appointments','start_time')).map(appointmentMap),
+  save:async(p,id)=>{
+    const {patient_id,user_id,...fields}=p;
+    if(fields.owner&&fields.owner!==auth?.id)throw new Error('Operador distinto.');
+    return appointmentMap(await write('mina_appointments',{
+      ...fields,owner:auth.id,patient:patient_id},id));
+  },
+  cancel:async id=>appointmentMap(await write('mina_appointments',{status:'cancelled'},id)),
+};
+export const localAvailabilityApi={
+  list:async()=>list('mina_availability','day_of_week'),
+  save:async(p)=>{
+    const day=Number(p.day_of_week);
+    const existing=(await list('mina_availability','day_of_week'))
+      .find(x=>Number(x.day_of_week)===day);
+    return write('mina_availability',{...p,owner:auth.id},existing?.id);
+  }
 };
