@@ -39,6 +39,14 @@ Ejecutado en Linux con PocketBase 0.40.6 y Chromium Playwright: 10 pruebas API y
 
 Esto no valida el equipo Windows del consultorio, su telefono ni HTTPS en su red. Las comprobaciones Windows se distinguen en CI; no asumirlas aprobadas a partir de Linux.
 
+## Continuacion: respaldo completo cifrado
+
+Implementados scripts PowerShell para preparar identidad de recuperacion cifrada, respaldar con age 1.2.1 y restaurar por separado sin reemplazar la base activa. El paquete incluye age y version de codigo; el consultorio no necesita Python/Node. El respaldo exige base detenida, incluye todos los archivos de PocketBase y migraciones, y valida manifiesto SHA256 al restaurar. El inicio y el respaldo comparten bloqueo de mantenimiento.
+
+Ejecutado en Linux con PowerShell 7.4.6, age 1.2.1 y PocketBase 0.40.6: cifrado/restauracion de una base real temporal, coincidencia de todos los archivos, inicio del servidor recuperado, acceso con operador original, pacientes, fotografia privada y nota clinica. Rechazo comprobado de clave incorrecta, archivo alterado, destino existente, copia dentro de los datos y base abierta. CI debe ejecutar tambien el procedimiento en Windows. Pendientes: prueba de PowerShell 5.1 y scripts de arranque en Windows, custodia real de la identidad/frase, disco cifrado, disco externo y recuperacion en otro equipo.
+
+Comando adicional de desarrollo: `MINA_TEST_AGE_DIR=tools-age python scripts/check_local.py tools-pb/pocketbase --browser --backup` (requiere age descargado mediante `scripts/get_age.py` y PowerShell en el entorno de desarrollo). En Windows definir `$env:MINA_TEST_AGE_DIR = 'tools-age'` y usar `tools-pb/pocketbase.exe`. No ejecutar contra la base instalada de Lalo.
+
 ## Verificación al publicar (12 de noviembre de 2026)
 
 Aprobadas: 29 pruebas Node, 10 pruebas API PocketBase 0.40.6, compilación habitual y compilación local. La prueba automatizada de navegador no llegó a ejecutarse: Chromium se cerró al iniciar por `socket() failed: Operation not permitted` en este entorno. No se declara aprobada. Windows y generación del paquete quedan pendientes de la ejecución de GitHub Actions y del equipo real.

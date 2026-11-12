@@ -1,5 +1,5 @@
+param([string]$DataRoot = (Join-Path $env:LOCALAPPDATA 'MINA-Local'))
 $ErrorActionPreference = 'Stop'
-$DataRoot = Join-Path $env:LOCALAPPDATA 'MINA-Local'
 $PidFile = Join-Path $DataRoot 'servidor.pid'
 if (!(Test-Path $PidFile)) { return }
 $ServerProcessId = [int](Get-Content $PidFile)

@@ -1,7 +1,9 @@
-param([switch]$SinNavegador)
+param([switch]$SinNavegador, [string]$DataRoot = (Join-Path $env:LOCALAPPDATA 'MINA-Local'))
 $ErrorActionPreference = 'Stop'
 $Root = $PSScriptRoot
-$DataRoot = Join-Path $env:LOCALAPPDATA 'MINA-Local'
+. (Join-Path $PSScriptRoot 'Respaldo-Comun.ps1')
+$MaintenanceLock = Open-MinaMaintenanceLock $DataRoot
+try {
 $Exe = Join-Path $Root 'pocketbase.exe'
 if (!(Test-Path $Exe)) { throw 'Falta pocketbase.exe. Extrae el paquete completo.' }
 New-Item -ItemType Directory -Force -Path $DataRoot | Out-Null
@@ -25,3 +27,4 @@ if (!$Running) {
     if (!$Ready) { throw 'No se pudo comprobar el inicio del servidor.' }
 }
 if (!$SinNavegador) { Start-Process 'http://127.0.0.1:8090' }
+} finally { $MaintenanceLock.Dispose() }
