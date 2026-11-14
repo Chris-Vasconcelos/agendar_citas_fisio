@@ -9,11 +9,12 @@ const assert = require('node:assert/strict');
   context.on('request', (request) => {
     if (new URL(request.url()).origin !== 'http://127.0.0.1:8090') externalRequests.push(request.url());
   });
-  const login = async (target) => {
+  const login = async (target, remember = false) => {
     await target.goto('http://127.0.0.1:8090');
     await target.getByRole('button', { name: 'Iniciar sesión', exact: true }).last().click();
     await target.locator('#auth-email-input').fill('mina-owner-1@example.invalid');
     await target.locator('#auth-password-input').fill('PrototypePassword_123456!');
+    if (remember) await target.getByRole('checkbox', { name: /Recordar este equipo/ }).check();
     await target.getByRole('button', { name: 'Entrar al Consultorio' }).click();
     await target.getByRole('button', { name: 'Expedientes', exact: true }).click();
     await target.locator('.mina-patient-row').first().waitFor();
@@ -158,7 +159,7 @@ const assert = require('node:assert/strict');
     await page.locator('#auth-email-input').fill('mina-owner-1@example.invalid');
     await page.locator('#auth-password-input').fill('WrongPassword_123456!');
     await page.getByRole('button', { name: 'Entrar al Consultorio' }).click();
-    await page.getByRole('dialog').getByText(/El servidor rechazó la operación/).waitFor();
+    await page.getByRole('dialog').getByText(/No se pudo entrar/).waitFor();
     assert.equal(await page.locator('#auth-email-input').inputValue(), 'mina-owner-1@example.invalid');
     await page.getByRole('dialog').getByRole('button', { name: 'Cerrar', exact: true }).click();
     // Reproduce the review's leak without reloading the tab between accounts.
@@ -222,9 +223,55 @@ const assert = require('node:assert/strict');
     await signInAs(1);
     await page.getByRole('button', { name: 'Respaldos', exact: true }).click();
     assert.equal(await page.getByRole('heading', { name: 'Actividad reciente:', exact: true }).count(), 0);
+    // Screen locking must preserve unsaved forms without showing their clinical fields.
+    await page.getByRole('button', { name: 'Expedientes', exact: true }).click();
+    await page.getByRole('button', { name: 'Nuevo paciente', exact: true }).click();
+    await page.locator('#patient-full-name').fill('Formulario protegido sin guardar');
+    await page.getByRole('button', { name: 'Bloquear MINA', exact: true }).evaluate((button) => button.click());
+    await page.getByRole('main', { name: 'MINA bloqueada' }).waitFor();
+    assert.equal(await page.locator('#patient-full-name').isVisible(), false);
+    await page.locator('#unlock-password').fill('wrong-password');
+    await page.getByRole('button', { name: 'Desbloquear MINA', exact: true }).click();
+    await page.getByRole('alert').filter({ hasText: 'No se pudo entrar' }).waitFor();
+    await page.locator('#unlock-password').fill('PrototypePassword_123456!');
+    await page.getByRole('button', { name: 'Desbloquear MINA', exact: true }).click();
+    await page.locator('#patient-full-name').waitFor();
+    assert.equal(await page.locator('#patient-full-name').inputValue(), 'Formulario protegido sin guardar');
+    await page.clock.install();
+    await page.clock.fastForward(10 * 60 * 1000 + 16000);
+    await page.getByRole('main', { name: 'MINA bloqueada' }).waitFor();
+    await page.locator('#unlock-password').fill('PrototypePassword_123456!');
+    await page.getByRole('button', { name: 'Desbloquear MINA', exact: true }).click();
+    await page.locator('#patient-full-name').waitFor();
+    assert.equal(await page.locator('#patient-full-name').inputValue(), 'Formulario protegido sin guardar');
+    await page.getByRole('button', { name: 'Cerrar formulario', exact: true }).click();
+    await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+
+    // Simulate closing the browser: storageState contains localStorage, never sessionStorage.
+    const trusted = await browser.newContext({ timezoneId: 'America/Mexico_City' });
+    const trustedPage = await trusted.newPage();
+    await login(trustedPage, true);
+    const remembered = await trusted.storageState();
+    const authMetadata = remembered.origins.flatMap((origin) => origin.localStorage).find((item) => item.name === 'mina_local_remembered_session_v1');
+    assert.ok(authMetadata);
+    assert.doesNotMatch(authMetadata.value, /PrototypePassword|Paciente|treatment_notes|full_name/);
+    await trusted.close();
+    const reopened = await browser.newContext({ timezoneId: 'America/Mexico_City', storageState: remembered });
+    const reopenedPage = await reopened.newPage();
+    await reopenedPage.goto('http://127.0.0.1:8090');
+    await reopenedPage.getByRole('button', { name: 'Expedientes', exact: true }).click();
+    await reopenedPage.locator('#patient-search-input').waitFor();
+    const sameProfile = await reopened.newPage();
+    await sameProfile.goto('http://127.0.0.1:8090');
+    await sameProfile.getByRole('button', { name: 'Expedientes', exact: true }).click();
+    await sameProfile.locator('#patient-search-input').waitFor();
+    await reopenedPage.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+    await sameProfile.getByRole('button', { name: 'Iniciar sesión', exact: true }).last().waitFor();
+    assert.equal(await sameProfile.evaluate(() => localStorage.getItem('mina_local_remembered_session_v1')), null);
+    await reopened.close();
     assert.deepEqual(errors, []);
     assert.deepEqual(externalRequests, [], 'The local app must not fetch cloud services or remote fonts.');
-    console.log('Browser PASS: local-only requests, original UI, patient/photo, Sunday 0, conflicts, manual WhatsApp, notes, archive, persistence, offline block, logout, cross-account activity isolation and late-response isolation.');
+    console.log('Browser PASS: remembered workday, idle/manual lock preserving forms, password unlock, cross-window logout, local-only requests, original UI, patient/photo, Sunday 0, conflicts, manual WhatsApp, notes, archive, persistence, offline block, logout, cross-account activity isolation and late-response isolation.');
   } catch (e) {
     console.error((await page.locator('body').innerText()).slice(-5000));
     throw e;

@@ -2,6 +2,16 @@
 
 Rama de trabajo: `feat/mina-local-etapa1-20261108`. No fusionar ni cambiar `main`. Destino: PC Windows del consultorio de Lalo; Windows 11 Pro Education x64 confirmado; iPhone disponible, uso inicial pendiente de confirmar. Los documentos de la version anterior y de los prototipos se encuentran en `docs/archive`; este documento, el codigo y los resultados de CI son la referencia actual.
 
+## Version candidata: instalacion y sesion
+
+En desarrollo sobre esta rama: instalador nativo por usuario (`Instalar-MINA.exe`), iniciador `MINA.exe`, accesos MINA/Comprobar MINA y arranque al entrar en Windows. La ubicacion estable es `%LOCALAPPDATA%\MINA-Local\app`; la base existente permanece en `%LOCALAPPDATA%\MINA-Local\pb_data`. El instalador conserva cuentas/datos, verifica archivos, detiene solo procesos identificados de esa base y guarda una copia local previa al actualizar. Esa copia local sin cifrar NO sustituye el respaldo externo cifrado.
+
+El asistente crea/verifica responsable y cuenta cotidiana sin abrir el panel del servidor. En instalaciones existentes prioriza entrar con la cuenta actual. La ventana propia usa Edge/Chrome con perfil separado, sin barra de direcciones en el flujo normal. No instala ni cambia politicas globales PowerShell; como ejecutable aun sin firma de editor, Windows puede solicitar comprobar procedencia/reputacion. No desactivar antivirus ni politicas para ejecutarlo.
+
+Sesion: recordar equipo es opcional, token/metadatos sin expedientes ni contraseñas en localStorage, validacion del servidor al reabrir, jornada maxima de ocho horas y bloqueo tras diez minutos sin actividad. El token del operador tambien se limita a ocho horas con una migracion adicional. El bloqueo oculta/inactiva la pantalla, bloquea nuevas consultas del cliente y cierra fotografias abiertas por MINA; conserva formularios en memoria. Desbloquear requiere contraseña de la misma cuenta. No sustituye el bloqueo de Windows ni protege frente a quien tenga control de esa cuenta/sus archivos. Cerrar sesion limpia almacenamiento y avisa a otras ventanas del mismo perfil.
+
+Pruebas de desarrollo de esta candidata: Node y compilacion web aprobadas; codigo C# compilado con referencias .NET Framework 4.8/C# 5. Navegador real aprobado: recordar y reabrir, bloqueo manual/inactivo, contraseña incorrecta, recuperacion de formulario, logout entre ventanas, y todos los flujos clinicos/HTTPS/restauracion anteriores. Ejecucion nativa en Windows y nuevo instalador deben confirmarse en CI antes de ofrecerlos como paquete probado.
+
 ## Implementado
 
 - Compilacion `npm run build:local` con la interfaz original y servicios PocketBase para acceso, pacientes/archivo, agenda, horarios, notas clinicas, fotografias privadas y seguimiento **manual** de WhatsApp. Todos los comandos de desarrollo y compilacion seleccionan ahora exclusivamente PocketBase local.

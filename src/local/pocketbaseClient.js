@@ -1,28 +1,62 @@
 // Same-origin API only. No clinical records are persisted in browser storage.
 const ROOT = '/api/collections/';
-const SESSION_KEY = 'mina_local_session_token';
+import { WORKDAY_MS, SESSION_KEY, REMEMBER_KEY, readSessionRecord, sessionDue } from './sessionPolicy.js';
 let auth = null;
 let token = '';
 let epoch = 0;
 let expiryTimer;
 let refreshPromise;
 let uncertainWrite = false;
+let sessionRecord = null;
+let locked = false;
+let lastPersistedAt = 0;
 const listeners = new Set();
 const notify = () => listeners.forEach((fn) => fn(auth));
 export const localCurrentUser = () => auth;
 export const localSessionEpoch = () => epoch;
 export const localSubscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
-function storeToken(value) {
+export const localSessionState = () => ({ locked, remembered: Boolean(sessionRecord?.remember) });
+function persistSession() {
+  if (!sessionRecord || !token) return;
+  lastPersistedAt = Date.now();
+  sessionRecord = { ...sessionRecord, token, locked };
   try {
-    if (value) sessionStorage.setItem(SESSION_KEY, value);
-    else sessionStorage.removeItem(SESSION_KEY);
-  } catch { /* Memory-only session if browser storage is unavailable. */ }
+    (sessionRecord.remember ? localStorage : sessionStorage).setItem(
+      sessionRecord.remember ? REMEMBER_KEY : SESSION_KEY, JSON.stringify(sessionRecord));
+  } catch { /* Session remains usable in memory if storage is blocked. */ }
 }
-export function localSignOut() {
+export function localSignOut({ clearPersistent = true } = {}) {
   epoch++;
   clearTimeout(expiryTimer);
-  token = ''; auth = null; refreshPromise = null;
-  storeToken(''); notify();
+  token = ''; auth = null; refreshPromise = null; sessionRecord = null; locked = false;
+  try { sessionStorage.removeItem(SESSION_KEY); } catch {}
+  if (clearPersistent) { try { localStorage.removeItem(REMEMBER_KEY); } catch {} }
+  notify();
+}
+export function localLockSession() {
+  if (!auth || locked) return;
+  locked = true; persistSession(); notify();
+}
+export function localCheckSession(now = Date.now()) {
+  if (!auth || !sessionRecord) return;
+  if (sessionDue(sessionRecord, now) === 'expired' || expiresAt(token) <= now) localSignOut();
+  else if (sessionDue(sessionRecord, now) === 'locked') localLockSession();
+}
+export function localTouchSession(now = Date.now()) {
+  localCheckSession(now);
+  if (!auth || locked || !sessionRecord) return;
+  const persist = now - lastPersistedAt >= 15000;
+  sessionRecord.lastActivity = now;
+  if (persist) persistSession();
+}
+export function localStorageChanged(event) {
+  if (event.key !== REMEMBER_KEY || !sessionRecord?.remember) return;
+  const other = readSessionRecord(event.newValue);
+  if (!other || other.sessionId !== sessionRecord.sessionId) {
+    localSignOut({ clearPersistent: false }); return;
+  }
+  sessionRecord.lastActivity = Math.max(sessionRecord.lastActivity, other.lastActivity);
+  if (other.locked) { locked = true; notify(); }
 }
 function expiresAt(value) {
   try {
@@ -34,16 +68,23 @@ function acceptSession(data) {
   if (!data?.record?.id || !data.token || !(expiresAt(data.token) > Date.now())) {
     localSignOut(); throw new Error('La sesión recibida no es válida.');
   }
+  if (!sessionRecord || sessionRecord.until <= Date.now()) {
+    localSignOut(); throw new Error('La jornada terminó. Inicia sesión nuevamente.');
+  }
   token = data.token;
   auth = { id: data.record.id, email: data.record.email };
-  storeToken(token);
+  sessionRecord.until = Math.min(sessionRecord.until, expiresAt(token));
+  locked = sessionDue(sessionRecord) === 'locked';
+  persistSession();
   clearTimeout(expiryTimer);
-  expiryTimer = setTimeout(localSignOut, Math.min(expiresAt(token) - Date.now(), 2147483647));
+  expiryTimer = setTimeout(localSignOut, Math.min(sessionRecord.until - Date.now(), expiresAt(token) - Date.now(), 2147483647));
   expiryTimer.unref?.();
   notify();
   return auth;
 }
 function requireSession() {
+  localCheckSession();
+  if (locked) throw new Error('MINA está bloqueada. Desbloquea tu sesión para continuar.');
   if (!token || expiresAt(token) <= Date.now()) {
     localSignOut(); throw new Error('La sesión terminó. Inicia sesión nuevamente.');
   }
@@ -73,15 +114,35 @@ async function http(path, { method = 'GET', payload, mutation = false } = {}) {
     if (response.status === 401) localSignOut();
     throw new Error(response.status === 401 || response.status === 403
       ? 'Acceso denegado o sesión expirada.'
-      : 'El servidor rechazó la operación. Revisa los datos y, si es una cita, que el horario esté libre.');
+      : path.endsWith('/auth-with-password')
+        ? 'No se pudo entrar. Revisa el correo y la contraseña de tu cuenta de MINA.'
+        : 'El servidor rechazó la operación. Revisa los datos y, si es una cita, que el horario esté libre.');
   }
   return result;
 }
-export async function localSignIn(email, password) {
+export async function localSignIn(email, password, rememberDevice = false) {
   localSignOut();
-  return acceptSession(await http(ROOT + 'mina_operators/auth-with-password', {
+  const data = await http(ROOT + 'mina_operators/auth-with-password', {
     method: 'POST', payload: { identity: email, password },
-  }));
+  });
+  const now = Date.now();
+  sessionRecord = { until: now + WORKDAY_MS, lastActivity: now, remember: Boolean(rememberDevice),
+    sessionId: crypto.randomUUID(), locked: false };
+  return acceptSession(data);
+}
+export async function localUnlockSession(password) {
+  if (!auth || !locked || !sessionRecord) throw new Error('La sesión no está bloqueada.');
+  const owner = auth.id;
+  const currentEpoch = epoch;
+  const data = await http(ROOT + 'mina_operators/auth-with-password', {
+    method: 'POST', payload: { identity: auth.email, password },
+  });
+  if (currentEpoch !== epoch || data?.record?.id !== owner) throw new Error('La cuenta cambió. Inicia sesión nuevamente.');
+  if (sessionRecord.until <= Date.now()) { localSignOut(); throw new Error('La jornada terminó. Inicia sesión nuevamente.'); }
+  locked = false;
+  sessionRecord.locked = false;
+  sessionRecord.lastActivity = Date.now();
+  return acceptSession(data);
 }
 export async function localRefreshSession() {
   requireSession();
@@ -93,13 +154,21 @@ export async function localRefreshSession() {
   return refreshPromise;
 }
 export async function localRestoreSession() {
-  // StrictMode can mount twice; share the refresh instead of resetting the session.
   if (refreshPromise) return refreshPromise;
-  if (!token) { try { token = sessionStorage.getItem(SESSION_KEY) || ''; } catch {} }
-  if (!token) return null;
+  if (token && auth) return auth;
+  let raw;
+  try { raw = sessionStorage.getItem(SESSION_KEY); } catch {}
+  sessionRecord = readSessionRecord(raw);
+  if (!sessionRecord) { try { sessionRecord = readSessionRecord(localStorage.getItem(REMEMBER_KEY)); } catch {} }
+  if (!sessionRecord) { localSignOut(); return null; }
+  token = sessionRecord.token;
   if (expiresAt(token) <= Date.now()) { localSignOut(); return null; }
-  try { return await localRefreshSession(); }
+  // Validate on the server before revealing either the screen or the locked identity.
+  const promise = http(ROOT + 'mina_operators/auth-refresh', { method: 'POST' }).then(acceptSession);
+  refreshPromise = promise;
+  try { return await promise; }
   catch (error) { if (!token) return null; throw error; }
+  finally { if (refreshPromise === promise) refreshPromise = null; }
 }
 async function list(name, sort = 'id', filter = '') {
   // PocketBase list rules can return 200 with zero items for an invalid session.

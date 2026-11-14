@@ -1,6 +1,7 @@
 import React from 'react';
 import { Shield, Lock, LogOut, Plus } from 'lucide-react';
 import { signOutUser } from '../../lib/backend';
+import { localLockSession } from '../../local/pocketbaseClient';
 
 export function Header({
   textSize,
@@ -49,6 +50,8 @@ export function Header({
             <Shield className="w-4 h-4" aria-hidden="true" />
           </button>
 
+          {session && <button type="button" className="mina-icon-button" title="Bloquear MINA"
+            aria-label="Bloquear MINA" onClick={localLockSession}><Lock className="w-4 h-4" aria-hidden="true" /></button>}
           {session ? (
             <button type="button" className="mina-icon-button" title="Cerrar sesión"
               aria-label="Cerrar sesión" onClick={signOutUser}>

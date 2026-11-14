@@ -7,6 +7,7 @@ import unittest
 import concurrent.futures
 import threading
 import base64
+import time
 
 BASE = "http://127.0.0.1:8090"
 ADMIN_EMAIL = "admin@example.invalid"
@@ -59,6 +60,13 @@ class LocalApiTests(unittest.TestCase):
             },cls.tokens[0])
             if code != 200: raise RuntimeError("Patient create failed: "+str(code)+" "+str(p))
             cls.patients.append(p["id"])
+    def test_operator_token_validity_is_at_most_one_workday(self):
+        for token in self.tokens:
+            claims = json.loads(base64.urlsafe_b64decode(token.split('.')[1] + '=='))
+            remaining = claims['exp'] - time.time()
+            self.assertGreater(remaining, 0)
+            self.assertLessEqual(remaining, 8 * 60 * 60 + 5)
+
     def test_anonymous_cannot_list_or_create(self):
         code,data=request("GET",collection("mina_patients"))
         self.assertEqual(code,200)

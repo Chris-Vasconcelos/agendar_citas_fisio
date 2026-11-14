@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { fetchPatients, savePatient as apiSavePatient, deletePatient as apiDeletePatient } from '../services/patientService';
 import { withTimeout } from '../utils/withTimeout';
 
-export function usePatients(session, appendAuditLog, setBannerAlert) {
+export function usePatients(session, appendAuditLog, setBannerAlert, locked = false) {
     const [patients, setPatients] = useState([]);
 
     const [loadedFor, setLoadedFor] = useState(null);
     const [initialLoadError, setInitialLoadError] = useState('');
     useEffect(() => {
+        if (locked) return;
         let cancelled = false;
         const owner = session?.user?.id;
         setPatients([]);
@@ -28,7 +29,7 @@ export function usePatients(session, appendAuditLog, setBannerAlert) {
             });
         }
         return () => { cancelled = true; };
-    }, [session?.user?.id]);
+    }, [session?.user?.id, locked]);
 
     const patientsById = useMemo(() => {
         const map = new Map();

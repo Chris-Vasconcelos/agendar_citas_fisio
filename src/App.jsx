@@ -28,6 +28,7 @@ import { PatientModal } from './components/modals/PatientModal';
 import { RecordModal } from './components/modals/RecordModal';
 import { PrivacyModal } from './components/modals/PrivacyModal';
 import { AuthModal } from './components/modals/AuthModal';
+import { SessionLock } from './components/modals/SessionLock';
 
 export default function App() {
   const auth = useAuth();
@@ -36,7 +37,7 @@ export default function App() {
   return <Consultorio key={`${auth.sessionGeneration}:${auth.session?.user?.id || 'signed-out'}`} {...auth} />;
 }
 
-function Consultorio({ session, authLoading, authInitError }) {
+function Consultorio({ session, authLoading, authInitError, locked }) {
   const [activeTab, setActiveTab] = useState('agenda');
   const [introRevealing, setIntroRevealing] = useState(false);
   const handleSplashReveal = useCallback(() => setIntroRevealing(true), []);
@@ -84,12 +85,12 @@ function Consultorio({ session, authLoading, authInitError }) {
   }, []);
 
   // 1. Availability no tiene dependencias entre hooks
-  const { availability, handleEnableDayNow, saveAvailabilityDay, loadedFor: availabilityLoadedFor, initialLoadError: availabilityLoadError } = useAvailability(session, setBannerAlert);
+  const { availability, handleEnableDayNow, saveAvailabilityDay, loadedFor: availabilityLoadedFor, initialLoadError: availabilityLoadError } = useAvailability(session, setBannerAlert, locked);
 
-  const { patients, patientsById, savePatient, deletePatient, loadedFor: patientsLoadedFor, initialLoadError: patientsLoadError } = usePatients(session, appendAuditLog, setBannerAlert);
+  const { patients, patientsById, savePatient, deletePatient, loadedFor: patientsLoadedFor, initialLoadError: patientsLoadError } = usePatients(session, appendAuditLog, setBannerAlert, locked);
 
   // 3. Appointments necesita patientsById puramente (no crea ciclo infinito si lo usamos directamente)
-  const { appointments, validateAppointmentConstraints, saveAppointment, cancelAppointment, loadedFor: appointmentsLoadedFor, initialLoadError: appointmentsLoadError } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById);
+  const { appointments, validateAppointmentConstraints, saveAppointment, cancelAppointment, loadedFor: appointmentsLoadedFor, initialLoadError: appointmentsLoadError } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById, locked);
 
   // Modal de Cita
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
@@ -106,6 +107,16 @@ function Consultorio({ session, authLoading, authInitError }) {
   const [patientFieldErrors, setPatientFieldErrors] = useState({});
   const [patientFormError, setPatientFormError] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
+  const [pendingPhoto, setPendingPhoto] = useState(false);
+  useEffect(() => {
+    const warn = (event) => {
+      if (isPatientModalOpen || isAppointmentModalOpen || pendingPhoto) {
+        event.preventDefault(); event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [isPatientModalOpen, isAppointmentModalOpen, pendingPhoto]);
   // Lógica de apertura de Modales
   const openCreateAppointmentModal = (defaultStart = '09:00', defaultSlot = 'auto', customDate = selectedDate) => {
     const targetDate = customDate || selectedDate;
@@ -434,6 +445,7 @@ function Consultorio({ session, authLoading, authInitError }) {
   );
   return (
     <>
+      <div hidden={locked} inert={locked ? true : undefined} aria-hidden={locked}>
       <Splash ready={startupReady} onRevealStart={handleSplashReveal} />
       <a className="mina-skip-link" href="#main-content">Saltar al contenido</a>
     <div className={`dash-main mina-app-shell pb-24 md:pb-8 ${introRevealing ? 'mina-app-revealing' : 'mina-app-starting'}`} data-theme={designSkill}>
@@ -597,6 +609,7 @@ function Consultorio({ session, authLoading, authInitError }) {
         appointments={appointments}
         openEditAppointmentModal={openEditAppointmentModal}
         userId={session?.user?.id ?? null}
+        onPhotoPending={setPendingPhoto}
       />
 
       <PrivacyModal
@@ -614,6 +627,8 @@ function Consultorio({ session, authLoading, authInitError }) {
       />
 
     </div>
+      </div>
+      {locked && <SessionLock email={session?.user?.email} />}
     </>
   );
 }

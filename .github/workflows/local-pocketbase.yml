@@ -51,9 +51,16 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: .\scripts\test_windows_package.ps1
+      - name: Native Windows installer and launcher checks
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: .\scripts\test_windows_desktop.ps1
       - uses: actions/upload-artifact@v4
         if: runner.os == 'Windows'
         with:
           name: MINA-Local-Windows-x64
-          path: local-release/MINA-Local-Windows-x64.zip
+          path: |
+            local-release/Instalar-MINA.exe
+            local-release/Instalar-MINA.exe.sha256
+            local-release/MINA-Local-Windows-x64.zip
           retention-days: 14

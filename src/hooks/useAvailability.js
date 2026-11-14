@@ -3,12 +3,13 @@ import { fetchAvailability, updateAvailability as apiUpdateAvailability } from '
 import { withTimeout } from '../utils/withTimeout';
 import { DAYS_OF_WEEK } from '../utils/constants';
 
-export function useAvailability(session, setBannerAlert) {
+export function useAvailability(session, setBannerAlert, locked = false) {
     const [availability, setAvailability] = useState([]);
 
     const [loadedFor, setLoadedFor] = useState(null);
     const [initialLoadError, setInitialLoadError] = useState('');
     useEffect(() => {
+        if (locked) return;
         let cancelled = false;
         const owner = session?.user?.id;
         setAvailability([]);
@@ -29,7 +30,7 @@ export function useAvailability(session, setBannerAlert) {
             });
         }
         return () => { cancelled = true; };
-    }, [session?.user?.id]);
+    }, [session?.user?.id, locked]);
 
     const saveAvailabilityDay = async (payload) => {
         try {

@@ -10,6 +10,7 @@ export function AuthModal({
   setAuthSuccess,
 }) {
   const [busy, setBusy] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(false);
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
 
   if (!isOpen) return null;
@@ -30,7 +31,7 @@ export function AuthModal({
 
     setBusy(true);
     try {
-      const { error } = await signInWithEmailPassword(cleanEmail, cleanPass);
+      const { error } = await signInWithEmailPassword(cleanEmail, cleanPass, rememberDevice);
       if (error) {
         setAuthError(error.message);
         return;
@@ -95,6 +96,10 @@ export function AuthModal({
             />
           </div>
 
+          <label className="flex items-start gap-2 text-sm mb-4">
+            <input type="checkbox" checked={rememberDevice} onChange={(e) => setRememberDevice(e.target.checked)} />
+            <span>Recordar este equipo durante la jornada (hasta 8 horas). Solo en tu computadora de confianza; bloqueo tras 10 minutos sin uso.</span>
+          </label>
           <div aria-live="polite" className="mb-4">
             {authError && <div className="error-message active">{authError}</div>}
             {authSuccess && (

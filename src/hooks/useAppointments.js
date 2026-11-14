@@ -3,12 +3,13 @@ import { fetchAppointments, saveAppointment as apiSaveAppointment, cancelAppoint
 import { formatTimeShort } from '../utils/date';
 import { withTimeout } from '../utils/withTimeout';
 
-export function useAppointments(session, appendAuditLog, setBannerAlert, patientsById) {
+export function useAppointments(session, appendAuditLog, setBannerAlert, patientsById, locked = false) {
     const [appointments, setAppointments] = useState([]);
 
     const [loadedFor, setLoadedFor] = useState(null);
     const [initialLoadError, setInitialLoadError] = useState('');
     useEffect(() => {
+        if (locked) return;
         let cancelled = false;
         const owner = session?.user?.id;
         setAppointments([]);
@@ -29,7 +30,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
             });
         }
         return () => { cancelled = true; };
-    }, [session?.user?.id]);
+    }, [session?.user?.id, locked]);
 
     const validateAppointmentConstraints = (startISO, endISO, requestedSlot = 'auto', ignoreAppointmentId = null, patientId = null) => {
         const startMs = new Date(startISO).getTime();
