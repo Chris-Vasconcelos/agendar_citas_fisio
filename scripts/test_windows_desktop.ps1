@@ -16,6 +16,8 @@ try {
     $Assembly = [Reflection.Assembly]::Load([IO.File]::ReadAllBytes((Join-Path $Source 'MINA.exe')))
     $Type = $Assembly.GetType('MinaDesktop.Runtime', $true)
     $Runtime = $Type.GetConstructor([type[]]@([string])).Invoke([object[]]@([string]$DataRoot))
+    # .NET expands TEMP's Windows 8.3 alias; compare WMI arguments with that same path.
+    $DataRoot = $Runtime.DataRoot
     $Setup = [Reflection.Assembly]::Load([IO.File]::ReadAllBytes((Join-Path $PSScriptRoot '../local-release/Instalar-MINA.exe')))
     $Payload = $Setup.GetManifestResourceStream('MINA.Payload.zip')
     if (!$Payload) { throw 'Falta el paquete incrustado en el instalador.' }
@@ -82,7 +84,7 @@ try {
         Start-Sleep -Milliseconds 250
     }
     if (!$Browser.Count) {
-        Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(msedge|chrome).exe$' } | ForEach-Object { Write-Host ('Browser test process: '+$_.Name+' '+$_.CommandLine) }
+        Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(msedge|chrome).exe$' } | ForEach-Object { Write-Host ('Browser test process: '+$_.Name+'; isolated profile='+($_.CommandLine -like "*$Profile*")+'; app mode='+($_.CommandLine -like '*--app=http://127.0.0.1:8090/*')) }
         throw 'No se abrio una ventana app con perfil MINA separado.'
     }
     if ($env:GITHUB_ACTIONS -eq 'true') {
