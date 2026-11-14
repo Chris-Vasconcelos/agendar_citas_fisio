@@ -76,12 +76,15 @@ try {
     $Runtime.OpenWindow()
     $Profile = Join-Path $DataRoot 'perfil-navegador'
     $Browser = $null
-    for ($i=0;$i -lt 40;$i++) {
+    for ($i=0;$i -lt 100;$i++) {
         $Browser = @(Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(msedge|chrome).exe$' -and $_.CommandLine -like "*$Profile*" -and $_.CommandLine -like '*--app=http://127.0.0.1:8090/*' })
         if ($Browser.Count) { break }
         Start-Sleep -Milliseconds 250
     }
-    if (!$Browser.Count) { throw 'No se abrio una ventana app con perfil MINA separado.' }
+    if (!$Browser.Count) {
+        Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(msedge|chrome).exe$' } | ForEach-Object { Write-Host ('Browser test process: '+$_.Name+' '+$_.CommandLine) }
+        throw 'No se abrio una ventana app con perfil MINA separado.'
+    }
     if ($env:GITHUB_ACTIONS -eq 'true') {
         if (Get-ScheduledTask -TaskName 'MINA Local - inicio del consultorio' -ErrorAction SilentlyContinue) { throw 'Existe una tarea ajena a esta prueba.' }
         & (Join-Path $Source 'Inicio-automatico.ps1')
@@ -112,7 +115,10 @@ try {
     if ($CreatedTask) { Unregister-ScheduledTask -TaskName 'MINA Local - inicio del consultorio' -Confirm:$false -ErrorAction SilentlyContinue }
     # Only terminate browser processes using this isolated test profile.
     $Profile = Join-Path $DataRoot 'perfil-navegador'
-    Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(msedge|chrome).exe$' -and $_.CommandLine -like "*$Profile*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -ErrorAction SilentlyContinue }
+    for ($cleanup=0;$cleanup -lt 10;$cleanup++) {
+        Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(msedge|chrome).exe$' -and $_.CommandLine -like "*$Profile*" } | ForEach-Object { Stop-Process -Id $_.ProcessId -ErrorAction SilentlyContinue }
+        Start-Sleep -Milliseconds 200
+    }
     if ($Runtime -and (Test-Path (Join-Path $Runtime.AppRoot 'payload-manifest.json'))) { $Runtime.Stop() }
     Remove-Item $Work -Recurse -Force
 }

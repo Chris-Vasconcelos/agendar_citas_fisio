@@ -26,6 +26,17 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run build:local
+      - name: Package Windows x64
+        if: runner.os == 'Windows'
+        run: python scripts/package_windows.py
+      - name: Windows PowerShell 5.1 portable package smoke test
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: .\scripts\test_windows_package.ps1
+      - name: Native Windows installer and launcher checks
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: .\scripts\test_windows_desktop.ps1
       - run: npx playwright install chromium
       - name: Linux real-server and browser checks
         if: runner.os == 'Linux'
@@ -44,17 +55,6 @@ jobs:
           $env:MINA_TEST_CADDY = 'tools-caddy/caddy.exe'
           python scripts/check_local.py tools-pb/pocketbase.exe --browser --backup --https
       - run: python -m unittest discover -s local/spike -p "test_*.py" -v
-      - name: Package Windows x64
-        if: runner.os == 'Windows'
-        run: python scripts/package_windows.py
-      - name: Windows PowerShell 5.1 portable package smoke test
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: .\scripts\test_windows_package.ps1
-      - name: Native Windows installer and launcher checks
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: .\scripts\test_windows_desktop.ps1
       - uses: actions/upload-artifact@v4
         if: runner.os == 'Windows'
         with:
