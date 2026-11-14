@@ -30,7 +30,7 @@ try {
     foreach ($Path in @((Join-Path $Desktop 'MINA.lnk'),(Join-Path $Desktop 'Comprobar MINA.lnk'),(Join-Path $Startup 'MINA.lnk'))) {
         $Shell = New-Object -ComObject WScript.Shell
         $Link = $Shell.CreateShortcut($Path)
-        if ($Link.TargetPath -ne (Join-Path $DataRoot 'app/MINA.exe')) { throw 'Acceso directo fuera de la instalacion estable.' }
+        if (!$Type.GetMethod('Same').Invoke($null,[object[]]@([string]$Link.TargetPath,[string](Join-Path $DataRoot 'app/MINA.exe')))) { throw 'Acceso directo fuera de la instalacion estable.' }
         [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($Link)
         [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($Shell)
     }
