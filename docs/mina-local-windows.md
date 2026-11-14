@@ -73,4 +73,4 @@ Conservar el ZIP del paquete de aplicacion correspondiente a `version.json` del 
 
 Exportar JSON/CSV no incluye fotografías y no sustituye este respaldo. La restauración JSON está deshabilitada para el backend local para evitar una falsa restauración en memoria. Esta primera version ofrece respaldo manual; no promete copias programadas ni recuperacion despues de un apagon sin verificar Windows real.
 
-Antes del uso clínico: validar Windows real, HTTPS y celular, protección del disco y cuentas Windows, respaldo completo cifrado a disco externo, restauración en otro equipo, recuperación tras reinicio/apagón y responsable de mantenimiento.
+Antes del uso clínico: validar Windows real, protección del disco y cuentas Windows, respaldo completo cifrado a disco externo, restauración en otro equipo, recuperación tras reinicio/apagón y responsable de mantenimiento. Si se incluye el celular en la entrega, validar también HTTPS y la red privada en los dispositivos reales. Lista de aceptación: `docs/entrega-mina-candidata.md`.
