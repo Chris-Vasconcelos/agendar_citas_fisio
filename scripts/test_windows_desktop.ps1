@@ -24,7 +24,7 @@ try {
     try { $Payload.CopyTo($File) } finally { $File.Dispose(); $Payload.Dispose() }
     $Extracted = Join-Path $Work 'incrustado'
     [IO.Compression.ZipFile]::ExtractToDirectory($EmbeddedZip, $Extracted)
-    $null = $Type.GetMethod('Verify').Invoke($null, @($Extracted))
+    $null = $Type.GetMethod('Verify').Invoke($null, [object[]]@([string]$Extracted))
     Write-Host 'Native check: install verified payload'
     $Runtime.Install($Source,$true,$Desktop,$Startup)
     foreach ($Path in @((Join-Path $Desktop 'MINA.lnk'),(Join-Path $Desktop 'Comprobar MINA.lnk'),(Join-Path $Startup 'MINA.lnk'))) {
