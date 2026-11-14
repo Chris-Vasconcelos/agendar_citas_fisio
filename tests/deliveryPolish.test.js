@@ -15,8 +15,10 @@ test('the consultorio login has no public sign-up action', () => {
 test('basic backups are accurately labeled as not including signed photos', () => {
   const security = read('../src/pages/SecurityPage.jsx');
   assert.ok(security.includes('Exportar datos (.JSON, sin fotografías)'));
-  assert.ok(security.includes('las fotografías de consentimientos guardadas en Storage NO se incluyen'));
-  assert.ok(security.includes('Restaurar datos (.JSON, sin fotografías)'));
+  assert.ok(security.includes('las fotografías de consentimientos NO se incluyen'));
+  assert.ok(!security.includes('restore-json-input'));
+  assert.ok(security.includes('Crear-respaldo.ps1'));
+  assert.ok(security.includes('no se admite importar JSON'));
 });
 
 test('signed consent photo requires visual legibility check and releases preview URL', () => {

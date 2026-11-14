@@ -13,10 +13,11 @@ export function PatientsPage({
   setSelectedPatientForRecord,
   handleDeletePatient
 }) {
+  const [showArchived, setShowArchived] = React.useState(false);
   const filteredPatients = useMemo(() => patients
-    .filter((p) => matchesPatient(p, patientSearch))
+    .filter((p) => (showArchived || !p.archived_at) && matchesPatient(p, patientSearch))
     .sort((a, b) => String(a.full_name ?? '').localeCompare(String(b.full_name ?? ''), 'es')),
-    [patients, patientSearch]);
+    [patients, patientSearch, showArchived]);
   const [visibleCount, setVisibleCount] = React.useState(25);
   React.useEffect(() => setVisibleCount(25), [patientSearch]);
 
@@ -52,6 +53,7 @@ export function PatientsPage({
         </div>
       </article>
 
+      <label className="text-sm"><input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Incluir expedientes archivados</label>
       <p className="text-xs text-slate-600" role="status">{filteredPatients.length} {filteredPatients.length === 1 ? 'paciente encontrado' : 'pacientes encontrados'}</p>
       {filteredPatients.length === 0 && <p className="craft-card">Sin coincidencias. Verifica los datos antes de crear otro expediente.</p>}
       <div className="mina-patient-list">
@@ -74,7 +76,7 @@ export function PatientsPage({
                 <div className="space-y-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-base font-bold text-[#222222] m-0">
-                      {formatPatientName(pt.full_name)} · {pt.age ?? '-'} años
+                      {pt.archived_at ? '[Archivado] ' : ''}{formatPatientName(pt.full_name)} · {pt.age ?? '-'} años
                     </h3>
                     {hasAllergies && (
                       <span className="text-xs font-bold text-white bg-[#b30000] px-2 py-0.5 rounded-sm">
@@ -114,12 +116,13 @@ export function PatientsPage({
                     <summary aria-label={`Más acciones para ${pt.full_name}`} title="Más acciones">⋯</summary>
                                       <button
                     type="button"
-                    onClick={() => { if (window.confirm(ptSessions.length ? `El expediente de ${pt.full_name} tiene ${ptSessions.length} citas; MINA impedirá eliminarlo para proteger su historial.` : `¿Eliminar el expediente de ${pt.full_name}? No tiene citas registradas y esta acción no se puede deshacer.`)) handleDeletePatient(pt.id); }}
+                    onClick={() => { if (window.confirm(`¿Archivar el expediente de ${pt.full_name}? Se conservará su historial.`)) handleDeletePatient(pt.id); }}
                     className="mina-delete-trigger"
-                    title="Eliminar expediente sin citas"
+                    disabled={Boolean(pt.archived_at)}
+                    title="Archivar expediente"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    Eliminar
+                    Archivar
                   </button>
                   </details>
                 </div>

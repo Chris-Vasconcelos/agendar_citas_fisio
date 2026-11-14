@@ -1,10 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { localSubscribe, localSessionState } from '../../local/pocketbaseClient';
 import { listSignedConsents, uploadSignedConsent, openSignedConsent } from '../../services/consentService';
 
-export function ConsentPhotoSection({ patient, userId }) {
+export function ConsentPhotoSection({ patient, userId, onPendingChange }) {
+  const popups = useRef([]);
+  useEffect(() => {
+    const close = () => { popups.current.forEach((popup) => { try { popup.close(); } catch {} }); popups.current = []; };
+    const unsubscribe = localSubscribe((user) => { if (!user || localSessionState().locked) close(); });
+    return () => { unsubscribe(); close(); };
+  }, []);
   const [items, setItems] = useState([]);
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    onPendingChange?.(Boolean(file) || busy);
+    return () => onPendingChange?.(false);
+  }, [file, busy, onPendingChange]);
   const [error, setError] = useState('');
   const [confirm, setConfirm] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
@@ -56,7 +67,7 @@ export function ConsentPhotoSection({ patient, userId }) {
 
   async function view(path) {
     const popup = window.open('', '_blank');
-    if (popup) popup.opener = null;
+    if (popup) { popup.opener = null; popups.current.push(popup); }
     try {
       const url = await openSignedConsent(path);
       if (popup) popup.location.replace(url);

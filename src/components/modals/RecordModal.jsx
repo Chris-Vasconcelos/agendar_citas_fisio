@@ -8,7 +8,8 @@ export function RecordModal({
   setSelectedPatientForRecord,
   appointments,
   openEditAppointmentModal,
-  userId
+  userId,
+  onPhotoPending
 }) {
   if (!selectedPatientForRecord) return null;
 
@@ -57,7 +58,7 @@ export function RecordModal({
           </div>
         </div>
 
-        <ConsentPhotoSection patient={selectedPatientForRecord} userId={userId} />
+        <ConsentPhotoSection patient={selectedPatientForRecord} userId={userId} onPendingChange={onPhotoPending} />
         <div className="space-y-2 border-t-2 border-[#595959] pt-3">
           <h3 className="text-sm font-bold text-[#222222]">
             Historial de Sesiones y Tratamientos

@@ -1,75 +1,15 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchAppointments, saveAppointment as apiSaveAppointment, cancelAppointment as apiCancelAppointment } from '../services/appointmentService';
-import { getTodayDateString, formatTimeShort } from '../utils/date';
-import { DEFAULT_PROFESSIONAL } from '../utils/constants';
-import { isSupabaseConfigured } from '../lib/supabase';
+import { formatTimeShort } from '../utils/date';
 import { withTimeout } from '../utils/withTimeout';
-import { readLocalJSON, writeLocalJSON } from '../utils/localJSON';
 
-export function useAppointments(session, appendAuditLog, setBannerAlert, patientsById) {
-    const [appointments, setAppointments] = useState(() => {
-        if (isSupabaseConfigured) return [];
-        const stored = readLocalJSON('fisio_appointments_v3', null);
-        if (stored !== null) return stored;
-        const today = getTodayDateString();
-        const s1 = new Date(`${today}T09:00:00`).toISOString();
-        const e1 = new Date(`${today}T10:00:00`).toISOString();
-        const s2 = new Date(`${today}T10:00:00`).toISOString();
-        const e2 = new Date(`${today}T11:00:00`).toISOString();
-        return [
-            {
-              id: 'aaaa1111-1111-4111-8111-111111111111',
-              patient_id: '11111111-1111-4111-8111-111111111111',
-              slot_number: 1,
-              start_time: s1,
-              end_time: e1,
-              status: 'scheduled',
-              patient_condition: 'Disminución de edema en cara medial de rodilla derecha, EVA 3/10.',
-              treatment_notes:
-                'Electroterapia interferencial 15 min, ejercicios isométricos de cuádriceps y crioterapia final.',
-              professional_name: DEFAULT_PROFESSIONAL,
-            },
-            {
-              id: 'bbbb2222-2222-4222-8222-222222222222',
-              patient_id: '22222222-2222-4222-8222-222222222222',
-              slot_number: 2,
-              start_time: s1,
-              end_time: e1,
-              status: 'scheduled',
-              patient_condition: 'Arco de movilidad en abducción de hombro a 140 grados con molestia leve.',
-              treatment_notes:
-                'Terapia manual escapulohumeral, ultrasonido terapéutico 1 MHz y fortalecimiento con liga.',
-              professional_name: DEFAULT_PROFESSIONAL,
-            },
-            {
-              id: 'cccc3333-3333-4333-8333-333333333333',
-              patient_id: '33333333-3333-4333-8333-333333333333',
-              slot_number: 1,
-              start_time: s2,
-              end_time: e2,
-              status: 'scheduled',
-              patient_condition: 'Marcha sin claudicación, estabilidad monopodal conservada.',
-              treatment_notes: 'Propiocepción en disco inestable y movilización articular de tobillo.',
-              professional_name: DEFAULT_PROFESSIONAL,
-            },
-        ];
-    });
-
-    const loadAppointments = useCallback(async () => {
-        try {
-            const data = await fetchAppointments();
-            if (Array.isArray(data)) {
-               setAppointments(data);
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    }, []);
+export function useAppointments(session, appendAuditLog, setBannerAlert, patientsById, locked = false) {
+    const [appointments, setAppointments] = useState([]);
 
     const [loadedFor, setLoadedFor] = useState(null);
     const [initialLoadError, setInitialLoadError] = useState('');
     useEffect(() => {
-        if (!isSupabaseConfigured) return;
+        if (locked) return;
         let cancelled = false;
         const owner = session?.user?.id;
         setAppointments([]);
@@ -90,14 +30,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
             });
         }
         return () => { cancelled = true; };
-    }, [session?.user?.id]);
-
-    useEffect(() => {
-        if (!isSupabaseConfigured) {
-          writeLocalJSON('fisio_appointments_v3', appointments);
-        }
-    }, [appointments]);
-
+    }, [session?.user?.id, locked]);
 
     const validateAppointmentConstraints = (startISO, endISO, requestedSlot = 'auto', ignoreAppointmentId = null, patientId = null) => {
         const startMs = new Date(startISO).getTime();
@@ -169,7 +102,6 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
             conflictOnSlot.end_time
           )}`;
           const sqlErrorMsg = `El Espacio ${numericSlot} ya está ocupado de ${conflictRange} por ${conflictPatient}.`;
-          console.error(sqlErrorMsg);
           appendAuditLog('AGENDA', sqlErrorMsg);
           return {
             valid: false,
@@ -181,10 +113,9 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
         return { valid: true, assignedSlot: numericSlot };
     };
 
-
-    const saveAppointment = async (payload, editingAppointmentId, assignedSlot) => {
+    const saveAppointment = async (payload, editingAppointmentId) => {
         try {
-            const data = await apiSaveAppointment(payload, editingAppointmentId, session?.user?.id);
+            const data = await apiSaveAppointment(payload, editingAppointmentId);
             if (editingAppointmentId) {
                 setAppointments((prev) => prev.map((a) => (a.id === data.id ? data : a)));
             } else {
@@ -192,8 +123,8 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
             }
             return { success: true };
         } catch (error) {
-            console.error('[Supabase Error]:', error);
-            const errMsg = error.code === '23P01' ? `El Espacio ${assignedSlot} ya está ocupado en ese horario.` : error.message;
+            console.error('[MINA] Error de guardado:', error);
+            const errMsg = error.message;
             return { success: false, error: errMsg };
         }
     };
@@ -213,11 +144,8 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
         }
     };
 
-
     return {
         appointments,
-        setAppointments,
-        loadAppointments,
         validateAppointmentConstraints,
         saveAppointment,
         cancelAppointment,

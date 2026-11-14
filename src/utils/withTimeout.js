@@ -1,6 +1,6 @@
 /**
  * Timeout that releases its timer on success or failure.
- * This does not abort the underlying Supabase request; callers ignore late
+ * This does not abort the underlying server request; callers ignore late
  * results after effect cleanup via their cancelled flag.
  */
 export function withTimeout(promise, ms = 15000) {

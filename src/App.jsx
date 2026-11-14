@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { getTodayDateString, formatTimeShort, addMinutesToTimeStr } from './utils/date';
 import { DEFAULT_PROFESSIONAL } from './utils/constants';
 import { formatPatientName } from './utils/name';
@@ -29,8 +28,16 @@ import { PatientModal } from './components/modals/PatientModal';
 import { RecordModal } from './components/modals/RecordModal';
 import { PrivacyModal } from './components/modals/PrivacyModal';
 import { AuthModal } from './components/modals/AuthModal';
+import { SessionLock } from './components/modals/SessionLock';
 
 export default function App() {
+  const auth = useAuth();
+  // All clinical UI state and its async callbacks belong to one login generation.
+  // A -> logout -> A is a new lifetime; routine token refresh keeps the same lifetime.
+  return <Consultorio key={`${auth.sessionGeneration}:${auth.session?.user?.id || 'signed-out'}`} {...auth} />;
+}
+
+function Consultorio({ session, authLoading, authInitError, locked }) {
   const [activeTab, setActiveTab] = useState('agenda');
   const [introRevealing, setIntroRevealing] = useState(false);
   const handleSplashReveal = useCallback(() => setIntroRevealing(true), []);
@@ -53,8 +60,6 @@ export default function App() {
     localStorage.setItem('fisio_typeui_skill_v2', designSkill);
   }, [designSkill]);
 
-  // Autenticación Supabase
-  const { session, authLoading, authInitError } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
@@ -68,7 +73,6 @@ export default function App() {
     return () => clearTimeout(timeout);
   }, [bannerAlert]);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [restoreReport, setRestoreReport] = useState(null);
 
   const appendAuditLog = useCallback((code, detail) => {
     const entry = {
@@ -81,20 +85,12 @@ export default function App() {
   }, []);
 
   // 1. Availability no tiene dependencias entre hooks
-  const { availability, setAvailability, handleEnableDayNow, saveAvailabilityDay, loadedFor: availabilityLoadedFor, initialLoadError: availabilityLoadError } = useAvailability(session, setBannerAlert);
+  const { availability, handleEnableDayNow, saveAvailabilityDay, loadedFor: availabilityLoadedFor, initialLoadError: availabilityLoadError } = useAvailability(session, setBannerAlert, locked);
 
-  // 2. Patients depende solo indirectamente de appointments (para validación en borrado)
-  // Pasaremos una referencia en lugar de un estado directo para no forzar renderizados cruzados:
-  const appointmentsRef = React.useRef([]);
-
-  const { patients, setPatients, patientsById, savePatient, deletePatient, loadedFor: patientsLoadedFor, initialLoadError: patientsLoadError } = usePatients(session, appendAuditLog, setBannerAlert, appointmentsRef);
+  const { patients, patientsById, savePatient, deletePatient, loadedFor: patientsLoadedFor, initialLoadError: patientsLoadError } = usePatients(session, appendAuditLog, setBannerAlert, locked);
 
   // 3. Appointments necesita patientsById puramente (no crea ciclo infinito si lo usamos directamente)
-  const { appointments, setAppointments, validateAppointmentConstraints, saveAppointment, cancelAppointment, loadedFor: appointmentsLoadedFor, initialLoadError: appointmentsLoadError } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById);
-
-  useEffect(() => {
-    appointmentsRef.current = appointments;
-  }, [appointments]);
+  const { appointments, validateAppointmentConstraints, saveAppointment, cancelAppointment, loadedFor: appointmentsLoadedFor, initialLoadError: appointmentsLoadError } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById, locked);
 
   // Modal de Cita
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
@@ -111,18 +107,16 @@ export default function App() {
   const [patientFieldErrors, setPatientFieldErrors] = useState({});
   const [patientFormError, setPatientFormError] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
-  // Close sensitive patient views immediately when authentication disappears.
+  const [pendingPhoto, setPendingPhoto] = useState(false);
   useEffect(() => {
-    if (isSupabaseConfigured && !session?.user?.id) {
-      setSelectedPatientForRecord(null);
-      setIsAppointmentModalOpen(false);
-      setIsPatientModalOpen(false);
-      setPatientSearch('');
-    }
-  }, [session?.user?.id]);
-
-
-
+    const warn = (event) => {
+      if (isPatientModalOpen || isAppointmentModalOpen || pendingPhoto) {
+        event.preventDefault(); event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [isPatientModalOpen, isAppointmentModalOpen, pendingPhoto]);
   // Lógica de apertura de Modales
   const openCreateAppointmentModal = (defaultStart = '09:00', defaultSlot = 'auto', customDate = selectedDate) => {
     const targetDate = customDate || selectedDate;
@@ -246,7 +240,7 @@ export default function App() {
       professional_name: (form.professional_name || DEFAULT_PROFESSIONAL).trim(),
     };
 
-    const res = await saveAppointment(payload, editId, assignedSlot);
+    const res = await saveAppointment(payload, editId);
     if (res.success) {
       setIsAppointmentModalOpen(false);
     } else {
@@ -436,7 +430,7 @@ export default function App() {
   // Do not display the login screen until the persisted session has been checked.
   // Never treat an empty asynchronous result as a successful initial load.
   const owner = session?.user?.id;
-  const startupReady = !authLoading && (!isSupabaseConfigured || !owner ||
+  const startupReady = !authLoading && (!owner ||
     (patientsLoadedFor === owner && appointmentsLoadedFor === owner && availabilityLoadedFor === owner));
   const startupErrors = [authInitError, patientsLoadError, appointmentsLoadError, availabilityLoadError].filter(Boolean);
   const loadFailed = startupReady && startupErrors.length > 0;
@@ -451,6 +445,7 @@ export default function App() {
   );
   return (
     <>
+      <div hidden={locked} inert={locked ? true : undefined} aria-hidden={locked}>
       <Splash ready={startupReady} onRevealStart={handleSplashReveal} />
       <a className="mina-skip-link" href="#main-content">Saltar al contenido</a>
     <div className={`dash-main mina-app-shell pb-24 md:pb-8 ${introRevealing ? 'mina-app-revealing' : 'mina-app-starting'}`} data-theme={designSkill}>
@@ -494,7 +489,7 @@ export default function App() {
           startupIssue
         ) : loadingData ? (
           <p role="status" className="p-12 text-center text-slate-600">Cargando tu agenda…</p>
-        ) : (!session && isSupabaseConfigured) ? (
+        ) : !session ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
             {import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL ? (
               <img src={import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL}
@@ -561,7 +556,6 @@ export default function App() {
           <AvailabilityPage
             appointments={appointments}
             availability={availability}
-            setAvailability={setAvailability}
             saveAvailabilityDay={saveAvailabilityDay}
             setActiveTab={setActiveTab}
           />
@@ -574,16 +568,7 @@ export default function App() {
                 availability={availability}
                 patientsById={patientsById}
                 appendAuditLog={appendAuditLog}
-                restoreReport={restoreReport}
-                setRestoreReport={setRestoreReport}
                 auditLogs={auditLogs}
-                setBannerAlert={setBannerAlert}
-                setPatients={setPatients}
-                setAppointments={setAppointments}
-                setAvailability={setAvailability}
-                session={session}
-                supabase={supabase}
-                isSupabaseConfigured={isSupabaseConfigured}
               />
             )}
           </>
@@ -600,7 +585,7 @@ export default function App() {
         setAptFieldErrors={setAptFieldErrors}
         aptFormError={aptFormError}
         setAptFormError={setAptFormError}
-        patients={patients}
+        patients={patients.filter((p) => !p.archived_at || p.id === aptForm.patient_id)}
         onSave={handleAppointmentFormSave}
       />
 
@@ -619,11 +604,12 @@ export default function App() {
       />
 
       <RecordModal
-        selectedPatientForRecord={!isSupabaseConfigured || session?.user?.id ? selectedPatientForRecord : null}
+        selectedPatientForRecord={session?.user?.id ? selectedPatientForRecord : null}
         setSelectedPatientForRecord={setSelectedPatientForRecord}
         appointments={appointments}
         openEditAppointmentModal={openEditAppointmentModal}
         userId={session?.user?.id ?? null}
+        onPhotoPending={setPendingPhoto}
       />
 
       <PrivacyModal
@@ -641,6 +627,8 @@ export default function App() {
       />
 
     </div>
+      </div>
+      {locked && <SessionLock email={session?.user?.email} />}
     </>
   );
 }

@@ -1,50 +1,6 @@
-import { readLocalJSON } from '../utils/localJSON';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { localPatientApi } from '../local/pocketbaseClient';
 
-export const fetchPatients = async () => {
-  if (!isSupabaseConfigured || !supabase) {
-    return readLocalJSON('fisio_patients_v3', []);
-  }
-  const { data, error } = await supabase.from('patients').select('*').order('full_name');
-  if (error) throw error;
-  return data;
-};
-
-export const savePatient = async (payload, editingPatientId, userId) => {
-  if (isSupabaseConfigured && supabase) {
-    if (!userId) {
-      throw new Error('Operación no autorizada: No hay sesión activa.');
-    }
-    if (editingPatientId) {
-      const { data, error } = await supabase
-        .from('patients')
-        .update(payload)
-        .eq('id', editingPatientId)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    } else {
-      const { data, error } = await supabase
-        .from('patients')
-        .insert({ user_id: userId, ...payload })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    }
-  } else {
-    // Local return solo si no hay Supabase configurado
-    return {
-      id: editingPatientId || crypto.randomUUID(),
-      ...payload
-    }
-  }
-};
-
-export const deletePatient = async (patientId) => {
-    if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase.from('patients').delete().eq('id', patientId);
-        if (error) throw error;
-    }
-}
+export const fetchPatients = () => localPatientApi.list();
+export const savePatient = (payload, editingPatientId) => localPatientApi.save(payload, editingPatientId);
+// Clinical history is retained: this action archives, never deletes the record.
+export const deletePatient = (patientId) => localPatientApi.archive(patientId);

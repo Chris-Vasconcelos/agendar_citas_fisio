@@ -1,30 +1,49 @@
-# MINA — El valor del movimiento
+# MINA Local — El valor del movimiento
 
-Agenda clínica y expediente básico para un consultorio de fisioterapia. Proyecto en revisión; **no utilizar datos clínicos reales hasta verificar la seguridad de Supabase, el aviso de privacidad y los respaldos**.
+Aplicacion de citas y expedientes de fisioterapia para el consultorio de Lalo/Eduardo. Esta rama utiliza exclusivamente **PocketBase local**, SQLite administrada por PocketBase y fotografias privadas. React/Vite conserva el diseño original.
 
-## Tecnologías
-React 19, Vite 6, Tailwind CSS 4, Supabase PostgreSQL/Auth. El modo localStorage se reserva para desarrollo y datos ficticios; un build de producción sin Supabase se bloquea.
+Una sola base en la PC Windows. Sin hosting, integracion de calendarios, servicios cloud ni expedientes alternativos en el navegador. Las preferencias visuales pueden persistir en el navegador y el token se conserva en sessionStorage, siempre sujeto a validacion.
+
+## Usar el paquete Windows
+
+El consultorio no necesita Docker, Node ni Python. Abrir `Instalar-MINA.exe` desde el artefacto verificado y seguir [Instalacion, cuentas y recuperacion](docs/mina-local-windows.md). Conservar una sola carpeta de programa estable. Los datos se guardan por separado en `%LOCALAPPDATA%\MINA-Local\pb_data`.
+
+[Estado, pruebas y pendientes](docs/mina-local-estado-integracion.md). Las pruebas de desarrollo y la prueba de persistencia comunicada desde la laptop no sustituyen la validacion del equipo de Lalo, cifrado y restauracion desde respaldo externo. Utilizar datos ficticios hasta completarla.
 
 ## Desarrollo
-1. Instala Node.js y ejecuta `npm ci`.
-2. Copia `.env.example` a `.env` y configura `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. **No utilices ninguna clave service_role en el navegador**.
-3. Ejecuta `npm run dev`.
-4. Ejecuta `npm test` y `npm run build` antes de publicar.
 
-Para pruebas locales sin credenciales, la app puede usar localStorage y datos de demostración. No uses esta modalidad con pacientes reales.
+1. Instalar Node y Python solamente en el entorno de desarrollo; ejecutar `npm ci`.
+2. Descargar el PocketBase oficial fijado con `python scripts/get_pocketbase.py linux_amd64 tools-pb` (en Windows: `windows_amd64`).
+3. Para una base de prueba nueva, iniciar PocketBase en loopback con `--migrationsDir local/pocketbase/pb_migrations` y un `--dir` de pruebas; crear administrador y cuenta cotidiana segun la guia Windows. No utilizar datos clinicos reales ni la carpeta de una instalacion existente para estas pruebas.
+4. Ejecutar `npm run dev`; la interfaz usa el mismo servidor en `127.0.0.1:8090`. `npm run dev:local` es un alias compatible.
+5. Ejecutar `npm test` y `npm run build`. El resultado es `dist-local`; `npm run build:local` produce la misma aplicacion. La compilacion no necesita credenciales ni seleccion de backend.
 
-## Preparación de Supabase
-- Revisa `supabase/schema.sql` en un entorno de pruebas antes de ejecutarlo. No vuelvas a aplicarlo en una base con datos sin plan de migración.
-- Crea únicamente la cuenta autorizada del profesional y desactiva el registro público en el panel de Supabase Auth.
-- Verifica en la base desplegada que RLS esté activo para `patients`, `appointments` y `availability`, y que los permisos estén limitados a `auth.uid() = user_id`.
-- Comprueba que la clave pública sin sesión no pueda leer filas y prueba el aislamiento con dos usuarios ficticios.
+Comprobacion aislada de API y navegador:
 
-## Publicación
-Configura las variables VITE en el proveedor **antes de compilar**. Ejecuta pruebas, aplica las migraciones revisadas y despliega únicamente una rama aprobada. Nunca despliegues la rama de desarrollo sin revisar permisos, autenticación y backups.
+```shell
+npm run build
+npx playwright install chromium
+python scripts/check_local.py tools-pb/pocketbase --browser
+```
 
-## Seguridad y operación
-- El repositorio no debe contener secretos, contraseñas, imágenes de pacientes ni datos clínicos reales.
-- Los errores iniciales de red bloquean la Agenda para impedir interpretarlos como horarios libres.
-- El almacenamiento local inválido no se sobreescribe automáticamente; recupera o respalda ese valor antes de continuar.
-- Valida RLS directamente en Supabase y el procedimiento de respaldos/restauración antes de la entrega.
-- Cambiar este repositorio a privado y proteger `main` requiere configuración de GitHub; no se hace automáticamente mediante esta documentación.
+Para incluir HTTPS y recuperacion, seguir los comandos del [estado vigente](docs/mina-local-estado-integracion.md). El script crea y elimina su propia base temporal con datos ficticios.
+
+## Reglas conservadas
+
+- Sesion obligatoria, archivos privados y aislamiento por operador. Sin registro publico.
+- Dos espacios de atencion, conflictos rechazados por el servidor y domingo como dia 0.
+- Archivo de pacientes con historial conservado; notas, fotografias y seguimiento manual de WhatsApp.
+- Carga fallida visible, sin cambiar a otro proveedor ni simular una agenda vacia.
+- Guardado sin confirmar: comprobar despues de recargar antes de repetirlo.
+- Respaldo completo cifrado y restauracion separada. CSV/JSON son exportaciones parciales; no importan ni recuperan el servidor.
+
+## Historial y organizacion
+
+- `src/`: unica interfaz clinica y cliente PocketBase.
+- `local/pocketbase/pb_migrations`: migraciones vigentes; no reescribir las ya publicadas.
+- `local/windows`: operacion del paquete, HTTPS y respaldos.
+- `scripts` y `tests`: comprobaciones y empaquetado.
+- `local/spike`: referencia independiente de integridad SQLite, solo para pruebas; no aplicar a PocketBase.
+- [Archivo historico](docs/archive/README.md): decisiones anteriores y referencia Git del codigo retirado. La version anterior permanece en `main`, que no se modifica ni se fusiona durante este trabajo.
+
+Las fuentes Geist y su licencia se incluyen en el paquete. El instalador, ventana y sesion se preparan como version candidata; ver [criterios de cierre](docs/entrega-mina-candidata.md). El cambio de logotipo por la imagen del consultorio sigue aplazado por el usuario.
