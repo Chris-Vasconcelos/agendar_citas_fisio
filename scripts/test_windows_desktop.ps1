@@ -15,7 +15,7 @@ try {
     $Source = Join-Path $Source 'MINA-Local'
     $Assembly = [Reflection.Assembly]::Load([IO.File]::ReadAllBytes((Join-Path $Source 'MINA.exe')))
     $Type = $Assembly.GetType('MinaDesktop.Runtime', $true)
-    $Runtime = [Activator]::CreateInstance($Type, @($DataRoot))
+    $Runtime = $Type.GetConstructor([type[]]@([string])).Invoke([object[]]@([string]$DataRoot))
     $Setup = [Reflection.Assembly]::Load([IO.File]::ReadAllBytes((Join-Path $PSScriptRoot '../local-release/Instalar-MINA.exe')))
     $Payload = $Setup.GetManifestResourceStream('MINA.Payload.zip')
     if (!$Payload) { throw 'Falta el paquete incrustado en el instalador.' }
@@ -35,7 +35,7 @@ try {
         [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($Shell)
     }
     $FormType = $Assembly.GetType('MinaDesktop.WelcomeForm',$true)
-    $Form = [Activator]::CreateInstance($FormType, @($Runtime,$Source,$false))
+    $Form = $FormType.GetConstructor([type[]]@($Type,[string],[bool])).Invoke([object[]]@($Runtime,[string]$Source,$false))
     try {
         $Consent = $Form.Controls.Find('closedConsent',$true)[0]
         $Button = $Form.Controls.Find('installButton',$true)[0]
@@ -43,7 +43,7 @@ try {
         $Consent.Checked = $true
         if (!$Button.Enabled) { throw 'No se habilita la instalacion despues de confirmar.' }
     } finally { $Form.Dispose() }
-    $AccountForm = [Activator]::CreateInstance($Assembly.GetType('MinaDesktop.AccountForm',$true), @($Runtime))
+    $AccountForm = $Assembly.GetType('MinaDesktop.AccountForm',$true).GetConstructor([type[]]@($Type)).Invoke([object[]]@($Runtime))
     try {
         if (!$AccountForm.Controls.Find('account1',$true)[0].UseSystemPasswordChar -or !$AccountForm.Controls.Find('account4',$true)[0].UseSystemPasswordChar) { throw 'Contrasenas visibles en el asistente.' }
     } finally { $AccountForm.Dispose() }
