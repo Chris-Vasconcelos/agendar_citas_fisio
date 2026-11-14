@@ -1,3 +1,5 @@
+> HISTORICO: no usar como instrucciones de instalacion ni como estado vigente. Ver ../mina-local-estado-integracion.md y ../mina-local-windows.md.
+
 # MINA — Entrega por etapas (rama de trabajo)
 
 ## Estado de desarrollo

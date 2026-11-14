@@ -12,7 +12,6 @@
     "build:local": "vite build --config vite.mina-local.config.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.49.1",
     "lucide-react": "^0.475.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

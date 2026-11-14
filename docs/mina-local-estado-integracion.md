@@ -1,10 +1,10 @@
 # MINA Local — estado real y relevo del PR #30
 
-Rama de trabajo: `feat/mina-local-etapa1-20261108`. No fusionar ni cambiar `main`. Destino: PC Windows del consultorio de Lalo; edicion, arquitectura y telefono pendientes de confirmar. Los documentos de etapa 1 y prototipo describen estados historicos; este documento, el codigo y los resultados de CI son la referencia actual.
+Rama de trabajo: `feat/mina-local-etapa1-20261108`. No fusionar ni cambiar `main`. Destino: PC Windows del consultorio de Lalo; Windows 11 Pro Education x64 confirmado; iPhone disponible, uso inicial pendiente de confirmar. Los documentos de la version anterior y de los prototipos se encuentran en `docs/archive`; este documento, el codigo y los resultados de CI son la referencia actual.
 
 ## Implementado
 
-- Compilacion `npm run build:local` con la interfaz original y servicios PocketBase para acceso, pacientes/archivo, agenda, horarios, notas clinicas, fotografias privadas y seguimiento **manual** de WhatsApp. La compilacion habitual conserva Supabase.
+- Compilacion `npm run build:local` con la interfaz original y servicios PocketBase para acceso, pacientes/archivo, agenda, horarios, notas clinicas, fotografias privadas y seguimiento **manual** de WhatsApp. Todos los comandos de desarrollo y compilacion seleccionan ahora exclusivamente PocketBase local.
 - Token de sesion en sessionStorage, sin expedientes; validacion contra auth-refresh, vencimiento/cierre y descarte de respuestas anteriores al cambio de sesion.
 - Fallos de carga bloquean la vista; no muestran una agenda vacia como si hubiera cargado. No existe respaldo de expedientes en almacenamiento del navegador. Guardados sin respuesta confirmada bloquean nuevas escrituras hasta recargar y revisar.
 - Migracion aditiva para fechas, domingo 0, validacion de horas y recordatorios. Triggers del servidor rechazan conflictos concurrentes. Los controles de horarios se bloquean durante su guardado.
@@ -12,7 +12,36 @@ Rama de trabajo: `feat/mina-local-etapa1-20261108`. No fusionar ni cambiar `main
 - Arranque/detencion de procesos, inicio al entrar en la cuenta Windows (no antes del inicio de sesion), configuracion opcional de HTTPS en IPv4 privada y regla de firewall restringida. El proxy bloquea panel/API administrativos y no instala confianza en telefonos automaticamente.
 - Respaldo completo cifrado con age: base detenida, fotografias, configuracion, migraciones y CA privada de HTTPS. Identidad de recuperacion cifrada con frase, destinatario publico en la PC. Restauracion en carpeta nueva, autenticacion del cifrado y verificacion SHA256 de todos los archivos antes de publicar. No reemplaza la base activa. Exportacion CSV/JSON sigue siendo parcial y no restaura el servidor.
 
-## Pruebas ejecutadas
+## Limpieza local y hallazgos del informe de seguridad
+
+Esta revision retira el SDK, configuracion y servicios cloud, las rutas de datos ficticios/localStorage, la importacion JSON al servidor cloud y la pantalla experimental separada. `npm run dev`/`build` y sus alias `:local` usan el mismo PocketBase y `dist-local`. Se conserva la interfaz original, las migraciones PocketBase ya publicadas y los archivos/datos de instalaciones existentes. Las fuentes Geist se empaquetan con licencia para evitar solicitudes a Google Fonts.
+
+La documentacion obsoleta se traslado a `docs/archive` con una advertencia e indice. El codigo retirado sigue recuperable en el commit `177d0bd` y en la version anterior de `main`; no se duplica como un segundo backend activo. Los requisitos clinicos y de consentimiento vigentes se actualizaron para PocketBase. `local/spike` sigue siendo solo una referencia independiente de integridad.
+
+### Hallazgo 1: actividad de una cuenta visible para otra — corregido
+
+Se reprodujo antes del cambio en navegador real: A genero un conflicto con nombre/horario, cerro sesion y B vio ese detalle en Respaldos sin recargar la pestaña. El estado pertenecia a toda la vida de App.
+
+Ahora `src/App.jsx` mantiene `useAuth` fuera de un subarbol clinico identificado por generacion de login y usuario. Al cerrar/cambiar cuenta se desmonta ese subarbol: actividad, datos, formularios, errores y avisos se descartan juntos; los callbacks viejos no actualizan la nueva instancia. `src/hooks/useAuth.js` consume el epoch de `src/local/pocketbaseClient.js`. Volver a la misma cuenta despues de cerrar sesion es una vida nueva; renovar el token de la cuenta vigente conserva su estado. Los intentos de acceso rechazados conservan el formulario y muestran su error.
+
+Comprobacion posterior: el mismo recorrido A -> B ya no muestra actividad/nombres de A; una escritura de A con respuesta retenida hasta que B abre un formulario no modifica ni cierra ese formulario ni muestra datos/errores de A. Volver a A tambien mantiene la actividad anterior descartada. El guardado legitimo sigue persistiendo en PocketBase.
+
+### Hallazgo 2: respuesta tardia de la version cloud — ruta retirada
+
+El informe original lo clasifico con confianza media y sin reproduccion en ejecucion. Afectaba las rutas Supabase de guardado/restauracion. Esas rutas y sus dependencias ya no existen en el codigo activo; no se afirma haber modificado o auditado un servicio remoto. El unico proveedor es PocketBase y no hay importacion JSON ni fallback clinico del navegador. El aislamiento de callbacks se prueba tambien en la interfaz local como se describe arriba.
+
+### Verificacion de esta limpieza
+
+- `npm test`: aprobado, incluidos refresh del mismo login y logout/reentrada en una nueva generacion.
+- `npm run build` y `npm run build:local`: aprobados, salida local compatible con el paquete.
+- `node --check src/local/pocketbaseClient.js` y `node --check scripts/check_local_browser.cjs`: aprobados.
+- `python -m unittest discover -s local/spike -p 'test_*.py' -v`: 7 aprobadas.
+- `MINA_TEST_AGE_DIR=/tmp/mina-age-tools MINA_TEST_CADDY=/tmp/mina-caddy-tools/caddy MINA_TEST_PWSH=/tmp/mina-pwsh/pwsh python scripts/check_local.py /tmp/mina-tools/pocketbase --browser --backup --https`: aprobado en Linux con base temporal. Incluye 10 pruebas API, navegador, error de contraseña, ausencia de peticiones externas de la app, aislamiento entre cuentas, guardados tardios, HTTPS verificado y arranque/lectura de base recuperada con foto privada y notas.
+- Sin referencias al SDK/configuracion Supabase ni a claves de demo clinico en el JS/HTML compilado; sin cambios a las migraciones PocketBase. Revision independiente del diff: sin bypass o regresion concreta encontrada (revision estatica, no sustituye las ejecuciones).
+
+La ejecucion Windows y su nuevo ZIP deben comprobarse en Actions sobre el commit publicado de esta limpieza. La validacion del consultorio sigue pendiente. La prueba de persistencia de expedientes/foto comunicada por Christofer corresponde a su laptop; no equivale a restauracion en otro equipo. Instalador guiado, icono/ventana propia, estrategia de recordar equipo y cambio de imagen del consultorio siguen pendientes y no se incluyen en esta revision.
+
+## Pruebas ejecutadas antes de la limpieza
 
 En este entorno Linux: pruebas Node, 7 pruebas SQLite, ambas compilaciones, 10 pruebas de API PocketBase real y recorrido Chromium de la interfaz original aprobados. El recorrido verifica paciente, fotografia privada, domingo y persistencia de horarios, conflicto entre dos sesiones, seguimiento manual de WhatsApp sin enviar mensajes, notas, archivo con historial conservado, recarga, ausencia de expedientes en almacenamiento del navegador, servidor inaccesible y cierre de sesion.
 
@@ -43,7 +72,7 @@ Requiere PowerShell en el entorno de desarrollo (`pwsh`, o ruta en `MINA_TEST_PW
 
 ## Pendiente imprescindible en el equipo real
 
-1. Confirmar edicion/arquitectura Windows y sistema del telefono; el paquete actual es x64.
+1. Probar el paquete x64 en la PC Windows 11 Pro Education del consultorio (4 GB RAM); confirmar si el iPhone se usara desde el inicio.
 2. Verificar arranque tras inicio de sesion/reinicio, recuperacion de energia, UPS y disponibilidad real de la PC.
 3. Reservar IP en router, red interna, firewall privado, instalar/verificar CA en telefono y comprobar HTTPS sin advertencias, citas simultaneas y fotografias desde ambos dispositivos.
 4. Verificar cifrado del disco Windows, cuentas/permisos y custodia de clave/frase. El respaldo utiliza temporales sin cifrar en el directorio de datos, que se eliminan ante errores normales; no promete borrado fisico.

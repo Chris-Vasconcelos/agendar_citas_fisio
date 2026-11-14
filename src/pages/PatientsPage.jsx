@@ -1,4 +1,3 @@
-import { isLocalBackend } from '../lib/backendMode';
 import React, { useMemo } from 'react';
 import { Plus, FileText, Edit3, Trash2 } from 'lucide-react';
 import { matchesPatient } from '../utils/patientSearch';
@@ -16,7 +15,7 @@ export function PatientsPage({
 }) {
   const [showArchived, setShowArchived] = React.useState(false);
   const filteredPatients = useMemo(() => patients
-    .filter((p) => (!isLocalBackend || showArchived || !p.archived_at) && matchesPatient(p, patientSearch))
+    .filter((p) => (showArchived || !p.archived_at) && matchesPatient(p, patientSearch))
     .sort((a, b) => String(a.full_name ?? '').localeCompare(String(b.full_name ?? ''), 'es')),
     [patients, patientSearch, showArchived]);
   const [visibleCount, setVisibleCount] = React.useState(25);
@@ -54,7 +53,7 @@ export function PatientsPage({
         </div>
       </article>
 
-      {isLocalBackend && <label className="text-sm"><input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Incluir expedientes archivados</label>}
+      <label className="text-sm"><input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> Incluir expedientes archivados</label>
       <p className="text-xs text-slate-600" role="status">{filteredPatients.length} {filteredPatients.length === 1 ? 'paciente encontrado' : 'pacientes encontrados'}</p>
       {filteredPatients.length === 0 && <p className="craft-card">Sin coincidencias. Verifica los datos antes de crear otro expediente.</p>}
       <div className="mina-patient-list">
@@ -117,13 +116,13 @@ export function PatientsPage({
                     <summary aria-label={`Más acciones para ${pt.full_name}`} title="Más acciones">⋯</summary>
                                       <button
                     type="button"
-                    onClick={() => { if (window.confirm(isLocalBackend ? `¿Archivar el expediente de ${pt.full_name}? Se conservará su historial.` : ptSessions.length ? `El expediente de ${pt.full_name} tiene ${ptSessions.length} citas; MINA impedirá eliminarlo para proteger su historial.` : `¿Eliminar el expediente de ${pt.full_name}? No tiene citas registradas y esta acción no se puede deshacer.`)) handleDeletePatient(pt.id); }}
+                    onClick={() => { if (window.confirm(`¿Archivar el expediente de ${pt.full_name}? Se conservará su historial.`)) handleDeletePatient(pt.id); }}
                     className="mina-delete-trigger"
-                    disabled={isLocalBackend && Boolean(pt.archived_at)}
-                    title={isLocalBackend ? "Archivar expediente" : "Eliminar expediente sin citas"}
+                    disabled={Boolean(pt.archived_at)}
+                    title="Archivar expediente"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    {isLocalBackend ? "Archivar" : "Eliminar"}
+                    Archivar
                   </button>
                   </details>
                 </div>

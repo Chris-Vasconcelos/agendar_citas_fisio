@@ -1,52 +1,31 @@
-import { isLocalBackend } from '../lib/backendMode';
-import { localCurrentUser, localSubscribe, localRestoreSession } from '../local/pocketbaseClient';
 import { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { localCurrentUser, localSessionEpoch, localSubscribe, localRestoreSession } from '../local/pocketbaseClient';
 
 export function useAuth() {
-  const [session, setSession] = useState(null);
-  const [authLoading, setAuthLoading] = useState(Boolean(isLocalBackend || (isSupabaseConfigured && supabase)));
+  const [identity, setIdentity] = useState(() => ({ session: null, generation: localSessionEpoch() }));
+  const [authLoading, setAuthLoading] = useState(true);
   const [authInitError, setAuthInitError] = useState('');
 
   useEffect(() => {
-    if (isLocalBackend) {
-      let active = true;
-      const unsubscribe = localSubscribe((user) => {
-        if (!active) return;
-        setSession(user ? { user } : null);
-        setAuthInitError('');
+    let active = true;
+    const acceptUser = (user) => {
+      if (!active) return;
+      setIdentity((previous) => {
+        // A sign-in attempt clears the client while it is already signed out.
+        // Keep that form mounted so a rejected password can still show its error.
+        if (!user && !previous.session) return previous;
+        return { session: user ? { user } : null, generation: localSessionEpoch() };
       });
-      localRestoreSession().then(() => {
-        if (active) setSession(localCurrentUser() ? { user: localCurrentUser() } : null);
-      }).catch((error) => {
-        if (active) setAuthInitError(error.message);
-      }).finally(() => { if (active) setAuthLoading(false); });
-      return () => { active = false; unsubscribe(); };
-    }
-    if (!isSupabaseConfigured || !supabase) { setAuthLoading(false); return; }
-    let cancelled = false;
-    let resolved = false;
-    const finish = (nextSession, error = '') => {
-      if (cancelled || resolved) return;
-      resolved = true;
-      setSession(nextSession);
-      setAuthInitError(error);
-      setAuthLoading(false);
+      setAuthInitError('');
     };
-    const timeout = setTimeout(() => {
-      finish(null, 'No se pudo comprobar la sesión. Comprueba tu conexión e inténtalo nuevamente.');
-    }, 12000);
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (cancelled) return;
-      setSession(nextSession);
-      if (nextSession) setAuthInitError('');
-      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') finish(nextSession);
-    });
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) finish(null, 'No se pudo recuperar tu sesión. Intenta iniciar sesión nuevamente.');
-      else finish(data?.session ?? null);
-    }).catch(() => finish(null, 'No se pudo comprobar la sesión. Comprueba tu conexión.'));
-    return () => { cancelled = true; clearTimeout(timeout); subscription.unsubscribe(); };
+    const unsubscribe = localSubscribe(acceptUser);
+    const restoreEpoch = localSessionEpoch();
+    localRestoreSession().then(() => {
+      acceptUser(localCurrentUser());
+    }).catch((error) => {
+      if (active && localSessionEpoch() === restoreEpoch) setAuthInitError(error.message);
+    }).finally(() => { if (active) setAuthLoading(false); });
+    return () => { active = false; unsubscribe(); };
   }, []);
-  return { session, authLoading, authInitError };
+  return { session: identity.session, sessionGeneration: identity.generation, authLoading, authInitError };
 }

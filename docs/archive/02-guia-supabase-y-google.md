@@ -1,3 +1,5 @@
+> HISTORICO: no usar como instrucciones de instalacion ni como estado vigente. Ver ../mina-local-estado-integracion.md y ../mina-local-windows.md.
+
 # Guía de Configuración: Supabase, Google Cloud y Costos Operativos
 
 Esta guía explica cómo configurar el backend en Supabase y la integración con Google Calendar API, así como las consideraciones reales sobre planes gratuitos y seguridad.

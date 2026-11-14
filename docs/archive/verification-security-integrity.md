@@ -1,3 +1,5 @@
+> HISTORICO: no usar como instrucciones de instalacion ni como estado vigente. Ver ../mina-local-estado-integracion.md y ../mina-local-windows.md.
+
 # Security and data-integrity fix: verification checklist
 
 Branch: `fix/security-data-integrity-20261029` (based on `refactor-app-architecture-15952622451304701325`).

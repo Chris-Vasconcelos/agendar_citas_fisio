@@ -2,7 +2,7 @@
 
 Estado: integración en desarrollo, exclusivamente datos ficticios. No instalar aún como sistema clínico definitivo.
 
-El paquete contiene PocketBase 0.40.6 para Windows x64, age 1.2.1, Caddy 2.10.2, migraciones y la interfaz compilada. No requiere Docker, Node ni Python en la computadora del consultorio. Edición y arquitectura de Windows pendientes de confirmar con Lalo.
+El paquete contiene PocketBase 0.40.6 para Windows x64, age 1.2.1, Caddy 2.10.2, migraciones y la interfaz compilada. No requiere Docker, Node ni Python en la computadora del consultorio. Equipo comunicado: Windows 11 Pro Education 23H2 x64 y 4 GB RAM; la validacion de instalacion/rendimiento en esa PC sigue pendiente.
 
 1. Extraer el ZIP completo a una carpeta estable del usuario.
 2. Revisar los scripts PowerShell antes de ejecutarlos. Si Windows los bloquea, comprobar procedencia y firma/hash; no deshabilitar globalmente la política de ejecución.

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { requiresServer, signInWithEmailPassword } from '../../lib/backend';
+import { signInWithEmailPassword } from '../../lib/backend';
 
 export function AuthModal({
   isOpen,
@@ -25,13 +25,6 @@ export function AuthModal({
 
     if (!cleanEmail.includes('@') || cleanPass.length < 6) {
       setAuthError('Ingresa un correo válido y una contraseña de al menos 6 caracteres.');
-      return;
-    }
-
-    if (!requiresServer) {
-      setAuthSuccess(
-        'Modo local activo: Para autenticar contra la nube, coloca VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en tu archivo .env.'
-      );
       return;
     }
 

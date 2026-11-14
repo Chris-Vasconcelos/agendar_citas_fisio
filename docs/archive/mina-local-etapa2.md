@@ -1,3 +1,5 @@
+> HISTORICO: no usar como instrucciones de instalacion ni como estado vigente. Ver ../mina-local-estado-integracion.md y ../mina-local-windows.md.
+
 # MINA Local — Etapa 2: prototipo PocketBase (en curso)
 
 **Equipo definido:** escritorio Windows 11 Home; celular conectado al Wi-Fi interno del consultorio; respaldo en disco externo. Supabase y la rama main siguen intactos.

@@ -1,3 +1,5 @@
+> HISTORICO: no usar como instrucciones de instalacion ni como estado vigente. Ver ../mina-local-estado-integracion.md y ../mina-local-windows.md.
+
 # MINA Local — prototipo React ↔ PocketBase
 
 Esta rama contiene una **vista experimental separada de MINA** en `local-preview.html`. No sustituye las pantallas actuales ni conecta el sistema clínico completo. Su propósito es verificar por HTTP una sesión PocketBase, listado/registro de pacientes ficticios, alta/cancelación de citas y rechazo de empalmes por los triggers de SQLite.

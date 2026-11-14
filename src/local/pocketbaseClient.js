@@ -10,6 +10,7 @@ let uncertainWrite = false;
 const listeners = new Set();
 const notify = () => listeners.forEach((fn) => fn(auth));
 export const localCurrentUser = () => auth;
+export const localSessionEpoch = () => epoch;
 export const localSubscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
 function storeToken(value) {
   try {

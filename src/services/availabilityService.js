@@ -1,34 +1,4 @@
-import { isLocalBackend } from '../lib/backendMode';
 import { localAvailabilityApi } from '../local/pocketbaseClient';
-import { readLocalJSON } from '../utils/localJSON';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-export const fetchAvailability = async () => {
-  if (isLocalBackend) return localAvailabilityApi.list();
-  if (!isSupabaseConfigured || !supabase) {
-      return readLocalJSON('fisio_availability_v3', []);
-  }
-  const { data, error } = await supabase.from('availability').select('*').order('day_of_week');
-  if (error) throw error;
-  return data;
-};
-
-export const updateAvailability = async (payload, userId) => {
-    if (isLocalBackend) return localAvailabilityApi.save(payload);
-    if (isSupabaseConfigured && supabase) {
-        if (!userId) {
-            throw new Error('Operación no autorizada: No hay sesión activa.');
-        }
-
-        const { data, error } = await supabase
-            .from('availability')
-            .upsert({ user_id: userId, ...payload }, { onConflict: 'user_id,day_of_week' })
-            .select()
-            .single();
-
-        if (error) throw error;
-        return data;
-    } else {
-        return payload;
-    }
-}
+export const fetchAvailability = () => localAvailabilityApi.list();
+export const updateAvailability = (payload) => localAvailabilityApi.save(payload);

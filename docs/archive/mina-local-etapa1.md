@@ -1,3 +1,5 @@
+> HISTORICO: no usar como instrucciones de instalacion ni como estado vigente. Ver ../mina-local-estado-integracion.md y ../mina-local-windows.md.
+
 # MINA Local — Etapa 1 (prototipo aislado)
 
 **Decisión confirmada:** computadora **de escritorio con Windows 11 Home** como servidor, celular del responsable por Wi-Fi privado del consultorio y disco externo para respaldos. **Sin mensualidades de hosting**. Mantenimiento, electricidad y hardware siguen siendo gastos.

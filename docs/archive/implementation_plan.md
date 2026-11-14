@@ -1,3 +1,5 @@
+> HISTORICO: plan de la version anterior. No ejecutar sus instrucciones en MINA Local.
+
 # Plan de Implementación Actualizado (Con Respuestas Reales de Eduardo)
 
 Las respuestas de Eduardo cambian el proyecto para **mucho mejor**: simplifican la parte más frágil (Google Calendar) y dejan claro el verdadero valor por el que te pidió un programa.

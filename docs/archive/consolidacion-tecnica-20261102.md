@@ -1,3 +1,5 @@
+> HISTORICO: no usar como instrucciones de instalacion ni como estado vigente. Ver ../mina-local-estado-integracion.md y ../mina-local-windows.md.
+
 # MINA — Consolidación técnica y lecciones (2026-11-02)
 
 ## Qué causó los problemas del splash

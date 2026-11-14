@@ -5,6 +5,10 @@ const assert = require('node:assert/strict');
   const context = await browser.newContext({ timezoneId: 'America/Mexico_City' });
   const page = await context.newPage();
   const errors = [];
+  const externalRequests = [];
+  context.on('request', (request) => {
+    if (new URL(request.url()).origin !== 'http://127.0.0.1:8090') externalRequests.push(request.url());
+  });
   const login = async (target) => {
     await target.goto('http://127.0.0.1:8090');
     await target.getByRole('button', { name: 'Iniciar sesión', exact: true }).last().click();
@@ -141,8 +145,86 @@ const assert = require('node:assert/strict');
     await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
     await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).last().waitFor();
     assert.equal(await page.evaluate(() => sessionStorage.getItem('mina_local_session_token')), null);
+    const signInAs = async (index) => {
+      await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).last().click();
+      await page.locator('#auth-email-input').fill(`mina-owner-${index}@example.invalid`);
+      await page.locator('#auth-password-input').fill('PrototypePassword_123456!');
+      await page.getByRole('button', { name: 'Entrar al Consultorio' }).click();
+      await page.getByRole('button', { name: 'Expedientes', exact: true }).click();
+      await page.locator('#patient-search-input').waitFor();
+    };
+    // A rejected password must preserve the form and show the login error.
+    await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).last().click();
+    await page.locator('#auth-email-input').fill('mina-owner-1@example.invalid');
+    await page.locator('#auth-password-input').fill('WrongPassword_123456!');
+    await page.getByRole('button', { name: 'Entrar al Consultorio' }).click();
+    await page.getByRole('dialog').getByText(/El servidor rechazó la operación/).waitFor();
+    assert.equal(await page.locator('#auth-email-input').inputValue(), 'mina-owner-1@example.invalid');
+    await page.getByRole('dialog').getByRole('button', { name: 'Cerrar', exact: true }).click();
+    // Reproduce the review's leak without reloading the tab between accounts.
+    await signInAs(1);
+    await page.getByRole('button', { name: 'Nueva cita', exact: true }).click();
+    const conflictPatient = (await page.locator('#apt-patient-select option').allTextContents()).find((text) => text.includes('Numero 1'));
+    await page.locator('#apt-patient-select').selectOption({ label: conflictPatient });
+    await page.locator('#apt-date-input').fill('2026-12-09');
+    await page.locator('#apt-start-time').fill('09:00');
+    await page.locator('#slot-option-1').check();
+    await page.getByRole('button', { name: 'Agendar cita', exact: true }).click();
+    await page.getByRole('dialog').getByText(/El Espacio 1 ya está ocupado/).first().waitFor();
+    await page.getByRole('dialog').getByRole('button', { name: '×', exact: true }).click();
+    await page.getByRole('button', { name: 'Respaldos', exact: true }).click();
+    await page.getByRole('heading', { name: 'Actividad reciente:', exact: true }).waitFor();
+    assert.match(await page.locator('main').innerText(), /Paciente Ficticio Numero 3/);
+    await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+    await signInAs(2);
+    await page.getByRole('button', { name: 'Respaldos', exact: true }).click();
+    assert.doesNotMatch(await page.locator('main').innerText(), /Actividad reciente:|Paciente Ficticio Numero 3/);
+    // A late response from A must not inject data/errors or close B's new form.
+    await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+    await signInAs(1);
+    await page.getByRole('button', { name: 'Nuevo paciente', exact: true }).click();
+    await page.locator('#patient-full-name').fill('Paciente Respuesta Tardia Ficticio');
+    await page.locator('#patient-age').fill('22');
+    await page.locator('#patient-phone').fill('7225550138');
+    await page.getByText('Datos clínicos (motivo de consulta requerido)', { exact: true }).click();
+    await page.locator('#patient-reason').fill('Prueba aislada de cambio de cuenta');
+    await page.locator('#patient-privacy-consent').check();
+    let release;
+    let received;
+    const held = new Promise((resolve) => { release = resolve; });
+    const dispatched = new Promise((resolve) => { received = resolve; });
+    await page.route('**/api/collections/mina_patients/records', async (route) => {
+      if (route.request().method() !== 'POST') return route.continue();
+      const response = await route.fetch();
+      received();
+      await held;
+      await route.fulfill({ response });
+    });
+    await page.getByRole('button', { name: 'Guardar paciente', exact: true }).click();
+    await dispatched;
+    // Simulate logout/expiry while a modal is saving, without reloading the tab.
+    await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).evaluate((button) => button.click());
+    await signInAs(2);
+    await page.getByRole('button', { name: 'Nuevo paciente', exact: true }).click();
+    await page.locator('#patient-full-name').fill('Formulario de la cuenta B');
+    const lateResponse = page.waitForResponse((response) => response.url().endsWith('/mina_patients/records') && response.request().method() === 'POST');
+    release();
+    await lateResponse;
+    // Flush the browser promise continuation after its response body is consumed.
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    assert.equal(await page.locator('#patient-full-name').inputValue(), 'Formulario de la cuenta B');
+    assert.doesNotMatch(await page.getByRole('dialog').innerText(), /descartada|sesión cambió|Respuesta Tardia/);
+    await page.getByRole('button', { name: 'Cerrar formulario', exact: true }).click();
+    assert.doesNotMatch(await page.locator('main').innerText(), /Respuesta Tardia/);
+    await page.unroute('**/api/collections/mina_patients/records');
+    await page.getByRole('button', { name: 'Cerrar sesión', exact: true }).click();
+    // Returning to A is a fresh login lifetime, not a return to its old activity.
+    await signInAs(1);
+    await page.getByRole('button', { name: 'Respaldos', exact: true }).click();
+    assert.equal(await page.getByRole('heading', { name: 'Actividad reciente:', exact: true }).count(), 0);
     assert.deepEqual(errors, []);
-    console.log('Browser PASS: original UI, login, patient, private photo, Sunday 0, conflicting devices, manual WhatsApp, notes, archive, persistence, no clinical browser storage, offline block, logout.');
+    assert.deepEqual(externalRequests, [], 'The local app must not fetch cloud services or remote fonts.');
+    console.log('Browser PASS: local-only requests, original UI, patient/photo, Sunday 0, conflicts, manual WhatsApp, notes, archive, persistence, offline block, logout, cross-account activity isolation and late-response isolation.');
   } catch (e) {
     console.error((await page.locator('body').innerText()).slice(-5000));
     throw e;

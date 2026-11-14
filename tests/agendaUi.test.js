@@ -87,18 +87,10 @@ test('initial clinical data failures block the calendar instead of showing empty
   assert.match(app, /Reintentar carga/);
 });
 
-test('production without Supabase stops before mounting the clinical app', () => {
-  const main = readFileSync(new URL('../src/main.jsx', import.meta.url), 'utf8');
-  const client = readFileSync(new URL('../src/lib/supabase.js', import.meta.url), 'utf8');
-  assert.match(client, /import\.meta\.env\.PROD && !isSupabaseConfigured/);
-  assert.match(main, /missingProdConfig \?/);
-  assert.match(main, /No es seguro guardar expedientes/);
-});
-
 test('auth and all three initial loads release errors or timeout timers', () => {
   const auth = readFileSync(new URL('../src/hooks/useAuth.js', import.meta.url), 'utf8');
   const helper = readFileSync(new URL('../src/utils/withTimeout.js', import.meta.url), 'utf8');
-  assert.match(auth, /if \(nextSession\) setAuthInitError\(''\)/);
+  assert.match(auth, /setAuthInitError\(''\)/);
   assert.match(helper, /clearTimeout\(timer\)/);
   for (const name of ['usePatients', 'useAppointments', 'useAvailability']) {
     const source = readFileSync(new URL(`../src/hooks/${name}.js`, import.meta.url), 'utf8');

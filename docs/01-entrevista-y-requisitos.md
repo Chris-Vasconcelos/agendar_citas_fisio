@@ -1,42 +1,20 @@
-# Fase 0: Entrevista con el Fisioterapeuta y Requisitos (MVP v1)
+# Requisitos vigentes de MINA Local
 
-Antes de poner el sistema en producción con pacientes reales, confirma estos puntos con tu fisioterapeuta. Algunas decisiones técnicas de la base de datos dependen directamente de sus respuestas.
+Aplicacion para el consultorio de Lalo/Eduardo. Una sola base PocketBase en la PC Windows; React conserva las pantallas originales. Sin hosting, integracion de calendario ni base alternativa en el navegador.
 
----
+- Pacientes: alta, busqueda por nombre/telefono, edicion, antecedentes, alergias, motivo de consulta, consentimiento y advertencia de duplicados.
+- Expedientes archivados: conservar historial, notas y fotografias; no eliminar pacientes para liberar la agenda.
+- Agenda: espacios 1 y 2; permitir dos atenciones simultaneas en espacios distintos, impedir solapamientos del espacio o del paciente, tambien entre dispositivos. La cancelacion libera el espacio.
+- Horarios semanales, incluido domingo como 0; notas de evolucion, tratamientos y profesional por sesion.
+- Fotografias privadas de consentimientos, asociadas al expediente y con confirmacion visual antes de guardarse.
+- Recordatorios de WhatsApp manuales: abrir mensaje, enviar en WhatsApp y confirmar manualmente en MINA. No confirmar entregas automaticas.
+- Copia completa cifrada con fotografias y recuperacion comprobada. JSON/CSV son exportaciones parciales, no restauraciones del servidor.
+- Windows x64, sin Docker ni herramientas de desarrollo en el equipo final. Inicio al entrar en Windows; la PC debe estar encendida para utilizar el servicio.
 
-## 1. Preguntas clave para la entrevista
+Equipo comunicado: HP ProOne 245 G10, Windows 11 Pro Education 23H2, procesador x64, 4 GB RAM y unos 43 GB libres. Hay que medir rendimiento y revisar proteccion/actualizaciones en el equipo real. El telefono es iPhone; su uso inicial aun debe confirmarse. El disco externo tambien esta pendiente de confirmar/conseguir.
 
-### A. Operación de la agenda y traslapes (Confirmado con Eduardo — 23/10/2026)
-1. **¿Atiendes a un solo paciente a la vez o puede haber varios al mismo tiempo?**
-   - **Respuesta confirmada:** *"Se atienden dos a la vez"* y *"Solo yo agendo paciente"*.
-   - **Cómo se resolvió en la base de datos (`supabase/schema.sql`):** Se agregó la columna `slot_number smallint NOT NULL DEFAULT 1 CHECK (slot_number IN (1, 2))` (Espacio 1 y Espacio 2) y la restricción `EXCLUDE USING gist (user_id WITH =, slot_number WITH =, tstzrange(start_time, end_time, '[)') WITH &&) WHERE (status <> 'cancelled')`. Así puede agendar hasta **2 pacientes en el mismo horario**, pero la base de datos bloquea automáticamente un 3er traslape.
-2. **¿Cuánto dura normalmente una sesión (ej. 45 min, 60 min) y dejas tiempo de limpieza entre pacientes?**
-3. **¿Cuáles son tus días y horarios habituales de consulta?**
-4. **¿Atiendes en un solo consultorio o en varios?**
+Validacion comunicada por Christofer: creo la cuenta, reinicio y volvio a consultar expedientes y fotografia en su laptop. No equivale a prueba en la PC del consultorio ni a restauracion desde respaldo.
 
-### B. Problema actual con Google Calendar
-5. **¿Qué es exactamente lo que te falla hoy con Google Calendar?**
-   - ¿Agendas en el celular y no lo ves en la PC (o viceversa)?
-   - ¿Se te enciman citas porque olvidas revisar algún calendario?
-   - ¿Te cuesta llevar el control de quién canceló o no asistió?
-6. **¿Usas un solo calendario en tu cuenta de Google o tienes varios (personal, consultorio, etc.)?**
+Proximos bloques de facilidad de uso: instalacion guiada, acceso directo y ventana propia, comprobacion del arranque y estrategia de sesion con bloqueo. No se declaran implementados por esta limpieza. Cambio de la M por imagen del consultorio aplazado por el usuario.
 
-### C. Privacidad y trato con pacientes
-7. **¿Cuentas actualmente con un Aviso de Privacidad para tus pacientes?**
-   - *Nota:* Aunque en esta versión v1 **no guardamos diagnósticos ni notas clínicas** (solo nombre, teléfono y correo opcional para agendar), recabar datos de contacto en un consultorio requiere informar al paciente sobre el uso de sus datos.
-8. **En las notificaciones de Google Calendar en la pantalla bloqueada de tu celular, ¿prefieres que el evento muestre solo las iniciales del paciente (ej. `Cita Fisio - J. P.`) o su nombre completo?**
-   - *Nota:* La aplicación incluye un interruptor para usar **solo iniciales** por defecto y proteger la privacidad del paciente frente a terceros que vean la pantalla del celular.
-
----
-
-## 2. Alcance del MVP (Versión 1.0)
-
-| Incluye en la v1 | Fuera de la v1 (para etapas posteriores) |
-|---|---|
-| Inicio de sesión con Google (Supabase Auth) | Portal público para que pacientes agenden solos |
-| Directorio de pacientes (solo nombre, teléfono, correo) | Expediente clínico, diagnósticos o notas médicas |
-| Crear, reprogramar, completar y cancelar citas | Sincronización automática en segundo plano vía Webhooks (`watch`) |
-| Bloqueo de citas encimadas en base de datos (`tstzrange`) | Cobros en línea o envío automático por WhatsApp Business API |
-| Creación/actualización/cancelación de evento en Google Calendar con zona horaria explícita (`timeZone`) e idempotencia al reintentar | Multi-camilla o múltiples fisioterapeutas en la misma cuenta |
-| Detección de discrepancias con Google Calendar (avisa sin sobrescribir automáticamente) | |
-| Botón visible **"Reconectar Google"** cuando caduque el token OAuth (`401`) | |
+La entrevista original permanece en [el archivo historico](archive/01-entrevista-y-requisitos.md).

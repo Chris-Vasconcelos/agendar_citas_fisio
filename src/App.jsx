@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, requiresServer, isLocalBackend } from './lib/backend';
 import { getTodayDateString, formatTimeShort, addMinutesToTimeStr } from './utils/date';
 import { DEFAULT_PROFESSIONAL } from './utils/constants';
 import { formatPatientName } from './utils/name';
@@ -31,6 +30,13 @@ import { PrivacyModal } from './components/modals/PrivacyModal';
 import { AuthModal } from './components/modals/AuthModal';
 
 export default function App() {
+  const auth = useAuth();
+  // All clinical UI state and its async callbacks belong to one login generation.
+  // A -> logout -> A is a new lifetime; routine token refresh keeps the same lifetime.
+  return <Consultorio key={`${auth.sessionGeneration}:${auth.session?.user?.id || 'signed-out'}`} {...auth} />;
+}
+
+function Consultorio({ session, authLoading, authInitError }) {
   const [activeTab, setActiveTab] = useState('agenda');
   const [introRevealing, setIntroRevealing] = useState(false);
   const handleSplashReveal = useCallback(() => setIntroRevealing(true), []);
@@ -53,8 +59,6 @@ export default function App() {
     localStorage.setItem('fisio_typeui_skill_v2', designSkill);
   }, [designSkill]);
 
-  // Autenticación Supabase
-  const { session, authLoading, authInitError } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
@@ -68,7 +72,6 @@ export default function App() {
     return () => clearTimeout(timeout);
   }, [bannerAlert]);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [restoreReport, setRestoreReport] = useState(null);
 
   const appendAuditLog = useCallback((code, detail) => {
     const entry = {
@@ -81,20 +84,12 @@ export default function App() {
   }, []);
 
   // 1. Availability no tiene dependencias entre hooks
-  const { availability, setAvailability, handleEnableDayNow, saveAvailabilityDay, loadedFor: availabilityLoadedFor, initialLoadError: availabilityLoadError } = useAvailability(session, setBannerAlert);
+  const { availability, handleEnableDayNow, saveAvailabilityDay, loadedFor: availabilityLoadedFor, initialLoadError: availabilityLoadError } = useAvailability(session, setBannerAlert);
 
-  // 2. Patients depende solo indirectamente de appointments (para validación en borrado)
-  // Pasaremos una referencia en lugar de un estado directo para no forzar renderizados cruzados:
-  const appointmentsRef = React.useRef([]);
-
-  const { patients, setPatients, patientsById, savePatient, deletePatient, loadedFor: patientsLoadedFor, initialLoadError: patientsLoadError } = usePatients(session, appendAuditLog, setBannerAlert, appointmentsRef);
+  const { patients, patientsById, savePatient, deletePatient, loadedFor: patientsLoadedFor, initialLoadError: patientsLoadError } = usePatients(session, appendAuditLog, setBannerAlert);
 
   // 3. Appointments necesita patientsById puramente (no crea ciclo infinito si lo usamos directamente)
-  const { appointments, setAppointments, validateAppointmentConstraints, saveAppointment, cancelAppointment, loadedFor: appointmentsLoadedFor, initialLoadError: appointmentsLoadError } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById);
-
-  useEffect(() => {
-    appointmentsRef.current = appointments;
-  }, [appointments]);
+  const { appointments, validateAppointmentConstraints, saveAppointment, cancelAppointment, loadedFor: appointmentsLoadedFor, initialLoadError: appointmentsLoadError } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById);
 
   // Modal de Cita
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
@@ -111,18 +106,6 @@ export default function App() {
   const [patientFieldErrors, setPatientFieldErrors] = useState({});
   const [patientFormError, setPatientFormError] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
-  // Close sensitive patient views immediately when authentication disappears.
-  useEffect(() => {
-    if (requiresServer && !session?.user?.id) {
-      setSelectedPatientForRecord(null);
-      setIsAppointmentModalOpen(false);
-      setIsPatientModalOpen(false);
-      setPatientSearch('');
-    }
-  }, [session?.user?.id]);
-
-
-
   // Lógica de apertura de Modales
   const openCreateAppointmentModal = (defaultStart = '09:00', defaultSlot = 'auto', customDate = selectedDate) => {
     const targetDate = customDate || selectedDate;
@@ -246,7 +229,7 @@ export default function App() {
       professional_name: (form.professional_name || DEFAULT_PROFESSIONAL).trim(),
     };
 
-    const res = await saveAppointment(payload, editId, assignedSlot);
+    const res = await saveAppointment(payload, editId);
     if (res.success) {
       setIsAppointmentModalOpen(false);
     } else {
@@ -436,7 +419,7 @@ export default function App() {
   // Do not display the login screen until the persisted session has been checked.
   // Never treat an empty asynchronous result as a successful initial load.
   const owner = session?.user?.id;
-  const startupReady = !authLoading && (!requiresServer || !owner ||
+  const startupReady = !authLoading && (!owner ||
     (patientsLoadedFor === owner && appointmentsLoadedFor === owner && availabilityLoadedFor === owner));
   const startupErrors = [authInitError, patientsLoadError, appointmentsLoadError, availabilityLoadError].filter(Boolean);
   const loadFailed = startupReady && startupErrors.length > 0;
@@ -494,7 +477,7 @@ export default function App() {
           startupIssue
         ) : loadingData ? (
           <p role="status" className="p-12 text-center text-slate-600">Cargando tu agenda…</p>
-        ) : (!session && requiresServer) ? (
+        ) : !session ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
             {import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL ? (
               <img src={import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL}
@@ -561,7 +544,6 @@ export default function App() {
           <AvailabilityPage
             appointments={appointments}
             availability={availability}
-            setAvailability={setAvailability}
             saveAvailabilityDay={saveAvailabilityDay}
             setActiveTab={setActiveTab}
           />
@@ -574,16 +556,7 @@ export default function App() {
                 availability={availability}
                 patientsById={patientsById}
                 appendAuditLog={appendAuditLog}
-                restoreReport={restoreReport}
-                setRestoreReport={setRestoreReport}
                 auditLogs={auditLogs}
-                setBannerAlert={setBannerAlert}
-                setPatients={setPatients}
-                setAppointments={setAppointments}
-                setAvailability={setAvailability}
-                session={session}
-                supabase={supabase}
-                isSupabaseConfigured={requiresServer}
               />
             )}
           </>
@@ -600,7 +573,7 @@ export default function App() {
         setAptFieldErrors={setAptFieldErrors}
         aptFormError={aptFormError}
         setAptFormError={setAptFormError}
-        patients={isLocalBackend ? patients.filter((p) => !p.archived_at || p.id === aptForm.patient_id) : patients}
+        patients={patients.filter((p) => !p.archived_at || p.id === aptForm.patient_id)}
         onSave={handleAppointmentFormSave}
       />
 
@@ -619,7 +592,7 @@ export default function App() {
       />
 
       <RecordModal
-        selectedPatientForRecord={!requiresServer || session?.user?.id ? selectedPatientForRecord : null}
+        selectedPatientForRecord={session?.user?.id ? selectedPatientForRecord : null}
         setSelectedPatientForRecord={setSelectedPatientForRecord}
         appointments={appointments}
         openEditAppointmentModal={openEditAppointmentModal}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Shield, Lock, LogOut, Plus } from 'lucide-react';
-import { signOutUser, requiresServer } from '../../lib/backend';
+import { signOutUser } from '../../lib/backend';
 
 export function Header({
   textSize,
@@ -66,7 +66,7 @@ export function Header({
             </button>
           )}
 
-          {(!requiresServer || session) && (
+          {session && (
             <button type="button" className="mina-new-appointment"
               onClick={() => openCreateAppointmentModal('09:00', 'auto', selectedDate)}>
               <Plus className="w-4 h-4" aria-hidden="true" />

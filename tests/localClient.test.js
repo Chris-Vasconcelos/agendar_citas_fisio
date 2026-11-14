@@ -47,3 +47,17 @@ test('ambiguous writes block a second mutation until reload', async () => {
   await assert.rejects(api.localPatientApi.save({ full_name: 'Ficticio' }), /guardado sin confirmar/);
   assert.equal(writes, 1); api.localSignOut();
 });
+
+test('login epochs distinguish logout and same-account re-entry but preserve routine refresh', async () => {
+  const api = await client();
+  globalThis.fetch = async () => ok(session());
+  await api.localSignIn('test', 'test');
+  const firstLogin = api.localSessionEpoch();
+  await api.localRefreshSession();
+  assert.equal(api.localSessionEpoch(), firstLogin);
+  api.localSignOut();
+  assert.ok(api.localSessionEpoch() > firstLogin);
+  await api.localSignIn('test', 'test');
+  assert.ok(api.localSessionEpoch() > firstLogin);
+  api.localSignOut();
+});
