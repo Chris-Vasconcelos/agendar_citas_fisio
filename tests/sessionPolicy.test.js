@@ -49,7 +49,19 @@ test('remembered login restores only after validation, locks after idle, and unl
   assert.equal(restored.localSessionEpoch(), epoch);
   assert.equal(JSON.parse(localStorage.getItem('mina_local_remembered_session_v1')).until, saved.until);
   restored.localCheckSession(saved.until + 1);
-  assert.equal(restored.localCurrentUser(), null);
+  assert.equal(restored.localSessionState().locked, true);
+  assert.ok(restored.localCurrentUser());
+  await assert.rejects(restored.localPatientApi.list(), /bloqueada/);
+  const realNow = Date.now;
+  try {
+    Date.now = () => saved.until + 2;
+    globalThis.fetch = async () => ok();
+    await restored.localUnlockSession('fresh-password');
+    assert.equal(restored.localSessionState().locked, false);
+    assert.equal(restored.localSessionEpoch(), epoch);
+    assert.ok(JSON.parse(localStorage.getItem('mina_local_remembered_session_v1')).until > saved.until);
+  } finally { Date.now = realNow; }
+  restored.localSignOut();
   assert.equal(localStorage.getItem('mina_local_remembered_session_v1'), null);
   first.localSignOut();
 });

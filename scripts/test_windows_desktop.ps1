@@ -13,10 +13,10 @@ function Must-Fail([scriptblock]$Action) { $Failed=$false; try { & $Action | Out
 try {
     Expand-Archive (Join-Path $PSScriptRoot '../local-release/MINA-Local-Windows-x64.zip') $Source
     $Source = Join-Path $Source 'MINA-Local'
-    $Assembly = [Reflection.Assembly]::LoadFrom((Join-Path $Source 'MINA.exe'))
+    $Assembly = [Reflection.Assembly]::Load([IO.File]::ReadAllBytes((Join-Path $Source 'MINA.exe')))
     $Type = $Assembly.GetType('MinaDesktop.Runtime', $true)
     $Runtime = [Activator]::CreateInstance($Type, @($DataRoot))
-    $Setup = [Reflection.Assembly]::LoadFrom((Join-Path $PSScriptRoot '../local-release/Instalar-MINA.exe'))
+    $Setup = [Reflection.Assembly]::Load([IO.File]::ReadAllBytes((Join-Path $PSScriptRoot '../local-release/Instalar-MINA.exe')))
     $Payload = $Setup.GetManifestResourceStream('MINA.Payload.zip')
     if (!$Payload) { throw 'Falta el paquete incrustado en el instalador.' }
     $EmbeddedZip = Join-Path $Work 'incrustado.zip'
@@ -25,6 +25,7 @@ try {
     $Extracted = Join-Path $Work 'incrustado'
     [IO.Compression.ZipFile]::ExtractToDirectory($EmbeddedZip, $Extracted)
     $null = $Type.GetMethod('Verify').Invoke($null, @($Extracted))
+    Write-Host 'Native check: install verified payload'
     $Runtime.Install($Source,$true,$Desktop,$Startup)
     foreach ($Path in @((Join-Path $Desktop 'MINA.lnk'),(Join-Path $Desktop 'Comprobar MINA.lnk'),(Join-Path $Startup 'MINA.lnk'))) {
         $Shell = New-Object -ComObject WScript.Shell
@@ -46,10 +47,12 @@ try {
     try {
         if (!$AccountForm.Controls.Find('account1',$true)[0].UseSystemPasswordChar -or !$AccountForm.Controls.Find('account4',$true)[0].UseSystemPasswordChar) { throw 'Contrasenas visibles en el asistente.' }
     } finally { $AccountForm.Dispose() }
+    Write-Host 'Native check: start backend'
     $Runtime.Start()
     $FirstId = [int](Get-Content (Join-Path $DataRoot 'servidor.pid'))
     $Runtime.Start()
     if ([int](Get-Content (Join-Path $DataRoot 'servidor.pid')) -ne $FirstId) { throw 'Segundo servidor al abrir MINA otra vez.' }
+    Write-Host 'Native check: configure accounts'
     $Runtime.ConfigureAccounts('native-admin@example.invalid','NativeAdmin_123456!','native-daily@example.invalid','NativeDaily_123456!')
     # Repeating the wizard must not overwrite or duplicate valid accounts.
     $Runtime.ConfigureAccounts('native-admin@example.invalid','NativeAdmin_123456!','native-daily@example.invalid','NativeDaily_123456!')
@@ -102,6 +105,9 @@ try {
     try { Must-Fail { $Runtime.Start() } } finally { [IO.File]::WriteAllBytes($Page,$Original) }
     Write-Host 'Native Windows PASS: embedded verified installer, wizard controls, masked credentials, stable shortcuts, first accounts without dashboard, repeated launch, private app window, data-preserving update, snapshot, retired legacy startup, sanitized diagnostics and rejection of unrelated processes/corruption.'
     $global:LASTEXITCODE = 0
+} catch {
+    Write-Host ('Native check failure: ' + $_.Exception.ToString())
+    throw
 } finally {
     if ($CreatedTask) { Unregister-ScheduledTask -TaskName 'MINA Local - inicio del consultorio' -Confirm:$false -ErrorAction SilentlyContinue }
     # Only terminate browser processes using this isolated test profile.

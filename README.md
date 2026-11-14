@@ -6,7 +6,7 @@ Una sola base en la PC Windows. Sin hosting, integracion de calendarios, servici
 
 ## Usar el paquete Windows
 
-El consultorio no necesita Docker, Node ni Python. Extraer el paquete completo y seguir [Instalacion, cuentas y recuperacion](docs/mina-local-windows.md). Conservar una sola carpeta de programa estable. Los datos se guardan por separado en `%LOCALAPPDATA%\MINA-Local\pb_data`.
+El consultorio no necesita Docker, Node ni Python. Abrir `Instalar-MINA.exe` desde el artefacto verificado y seguir [Instalacion, cuentas y recuperacion](docs/mina-local-windows.md). Conservar una sola carpeta de programa estable. Los datos se guardan por separado en `%LOCALAPPDATA%\MINA-Local\pb_data`.
 
 [Estado, pruebas y pendientes](docs/mina-local-estado-integracion.md). Las pruebas de desarrollo y la prueba de persistencia comunicada desde la laptop no sustituyen la validacion del equipo de Lalo, cifrado y restauracion desde respaldo externo. Utilizar datos ficticios hasta completarla.
 
@@ -46,4 +46,4 @@ Para incluir HTTPS y recuperacion, seguir los comandos del [estado vigente](docs
 - `local/spike`: referencia independiente de integridad SQLite, solo para pruebas; no aplicar a PocketBase.
 - [Archivo historico](docs/archive/README.md): decisiones anteriores y referencia Git del codigo retirado. La version anterior permanece en `main`, que no se modifica ni se fusiona durante este trabajo.
 
-Las fuentes Geist y su licencia se incluyen en el paquete. El cambio de logotipo por la imagen del consultorio y las mejoras del instalador/ventana/sesion siguen pendientes; no forman parte de esta limpieza.
+Las fuentes Geist y su licencia se incluyen en el paquete. El instalador, ventana y sesion se preparan como version candidata; ver [criterios de cierre](docs/entrega-mina-candidata.md). El cambio de logotipo por la imagen del consultorio sigue aplazado por el usuario.

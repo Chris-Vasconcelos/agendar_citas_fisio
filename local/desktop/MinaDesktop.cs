@@ -221,7 +221,8 @@ namespace MinaDesktop {
    dynamic service=Activator.CreateInstance(Type.GetTypeFromProgID("Schedule.Service"));
    try {
     service.Connect(); dynamic folder=service.GetFolder("\\"); dynamic task=null;
-    try { task=folder.GetTask("MINA Local - inicio del consultorio"); } catch(COMException) { return; }
+    try { task=folder.GetTask("MINA Local - inicio del consultorio"); }
+    catch(Exception failure) { if(failure.HResult==unchecked((int)0x80070002) || failure.HResult==unchecked((int)0x80070003)) return; throw; }
     dynamic action=task.Definition.Actions.Item(1);
     if(!String.Equals(Path.GetFileName((string)action.Path),"powershell.exe",StringComparison.OrdinalIgnoreCase) || !((string)action.Arguments).Contains("Iniciar-MINA.ps1")) throw new MinaFailure("STARTUP_CONFLICT","Ya existe otra tarea con el nombre de MINA. Comprueba su configuración antes de cambiar el inicio.");
     folder.DeleteTask("MINA Local - inicio del consultorio",0);
@@ -250,6 +251,7 @@ namespace MinaDesktop {
   public Dictionary<string,object> Diagnose() {
    var result=new Dictionary<string,object>(); result["momento_utc"]=DateTime.UtcNow.ToString("o"); result["windows_x64"]=Environment.Is64BitOperatingSystem;
    result["base_presente"]=File.Exists(Path.Combine(DataRoot,"pb_data/data.db")); result["navegador_disponible"]=Browser()!=null; result["puerto_ocupado"]=PortBusy(8090);
+   try { result["espacio_libre_mb"]=new DriveInfo(Path.GetPathRoot(DataRoot)).AvailableFreeSpace / (1024*1024); } catch { result["espacio_libre_mb"]="no disponible"; }
    try { Verify(AppRoot); result["archivos"]="correctos"; } catch { result["archivos"]="faltan archivos o hay cambios; reinstalar el paquete oficial"; }
    try { var p=Managed("servidor.pid","pocketbase.exe","--dir",Path.Combine(DataRoot,"pb_data"),AppRoot); result["servidor_identificado"]=p!=null; } catch { result["servidor_identificado"]=false; }
    try { result["version"]=Json.DeserializeObject(File.ReadAllText(Path.Combine(AppRoot,"version.json"))); } catch { result["version"]="desconocida"; }
@@ -278,7 +280,9 @@ namespace MinaDesktop {
      preparing=false; Hide(); using(var accounts=new AccountForm(runtime)) accounts.ShowDialog(); Close();
     } catch(Exception failure) { status.Text="No se terminó la preparación."; MessageBox.Show(failure.Message,"MINA",MessageBoxButtons.OK,MessageBoxIcon.Warning); preparing=false; button.Enabled=true; consent.Enabled=true; }
    };
-   Controls.AddRange(new Control[]{title,info,consent,button,status});
+   var check=new Button{Text="Comprobar MINA",Left=270,Top=278,Width=220,Height=42};
+   check.Click+=(s,e)=> { using(var diagnostic=new DiagnosticForm(runtime)) diagnostic.ShowDialog(); };
+   Controls.AddRange(new Control[]{title,info,consent,button,check,status});
   }
  }
  public sealed class AccountForm : Form {
@@ -323,13 +327,27 @@ namespace MinaDesktop {
   public DiagnosticForm(Runtime runtime) {
    Text="Comprobar MINA"; Width=620; Height=450; StartPosition=FormStartPosition.CenterScreen; Font=new Font("Segoe UI",10);
    var output=new TextBox{Multiline=true,ReadOnly=true,ScrollBars=ScrollBars.Vertical,Left=20,Top=20,Width=560,Height=250};
-   var data=runtime.Diagnose(); output.Text=String.Join(Environment.NewLine,data.Select(pair=>pair.Key+": "+Runtime.Serialize(pair.Value)));
+   var data=runtime.Diagnose();
+   output.Text="Archivos del programa: "+Convert.ToString(data["archivos"])+Environment.NewLine+
+    "Base de datos: "+((bool)data["base_presente"]?"encontrada (se conservará)":"aún no creada o cuenta Windows diferente")+Environment.NewLine+
+    "Servidor de MINA: "+((bool)data["servidor_identificado"]?"identificado":((bool)data["puerto_ocupado"]?"hay otro servicio en el puerto; no se detendrá":"detenido; pulsa Abrir MINA"))+Environment.NewLine+
+    "Edge/Chrome: "+((bool)data["navegador_disponible"]?"disponible":"no encontrado; instalar o reparar el navegador")+Environment.NewLine+
+    "Espacio libre (MB): "+Convert.ToString(data["espacio_libre_mb"])+Environment.NewLine+
+    "Si faltan archivos, vuelve a ejecutar Instalar-MINA.exe. No borres los datos.";
    var open=new Button{Text="Abrir MINA",Left=20,Top=290,Width=150,Height=40};
    open.Click+=async(s,e)=> { open.Enabled=false; try { await Task.Run(()=>runtime.Start()); runtime.OpenWindow(); Close(); } catch(Exception failure) { MessageBox.Show(failure.Message,"MINA"); } finally { open.Enabled=true; } };
-   var save=new Button{Text="Guardar diagnóstico",Left=190,Top=290,Width=190,Height=40};
+   var restart=new Button{Text="Reiniciar servidor",Left=190,Top=290,Width=180,Height=40};
+   restart.Click+=async(s,e)=> {
+    if(MessageBox.Show("Guarda tus capturas antes de reiniciar el servidor de MINA. ¿Quieres continuar?","MINA",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes) return;
+    restart.Enabled=false;
+    try { await Task.Run(()=> { runtime.Stop(); runtime.Start(); }); runtime.OpenWindow(); Close(); }
+    catch(Exception failure) { MessageBox.Show(failure.Message,"MINA"); }
+    finally { if(!IsDisposed) restart.Enabled=true; }
+   };
+   var save=new Button{Text="Guardar diagnóstico",Left=390,Top=290,Width=190,Height=40};
    save.Click+=(s,e)=>{ using(var dialog=new SaveFileDialog{Filter="Diagnóstico MINA|*.json",FileName="MINA-diagnostico.json"}) if(dialog.ShowDialog()==DialogResult.OK) File.WriteAllText(dialog.FileName,Runtime.Serialize(data)); };
    Controls.Add(new Label{Text="El diagnóstico no incluye expedientes, fotografías, contraseñas ni registros privados.",Left=20,Top=350,Width=560,Height=40});
-   Controls.AddRange(new Control[]{output,open,save});
+   Controls.AddRange(new Control[]{output,open,restart,save});
   }
  }
  public static class Program {

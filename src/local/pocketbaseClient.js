@@ -39,7 +39,7 @@ export function localLockSession() {
 }
 export function localCheckSession(now = Date.now()) {
   if (!auth || !sessionRecord) return;
-  if (sessionDue(sessionRecord, now) === 'expired' || expiresAt(token) <= now) localSignOut();
+  if (sessionDue(sessionRecord, now) === 'expired' || expiresAt(token) <= now) localLockSession();
   else if (sessionDue(sessionRecord, now) === 'locked') localLockSession();
 }
 export function localTouchSession(now = Date.now()) {
@@ -77,7 +77,7 @@ function acceptSession(data) {
   locked = sessionDue(sessionRecord) === 'locked';
   persistSession();
   clearTimeout(expiryTimer);
-  expiryTimer = setTimeout(localSignOut, Math.min(sessionRecord.until - Date.now(), expiresAt(token) - Date.now(), 2147483647));
+  expiryTimer = setTimeout(localLockSession, Math.min(sessionRecord.until - Date.now(), expiresAt(token) - Date.now(), 2147483647));
   expiryTimer.unref?.();
   notify();
   return auth;
@@ -138,7 +138,8 @@ export async function localUnlockSession(password) {
     method: 'POST', payload: { identity: auth.email, password },
   });
   if (currentEpoch !== epoch || data?.record?.id !== owner) throw new Error('La cuenta cambió. Inicia sesión nuevamente.');
-  if (sessionRecord.until <= Date.now()) { localSignOut(); throw new Error('La jornada terminó. Inicia sesión nuevamente.'); }
+  // Fresh password confirmation opens a new workday without discarding the same owner's draft.
+  if (sessionRecord.until <= Date.now() || expiresAt(token) <= Date.now()) sessionRecord.until = Date.now() + WORKDAY_MS;
   locked = false;
   sessionRecord.locked = false;
   sessionRecord.lastActivity = Date.now();

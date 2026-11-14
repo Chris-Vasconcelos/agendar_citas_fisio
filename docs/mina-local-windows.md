@@ -4,13 +4,29 @@ Estado: integración en desarrollo, exclusivamente datos ficticios. No instalar 
 
 El paquete contiene PocketBase 0.40.6 para Windows x64, age 1.2.1, Caddy 2.10.2, migraciones y la interfaz compilada. No requiere Docker, Node ni Python en la computadora del consultorio. Equipo comunicado: Windows 11 Pro Education 23H2 x64 y 4 GB RAM; la validacion de instalacion/rendimiento en esa PC sigue pendiente.
 
-1. Extraer el ZIP completo a una carpeta estable del usuario.
-2. Revisar los scripts PowerShell antes de ejecutarlos. Si Windows los bloquea, comprobar procedencia y firma/hash; no deshabilitar globalmente la política de ejecución.
-3. Ejecutar `Iniciar-MINA.ps1`. Los datos se guardan en `%LOCALAPPDATA%\MINA-Local\pb_data`, fuera de la carpeta de la aplicación.
-4. Configurar el primer administrador con el enlace local de instalación que registra PocketBase en `servidor.log`. Ese enlace es sensible; no compartir el registro.
-5. Ejecutar `Configurar-cuenta.ps1` para crear la cuenta diaria usando el administrador local. No usar la cuenta administrativa para atender pacientes.
-6. Abrir `http://127.0.0.1:8090`. `Detener-MINA.ps1` detiene el proceso de esta instalación.
-7. `Inicio-automatico.ps1` registra inicio al entrar en la cuenta Windows, no antes del inicio de sesión. Debe comprobarse en el equipo real.
+## Uso normal: instalar y abrir sin comandos
+
+1. Descargar el artefacto del PR verificado y extraer `Instalar-MINA.exe`. Ese archivo contiene el paquete completo; no necesita Node, Python, Docker ni ejecutar scripts de PowerShell para el inicio cotidiano.
+2. Comprobar que procede de la ejecucion/commit anunciado. El artefacto incluye SHA256 del instalador. El ejecutable no tiene aun firma de editor: Windows puede mostrar un aviso de reputacion o una politica empresarial puede impedirlo. Verificar procedencia y consultar al responsable; no desactivar antivirus, SmartScreen ni politicas globales.
+3. Cerrar MINA y guardar capturas abiertas. Ejecutar `Instalar-MINA.exe` y confirmar el paso del asistente. Se instala para la cuenta Windows actual en `%LOCALAPPDATA%\MINA-Local\app`, conservando `%LOCALAPPDATA%\MINA-Local\pb_data`. No instalar desde otra cuenta Windows para buscar los datos anteriores.
+4. En una instalacion nueva, el asistente solicita cuenta del responsable y cuenta cotidiana. Las contraseñas nuevas deben ser distintas, al menos 12 caracteres; guardar las del responsable para administracion/recuperacion. No se ponen contraseñas en comandos ni archivos. Si ya existen cuentas, elegir abrir con la cuenta actual; no crear otra para ver los mismos expedientes.
+5. Abrir el icono **MINA** del escritorio. Comprueba los archivos, identifica el servidor de esa base, lo inicia si es necesario y abre una ventana Edge/Chrome con perfil separado y sin barra de direcciones. El primer acceso desde ese perfil pide la cuenta cotidiana existente.
+6. El icono **Comprobar MINA** permite revisar archivos, servidor y navegador, abrir de nuevo y guardar un diagnostico sin expedientes, fotos, registros privados ni tokens. Si hay error, enviar solo ese diagnostico, no `servidor.log` ni el perfil del navegador.
+7. MINA prepara un acceso de inicio en la carpeta Inicio de esa cuenta Windows. Funciona al entrar en Windows, no antes del inicio de sesion. Una tarea antigua de MINA en PowerShell se retira solo si coincide con la configuracion conocida. Probar el reinicio en el equipo real.
+
+El programa conserva la version anterior y una copia local previa de los datos al actualizar. Estan dentro del mismo directorio protegido del usuario: no son copias cifradas externas ni sustituyen la recuperacion en otro equipo. Comprobar espacio y cifrado del disco. No borrar la carpeta `pb_data` para solucionar un arranque.
+
+## Sesion durante la jornada
+
+- Por defecto el acceso se conserva en la pestaña/ventana. **Recordar este equipo** es opcional, solo en una cuenta Windows privada y protegida; conserva token/metadatos durante una jornada de hasta ocho horas, nunca contraseñas ni expedientes. Al reabrir se valida con PocketBase antes de mostrar datos.
+- Tras diez minutos sin actividad o con el boton **Bloquear MINA**, se oculta/inactiva la pantalla y se bloquean nuevas consultas del cliente. Las capturas y la foto seleccionada permanecen en memoria dentro de la ventana, y las ventanas de fotos abiertas por MINA se cierran.
+- Desbloquear exige la contraseña de la misma cuenta. Al terminar la jornada se exige autenticar otra vez; una nueva jornada puede continuar las capturas de esa ventana. Cerrar la ventana puede descartarlas: el navegador avisa si hay formularios o una foto pendientes. No hay borrador clinico persistente en el navegador.
+- Cerrar sesion borra el acceso recordado y lo retira de otras ventanas del mismo perfil. No es una revocacion de tokens ya robados; PocketBase limita el token a ocho horas y cambiar la contraseña permite revocarlo. El bloqueo visual del cliente no protege frente a quien controle esa cuenta Windows o sus archivos.
+- El perfil de MINA es independiente del navegador cotidiano. Usar el mismo usuario Windows y el acceso MINA para conservar las preferencias y el acceso recordado. Si el navegador bloquea su almacenamiento o se borra el perfil, se pedira iniciar sesion otra vez.
+
+## Herramientas avanzadas del paquete
+
+Los scripts se conservan para respaldo/HTTPS y soporte, no son el flujo normal de instalacion/inicio. `Iniciar-MINA.ps1`, `Detener-MINA.ps1`, `Configurar-cuenta.ps1` y `Inicio-automatico.ps1` siguen disponibles como compatibilidad. No crear a la vez otro inicio automatico por scripts si ya se instalo el nativo.
 
 ## Límites pendientes
 
