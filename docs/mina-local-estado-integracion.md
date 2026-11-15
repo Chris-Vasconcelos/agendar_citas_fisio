@@ -4,7 +4,7 @@ Rama de trabajo: `feat/mina-local-etapa1-20261108`. No fusionar ni cambiar `main
 
 ## Revision funcional posterior
 
-La revision funcional ampliada y sus defectos/regresiones estan documentados en `docs/mina-local-revision-funcional.md`. Incluye visibilidad de agenda, actualizacion entre pantallas, fotografias, exportacion y proteccion de ediciones simultaneas mediante una migracion adicional. La validacion y descarga de ese bloque deben consultarse alli antes de usar los paquetes historicos siguientes.
+La revision funcional ampliada y sus defectos/regresiones estan documentados en `docs/mina-local-revision-funcional.md`. Incluye visibilidad de agenda, actualizacion entre pantallas, fotografias, exportacion y proteccion de ediciones simultaneas mediante una migracion adicional. CI del codigo `12b1d23` aprobada en Windows y Linux: https://github.com/Chris-Vasconcelos/agendar_citas_fisio/actions/runs/43758606118 . Paquete revisado: https://github.com/Chris-Vasconcelos/agendar_citas_fisio/actions/runs/43758606118/artifacts/14179382856 . Sustituye los paquetes historicos siguientes; consultar el informe para evidencia, compatibilidad y pendientes del consultorio.
 
 ## Correccion de actualizacion de recordatorios
 

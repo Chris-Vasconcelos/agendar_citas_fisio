@@ -35,7 +35,14 @@ Pruebas añadidas/permanentes:
 - `scripts/check_upgrade.py`: inicia el esquema anterior, crea datos y foto privada reales ficticios, aplica la migración y comprueba conservación, consulta de foto, rechazo de una escritura antigua y aceptación de una versión actual.
 - Continúan el recorrido original del navegador y las pruebas de HTTPS, respaldo cifrado/restauración y Windows nativo.
 
-Validación final de la candidata: pendiente de registrar CI y el paquete de este bloque. Las pruebas locales de código/API y el primer recorrido ampliado están aprobados; no sustituir esta línea por una aprobación de Windows sin consultar la ejecución.
+Validación final del código `12b1d231b3e47224787ddd9726a2ce112ce9a0be`: **aprobada en Linux y Windows**. Incluye 37 pruebas Node, 12 pruebas API (con ediciones simultáneas en cuatro colecciones), siete SQLite, ambas compilaciones, el recorrido original y 16 casos adicionales de navegador, migración desde el esquema anterior con foto privada, HTTPS, respaldo cifrado/restauración e instalador nativo Windows. También se completó la ejecución integral local con restauración real. No se probaron pacientes reales.
+
+- CI: https://github.com/Chris-Vasconcelos/agendar_citas_fisio/actions/runs/43758606118
+- Paquete de esta revisión: https://github.com/Chris-Vasconcelos/agendar_citas_fisio/actions/runs/43758606118/artifacts/14179382856 (retención 14 días).
+- SHA-256 de `Instalar-MINA.exe`: `350e94abdbced536f754634dc1f63b40c14070b78030d53a4883c623522cc4c6`.
+- Salida resumida de la reproducción sobre la base anterior: [validacion-mina-base-325fa0e.txt](validacion-mina-base-325fa0e.txt).
+
+Estos resultados no equivalen a la validación de la PC de Lalo. El PR #30 continúa como borrador, sin fusionar ni modificar main.
 
 ## Instalación y compatibilidad
 
