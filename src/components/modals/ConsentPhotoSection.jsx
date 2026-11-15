@@ -1,17 +1,21 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { localSubscribe, localSessionState } from '../../local/pocketbaseClient';
+import { withTimeout } from '../../utils/withTimeout';
 import { listSignedConsents, uploadSignedConsent, openSignedConsent } from '../../services/consentService';
 
-export function ConsentPhotoSection({ patient, userId, onPendingChange }) {
+export function ConsentPhotoSection({ patient, userId, onPendingChange, onBusyChange }) {
   const popups = useRef([]);
   useEffect(() => {
     const close = () => { popups.current.forEach((popup) => { try { popup.close(); } catch {} }); popups.current = []; };
     const unsubscribe = localSubscribe((user) => { if (!user || localSessionState().locked) close(); });
     return () => { unsubscribe(); close(); };
   }, []);
+  const generation = useRef(0);
+  const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
   const [file, setFile] = useState(null);
   const [busy, setBusy] = useState(false);
+  useEffect(() => { onBusyChange?.(busy); return () => onBusyChange?.(false); }, [busy, onBusyChange]);
   useEffect(() => {
     onPendingChange?.(Boolean(file) || busy);
     return () => onPendingChange?.(false);
@@ -30,38 +34,43 @@ export function ConsentPhotoSection({ patient, userId, onPendingChange }) {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  useEffect(() => {
-    let alive = true;
-    setFile(null);
-    setConfirm(false);
+  const loadPhotos = useCallback(async () => {
+    const current = ++generation.current;
+    setLoading(true);
     setItems([]);
     setError('');
-    if (patient?.id && userId) {
-      listSignedConsents(patient.id).then((data) => {
-        if (alive) setItems(data);
-      }).catch(() => {
-        if (alive) setError('No se pudieron consultar los consentimientos.');
-      });
-    }
-    return () => { alive = false; };
+    try {
+      const data = await withTimeout(listSignedConsents(patient.id));
+      if (generation.current === current) setItems(data);
+    } catch {
+      if (generation.current === current) setError('No se pudieron consultar los consentimientos. Vuelve a consultar antes de asumir que no hay fotografías.');
+    } finally { if (generation.current === current) setLoading(false); }
   }, [patient?.id, userId]);
+  useEffect(() => {
+    setFile(null);
+    setConfirm(false);
+    if (patient?.id && userId) void loadPhotos();
+    return () => { generation.current++; };
+  }, [loadPhotos]);
 
   if (!patient || !userId) return null;
 
   async function upload() {
     if (!file || !confirm || busy) return;
+    const current = ++generation.current;
     setBusy(true);
     setError('');
     try {
       await uploadSignedConsent({ patientId: patient.id, file, userId });
       const data = await listSignedConsents(patient.id);
+      if (generation.current !== current) return;
       setItems(data);
       setFile(null);
       setConfirm(false);
     } catch (err) {
-      setError(err?.message || 'No se pudo guardar la fotografía.');
+      if (generation.current === current) setError(err?.message || 'No se pudo guardar la fotografía.');
     } finally {
-      setBusy(false);
+      if (generation.current === current) setBusy(false);
     }
   }
 
@@ -70,6 +79,7 @@ export function ConsentPhotoSection({ patient, userId, onPendingChange }) {
     if (popup) { popup.opener = null; popups.current.push(popup); }
     try {
       const url = await openSignedConsent(path);
+      if (localSessionState().locked || popup?.closed) return;
       if (popup) popup.location.replace(url);
       else setError('El navegador bloqueó la ventana. Permite ventanas emergentes para visualizarla.');
     } catch {
@@ -89,7 +99,7 @@ export function ConsentPhotoSection({ patient, userId, onPendingChange }) {
       <div className="form-group">
         <label htmlFor="signed-consent-photo" className="form-label">Tomar foto o elegir imagen (máx. 8 MB)</label>
         <input id="signed-consent-photo" type="file" accept="image/jpeg,image/png,image/webp"
-          disabled={busy} className="form-input"
+          disabled={busy || loading} className="form-input"
           onChange={(e) => { setFile(e.target.files?.[0] || null); setConfirm(false); e.target.value = ''; }} />
       </div>
       {file && (
@@ -106,9 +116,11 @@ export function ConsentPhotoSection({ patient, userId, onPendingChange }) {
             onClick={upload}>{busy ? 'Subiendo...' : 'Guardar fotografía privada'}</button>
         </div>
       )}
-      {error && <p role="alert" className="text-red-700 text-xs">{error}</p>}
+      {loading && <p role="status" className="text-xs">Consultando fotografías…</p>}
+      {error && <div><p role="alert" className="text-red-700 text-xs">{error}</p>
+        <button type="button" className="toolbar-btn" disabled={busy || loading} onClick={loadPhotos}>Volver a consultar fotografías</button></div>}
       <div className="space-y-2">
-        {items.length === 0 && <p className="text-xs text-slate-600">Sin fotografías registradas.</p>}
+        {!loading && !error && items.length === 0 && <p className="text-xs text-slate-600">Sin fotografías registradas.</p>}
         {items.map((item) => (
           <div key={item.id} className="flex justify-between items-center gap-2 border border-slate-300 p-2 rounded">
             <span className="text-xs">{new Date(item.uploaded_at).toLocaleString('es-MX')}</span>

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { addMinutesToTimeStr } from '../../utils/date';
 import { DEFAULT_PROFESSIONAL } from '../../utils/constants';
-import { normalizePatientText, matchesPatient } from '../../utils/patientSearch';
+import { matchesPatient } from '../../utils/patientSearch';
 
 export function AppointmentModal({
   isOpen,
@@ -18,7 +18,7 @@ export function AppointmentModal({
 }) {
   const [isSaving, setIsSaving] = useState(false);
   const [patientQuery, setPatientQuery] = useState('');
-  const query = normalizePatientText(patientQuery);
+  useEffect(() => { if (isOpen) setPatientQuery(''); }, [isOpen, editingAppointmentId]);
   const matches = patients.filter((p) => matchesPatient(p, patientQuery)).slice(0, 100);
   const selected = patients.find((p) => p.id === aptForm.patient_id);
 
@@ -190,7 +190,7 @@ export function AppointmentModal({
             />
           </div>
 
-          <p className="mina-duration-hint">Duración: 60 minutos · Termina a las {aptForm.endTime}</p>
+          <p className="mina-duration-hint">Duración: {(Number(aptForm.endTime?.slice(0,2)) * 60 + Number(aptForm.endTime?.slice(3,5))) - (Number(aptForm.startTime?.slice(0,2)) * 60 + Number(aptForm.startTime?.slice(3,5)))} minutos · Termina a las {aptForm.endTime}</p>
 
           {editingAppointmentId && (
             <>
@@ -207,6 +207,7 @@ export function AppointmentModal({
                   <option value="scheduled">Programada</option>
                   <option value="completed">Completada (Asistió)</option>
                   <option value="no_show">No asistió</option>
+                  <option value="cancelled">Cancelada (conservar historial)</option>
                 </select>
               </div>
 

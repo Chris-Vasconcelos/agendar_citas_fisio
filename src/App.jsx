@@ -1,3 +1,4 @@
+import { calendarHours } from './utils/calendar';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { getTodayDateString, formatTimeShort, addMinutesToTimeStr } from './utils/date';
 import { DEFAULT_PROFESSIONAL } from './utils/constants';
@@ -38,26 +39,27 @@ export default function App() {
 }
 
 function Consultorio({ session, authLoading, authInitError, locked }) {
-  const [activeTab, setActiveTab] = useState('agenda');
+  const [activeTab, setTab] = useState('agenda');
+  const [reloadKey, setReloadKey] = useState(0);
+  const setActiveTab = (tab) => { setTab(tab); setReloadKey((previous) => previous + 1); };
   const [introRevealing, setIntroRevealing] = useState(false);
   const handleSplashReveal = useCallback(() => setIntroRevealing(true), []);
   const [selectedDate, setSelectedDate] = useState(getTodayDateString);
   const [calendarViewMode, setCalendarViewMode] = useState('week');
   const [textSize, setTextSize] = useState(() => {
-    const saved = localStorage.getItem('mina_text_size_v1');
-    return ['sm', 'md', 'lg'].includes(saved) ? saved : 'md';
+    try { const saved = localStorage.getItem('mina_text_size_v1'); return ['sm', 'md', 'lg'].includes(saved) ? saved : 'md'; } catch { return 'md'; }
   });
   useEffect(() => {
     document.documentElement.dataset.size = textSize;
-    localStorage.setItem('mina_text_size_v1', textSize);
+    try { localStorage.setItem('mina_text_size_v1', textSize); } catch {}
   }, [textSize]);
   const [designSkill, setDesignSkill] = useState(
-    () => localStorage.getItem('fisio_typeui_skill_v2') || 'clean'
+    () => { try { return localStorage.getItem('fisio_typeui_skill_v2') || 'clean'; } catch { return 'clean'; } }
   );
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', designSkill);
-    localStorage.setItem('fisio_typeui_skill_v2', designSkill);
+    try { localStorage.setItem('fisio_typeui_skill_v2', designSkill); } catch {}
   }, [designSkill]);
 
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -85,12 +87,12 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
   }, []);
 
   // 1. Availability no tiene dependencias entre hooks
-  const { availability, handleEnableDayNow, saveAvailabilityDay, loadedFor: availabilityLoadedFor, initialLoadError: availabilityLoadError } = useAvailability(session, setBannerAlert, locked);
+  const { availability, handleEnableDayNow, saveAvailabilityDay, loadedFor: availabilityLoadedFor, initialLoadError: availabilityLoadError, loadedRevision: availabilityRevision } = useAvailability(session, setBannerAlert, locked, reloadKey);
 
-  const { patients, patientsById, savePatient, deletePatient, loadedFor: patientsLoadedFor, initialLoadError: patientsLoadError } = usePatients(session, appendAuditLog, setBannerAlert, locked);
+  const { patients, patientsById, savePatient, deletePatient, loadedFor: patientsLoadedFor, initialLoadError: patientsLoadError, loadedRevision: patientsRevision } = usePatients(session, appendAuditLog, setBannerAlert, locked, reloadKey);
 
   // 3. Appointments necesita patientsById puramente (no crea ciclo infinito si lo usamos directamente)
-  const { appointments, validateAppointmentConstraints, saveAppointment, cancelAppointment, loadedFor: appointmentsLoadedFor, initialLoadError: appointmentsLoadError } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById, locked);
+  const { appointments, validateAppointmentConstraints, saveAppointment, cancelAppointment, loadedFor: appointmentsLoadedFor, initialLoadError: appointmentsLoadError, loadedRevision: appointmentsRevision } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById, locked, reloadKey);
 
   // Modal de Cita
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
@@ -147,6 +149,7 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
     setAptFieldErrors({});
     setAptFormError('');
     setAptForm({
+      write_version: apt.write_version,
       patient_id: apt.patient_id,
       slot_number: String(apt.slot_number || 1),
       date: `${y}-${m}-${day}`,
@@ -184,6 +187,7 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
     setPatientFieldErrors({});
     setPatientFormError('');
     setPatientForm({
+      write_version: pt.write_version,
       full_name: pt.full_name || '',
       age: pt.age !== null && pt.age !== undefined ? String(pt.age) : '',
       phone: pt.phone || '',
@@ -221,7 +225,9 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
     const startISO = new Date(`${form.date}T${form.startTime}:00`).toISOString();
     const endISO = new Date(`${form.date}T${form.endTime}:00`).toISOString();
 
-    const validation = validateAppointmentConstraints(startISO, endISO, form.slot_number, editId, form.patient_id);
+    const validation = form.status === 'cancelled'
+      ? { valid: true, assignedSlot: Number(form.slot_number) || 1 }
+      : validateAppointmentConstraints(startISO, endISO, form.slot_number, editId, form.patient_id);
     if (!validation.valid) {
       if (validation.field) setAptFieldErrors({ [validation.field]: validation.error });
       setAptFormError(validation.error);
@@ -230,6 +236,7 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
 
     const assignedSlot = validation.assignedSlot || 1;
     const payload = {
+      write_version: form.write_version,
       patient_id: form.patient_id,
       slot_number: assignedSlot,
       start_time: startISO,
@@ -260,10 +267,10 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
 
     const fieldErrors = {};
     if (cleanName.length < 3) fieldErrors.full_name = 'El nombre completo debe contener al menos 3 caracteres.';
-    if (numericAge === null || Number.isNaN(numericAge) || numericAge < 0 || numericAge > 120) {
+    if (numericAge === null || !Number.isInteger(numericAge) || numericAge < 0 || numericAge > 120) {
       fieldErrors.age = 'La edad debe ser un número válido entre 0 y 120 años.';
     }
-    if (cleanPhone.length < 7) fieldErrors.phone = 'Ingresa un teléfono válido de al menos 7 dígitos.';
+    if (cleanPhone.replace(/\D/g, '').length < 7) fieldErrors.phone = 'Ingresa un teléfono válido de al menos 7 dígitos.';
     if (cleanEmail && (!cleanEmail.includes('@') || cleanEmail.length < 6)) {
       fieldErrors.email = 'Ingresa un correo electrónico válido o déjalo vacío.';
     }
@@ -281,6 +288,7 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
     }
 
     const payload = {
+      write_version: form.write_version,
       full_name: cleanName,
       age: numericAge,
       phone: cleanPhone,
@@ -366,49 +374,15 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
     });
   }, [selectedDate, availability, appointments]);
 
-  const weeklyHourRange = useMemo(() => {
-    let minH = 8;
-    let maxH = 19;
-    let maxM = 0;
-    const activeRules = availability.filter((a) => a.is_active);
-    if (activeRules.length > 0) {
-      minH = Math.min(...activeRules.map((r) => Number(r.start_time.split(':')[0])));
-      const maxEndTime = activeRules.reduce((max, r) => {
-        const [h, m] = r.end_time.split(':').map(Number);
-        return h > max.h || (h === max.h && m > max.m) ? { h, m } : max;
-      }, { h: 0, m: 0 });
-      maxH = maxEndTime.h;
-      maxM = maxEndTime.m;
-    }
-
-    // Add extra hour if end time has minutes
-    const effectiveMaxH = maxM > 0 ? maxH + 1 : maxH;
-
-    const hours = [];
-    for (let h = minH; h < effectiveMaxH; h += 1) {
-      hours.push(`${String(h).padStart(2, '0')}:00`);
-    }
-    return hours;
-  }, [availability]);
+  const weeklyHourRange = useMemo(() => calendarHours(
+    weekDays.map((day) => day.rule).filter(Boolean), weekDays.flatMap((day) => day.appointments)
+  ), [weekDays]);
 
   const dailyHourlySlots = useMemo(() => {
     const [y, m, d] = selectedDate.split('-').map(Number);
-    const dayOfWeek = new Date(y, m - 1, d).getDay();
-    const rule = availability.find((a) => Number(a.day_of_week) === dayOfWeek);
-    if (!rule || !rule.is_active) return [];
-
-    const [startH] = rule.start_time.split(':').map(Number);
-    const [endH, endM] = rule.end_time.split(':').map(Number);
-
-    // Add extra hour if end time has minutes
-    const effectiveEndH = endM > 0 ? endH + 1 : endH;
-
-    const hours = [];
-    for (let h = startH; h < effectiveEndH; h += 1) {
-      hours.push(`${String(h).padStart(2, '0')}:00`);
-    }
-    return hours;
-  }, [availability, selectedDate]);
+    const rule = availability.find((a) => Number(a.day_of_week) === new Date(y, m - 1, d).getDay());
+    return calendarHours(rule ? [rule] : [], appointmentsForSelectedDate);
+  }, [availability, selectedDate, appointmentsForSelectedDate]);
 
   const activeDayAppointments = appointmentsForSelectedDate.filter(
     (a) => a.status !== 'cancelled'
@@ -431,7 +405,8 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
   // Never treat an empty asynchronous result as a successful initial load.
   const owner = session?.user?.id;
   const startupReady = !authLoading && (!owner ||
-    (patientsLoadedFor === owner && appointmentsLoadedFor === owner && availabilityLoadedFor === owner));
+    (patientsLoadedFor === owner && appointmentsLoadedFor === owner && availabilityLoadedFor === owner &&
+      patientsRevision === reloadKey && appointmentsRevision === reloadKey && availabilityRevision === reloadKey));
   const startupErrors = [authInitError, patientsLoadError, appointmentsLoadError, availabilityLoadError].filter(Boolean);
   const loadFailed = startupReady && startupErrors.length > 0;
   const loadingData = !startupReady;
@@ -440,7 +415,7 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
       <h2 className="font-bold">No se pudieron cargar los datos de MINA.</h2>
       <p className="mt-2 text-sm">Por seguridad, la agenda y los expedientes no se muestran hasta confirmar una carga correcta.</p>
       <p className="mt-2 text-sm">{startupErrors.join(' ')}</p>
-      <button type="button" className="toolbar-btn mt-3" onClick={() => window.location.reload()}>Reintentar carga</button>
+      <button type="button" className="toolbar-btn mt-3" onClick={() => { if (authInitError) window.location.reload(); else setReloadKey((value) => value + 1); }}>Reintentar carga</button>
     </section>
   );
   return (
@@ -460,6 +435,9 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
         setAuthSuccess={setAuthSuccess}
         setShowAuthModal={setShowAuthModal}
         openCreateAppointmentModal={openCreateAppointmentModal}
+        dataUnavailable={loadingData || loadFailed}
+        onRefresh={() => setReloadKey((value) => value + 1)}
+        refreshDisabled={loadingData || locked || isAppointmentModalOpen || isPatientModalOpen || Boolean(selectedPatientForRecord)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         patientsCount={patients.length}
@@ -563,10 +541,6 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
 
             {activeTab === 'security' && (
               <SecurityPage
-                patients={patients}
-                appointments={appointments}
-                availability={availability}
-                patientsById={patientsById}
                 appendAuditLog={appendAuditLog}
                 auditLogs={auditLogs}
               />
@@ -575,6 +549,7 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
         )}
       </main>
 
+      <div hidden={loadingData || loadFailed} inert={loadingData || loadFailed ? true : undefined}>
       <AppointmentModal
         isOpen={isAppointmentModalOpen}
         onClose={() => setIsAppointmentModalOpen(false)}
@@ -604,8 +579,12 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
       />
 
       <RecordModal
-        selectedPatientForRecord={session?.user?.id ? selectedPatientForRecord : null}
-        setSelectedPatientForRecord={setSelectedPatientForRecord}
+        selectedPatientForRecord={session?.user?.id && selectedPatientForRecord ? (patientsById.get(selectedPatientForRecord.id) || selectedPatientForRecord) : null}
+        setSelectedPatientForRecord={(next) => {
+          if (next === null && pendingPhoto && !window.confirm('Hay una fotografía sin terminar de guardar. ¿Quieres cerrar el expediente y descartarla?')) return false;
+          setSelectedPatientForRecord(next);
+          return true;
+        }}
         appointments={appointments}
         openEditAppointmentModal={openEditAppointmentModal}
         userId={session?.user?.id ?? null}
@@ -617,6 +596,7 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
         onClose={() => setShowPrivacyNoticeModal(false)}
       />
 
+      </div>
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}

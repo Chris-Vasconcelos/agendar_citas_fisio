@@ -3,11 +3,12 @@ import { fetchAvailability, updateAvailability as apiUpdateAvailability } from '
 import { withTimeout } from '../utils/withTimeout';
 import { DAYS_OF_WEEK } from '../utils/constants';
 
-export function useAvailability(session, setBannerAlert, locked = false) {
+export function useAvailability(session, setBannerAlert, locked = false, reloadKey = 0) {
     const [availability, setAvailability] = useState([]);
 
     const [loadedFor, setLoadedFor] = useState(null);
     const [initialLoadError, setInitialLoadError] = useState('');
+    const [loadedRevision, setLoadedRevision] = useState(null);
     useEffect(() => {
         if (locked) return;
         let cancelled = false;
@@ -26,11 +27,11 @@ export function useAvailability(session, setBannerAlert, locked = false) {
                     setInitialLoadError('No se pudieron cargar horarios. Revisa la conexión y recarga.');
                 }
             }).finally(() => {
-                if (!cancelled) setLoadedFor(owner);
+                if (!cancelled) { setLoadedFor(owner); setLoadedRevision(reloadKey); }
             });
         }
         return () => { cancelled = true; };
-    }, [session?.user?.id, locked]);
+    }, [session?.user?.id, locked, reloadKey]);
 
     const saveAvailabilityDay = async (payload) => {
         try {
@@ -55,6 +56,8 @@ export function useAvailability(session, setBannerAlert, locked = false) {
 
         const existingRule = availability.find((item) => item.day_of_week === dayOfWeekNumber);
         const payload = {
+            id: existingRule?.id,
+            write_version: existingRule?.write_version,
             day_of_week: dayOfWeekNumber,
             is_active: true,
             start_time: existingRule?.start_time || '08:00',
@@ -76,6 +79,7 @@ export function useAvailability(session, setBannerAlert, locked = false) {
         handleEnableDayNow,
         saveAvailabilityDay,
         loadedFor,
-        initialLoadError
+        initialLoadError,
+        loadedRevision
     };
 }

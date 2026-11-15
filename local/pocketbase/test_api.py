@@ -8,6 +8,7 @@ import concurrent.futures
 import threading
 import base64
 import time
+import uuid
 
 BASE = "http://127.0.0.1:8090"
 ADMIN_EMAIL = "admin@example.invalid"
@@ -15,6 +16,12 @@ ADMIN_PASSWORD = "TemporaryTestPassword_12345!"
 OWNER_PASSWORD = "PrototypePassword_123456!"
 
 def request(method,path,body=None,token=None):
+    # Normal fixture edits carry the version actually read by that fixture.
+    # Concurrency tests pass previous_version explicitly to keep a stale snapshot.
+    if method == 'PATCH' and body is not None and 'previous_version' not in body and any('/'+name+'/records/' in path for name in ['mina_patients','mina_appointments','mina_availability','mina_appointment_reminders']):
+        code, current = request('GET', path, token=token)
+        if code == 200:
+            body = dict(body, previous_version=current.get('write_version',''), write_version=str(uuid.uuid4()))
     headers = {"Accept":"application/json"}
     if token: headers["Authorization"] = token
     if body is not None: headers["Content-Type"] = "application/json"
@@ -169,6 +176,52 @@ class LocalApiTests(unittest.TestCase):
         for method,payload in [("PATCH",{"patient":self.patients[1]}),("DELETE",None)]:
             code,_=request(method,collection("mina_patient_documents")+"/"+doc["id"],payload,self.tokens[0])
             self.assertNotEqual(code,200)
+
+    def test_stale_and_simultaneous_edits_are_rejected_atomically(self):
+        token = self.tokens[0]
+        code, patient = request('POST', collection('mina_patients'), {
+            'owner': self.owners[0], 'full_name': 'Paciente Version Ficticio', 'age': 0,
+            'phone': '7225550181', 'consultation_reason': 'Prueba versiones', 'privacy_consent': True,
+        }, token)
+        self.assertEqual(code, 200, patient)
+        code, appointment = request('POST', collection('mina_appointments'), {
+            'owner': self.owners[0], 'patient': patient['id'], 'slot_number': 1,
+            'start_time': '2031-02-03 15:00:00Z', 'end_time': '2031-02-03 16:00:00Z', 'status': 'scheduled',
+        }, token)
+        self.assertEqual(code, 200, appointment)
+        code, hours = request('POST', collection('mina_availability'), {
+            'owner': self.owners[0], 'day_of_week': 3, 'start_time': '08:00', 'end_time': '13:00',
+            'slot_duration_minutes': 60, 'is_active': True,
+        }, token)
+        self.assertEqual(code, 200, hours)
+        code, reminder = request('POST', collection('mina_appointment_reminders'), {
+            'owner': self.owners[0], 'appointment': appointment['id'], 'appointment_start_time': appointment['start_time'], 'status': 'opened',
+        }, token)
+        self.assertEqual(code, 200, reminder)
+        for name, record, field, values in [
+            ('mina_patients', patient, 'phone', ['7225550182','7225550183','7225550184']),
+            ('mina_appointments', appointment, 'treatment_notes', ['Nota primera','Nota segunda','Nota tercera']),
+            ('mina_availability', hours, 'end_time', ['14:00','15:00','16:00']),
+            ('mina_appointment_reminders', reminder, 'opened_at', ['2031-02-02 15:00:00Z','2031-02-02 16:00:00Z','2031-02-02 17:00:00Z']),
+        ]:
+            with self.subTest(collection=name):
+                path = collection(name)+'/'+record['id']
+                old = record.get('write_version','')
+                first = {field: values[0], 'previous_version': old, 'write_version': str(uuid.uuid4())}
+                code, saved = request('PATCH', path, first, token)
+                self.assertEqual(code, 200, saved)
+                code, _ = request('PATCH', path, {field: values[1], 'previous_version': old, 'write_version': str(uuid.uuid4())}, token)
+                self.assertNotEqual(code, 200, 'A stale device overwrote newer data')
+                barrier = threading.Barrier(2)
+                def edit(value):
+                    barrier.wait()
+                    return request('PATCH', path, {field: value, 'previous_version': saved['write_version'], 'write_version': str(uuid.uuid4())}, token)[0]
+                with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+                    codes = list(pool.map(edit, values[1:]))
+                self.assertEqual(codes.count(200), 1, codes)
+                code, latest = request('GET', path, token=token)
+                self.assertEqual(code, 200)
+                self.assertNotEqual(latest['write_version'], saved['write_version'])
 
     def test_no_patient_delete(self):
         code,_=request("DELETE",collection("mina_patients")+"/"+self.patients[0],token=self.tokens[0])

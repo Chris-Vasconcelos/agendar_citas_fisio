@@ -3,11 +3,12 @@ import { fetchAppointments, saveAppointment as apiSaveAppointment, cancelAppoint
 import { formatTimeShort } from '../utils/date';
 import { withTimeout } from '../utils/withTimeout';
 
-export function useAppointments(session, appendAuditLog, setBannerAlert, patientsById, locked = false) {
+export function useAppointments(session, appendAuditLog, setBannerAlert, patientsById, locked = false, reloadKey = 0) {
     const [appointments, setAppointments] = useState([]);
 
     const [loadedFor, setLoadedFor] = useState(null);
     const [initialLoadError, setInitialLoadError] = useState('');
+    const [loadedRevision, setLoadedRevision] = useState(null);
     useEffect(() => {
         if (locked) return;
         let cancelled = false;
@@ -26,11 +27,11 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
                     setInitialLoadError('No se pudieron cargar citas. Revisa la conexión y recarga.');
                 }
             }).finally(() => {
-                if (!cancelled) setLoadedFor(owner);
+                if (!cancelled) { setLoadedFor(owner); setLoadedRevision(reloadKey); }
             });
         }
         return () => { cancelled = true; };
-    }, [session?.user?.id, locked]);
+    }, [session?.user?.id, locked, reloadKey]);
 
     const validateAppointmentConstraints = (startISO, endISO, requestedSlot = 'auto', ignoreAppointmentId = null, patientId = null) => {
         const startMs = new Date(startISO).getTime();
@@ -131,9 +132,9 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
 
     const cancelAppointment = async (apt) => {
         try {
-            await apiCancelAppointment(apt.id);
+            const saved = await apiCancelAppointment(apt);
             setAppointments((prev) =>
-              prev.map((item) => (item.id === apt.id ? { ...item, status: 'cancelled' } : item))
+              prev.map((item) => (item.id === apt.id ? saved : item))
             );
             appendAuditLog(
               'AGENDA',
@@ -150,6 +151,7 @@ export function useAppointments(session, appendAuditLog, setBannerAlert, patient
         saveAppointment,
         cancelAppointment,
         loadedFor,
-        initialLoadError
+        initialLoadError,
+        loadedRevision
     };
 }

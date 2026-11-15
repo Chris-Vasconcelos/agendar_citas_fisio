@@ -1,19 +1,33 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { fetchPatients } from '../services/patientService';
+import { fetchAppointments } from '../services/appointmentService';
+import { fetchAvailability } from '../services/availabilityService';
+import { withTimeout } from '../utils/withTimeout';
 import { Download } from 'lucide-react';
 import { getCompactDateString } from '../utils/date';
 import { escapeCsvCell } from '../utils/csv';
 import { DEFAULT_PROFESSIONAL } from '../utils/constants';
 
 export function SecurityPage({
-  patients,
-  appointments,
-  availability,
-  patientsById,
   appendAuditLog,
   auditLogs,
 }) {
 
-  const handleExportJsonBackup = () => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const exportFresh = async (format) => {
+    if (busy) return;
+    setBusy(true); setError('');
+    try {
+      const [patients, appointments, availability] = await withTimeout(Promise.all([
+        fetchPatients(), fetchAppointments(), fetchAvailability(),
+      ]));
+      if (format === 'json') exportJson(patients, appointments, availability);
+      else exportCsv(appointments, new Map(patients.map((patient) => [patient.id, patient])));
+    } catch { setError('No se pudo preparar la exportación con datos actuales del servidor. No se ha generado el archivo. Comprueba la conexión y reintenta.'); }
+    finally { setBusy(false); }
+  };
+  const exportJson = (patients, appointments, availability) => {
     const backupPayload = {
       schema_version: '1.0',
       exported_at: new Date().toISOString(),
@@ -39,11 +53,11 @@ export function SecurityPage({
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    const logMsg = `Respaldo JSON descargado (${filename}): ${patients.length} pacientes y ${appointments.length} citas.`;
-    appendAuditLog('RESPALDO JSON', logMsg);
+    const logMsg = `Exportación JSON preparada (${filename}): ${patients.length} pacientes y ${appointments.length} citas.`;
+    appendAuditLog('EXPORTACIÓN JSON', logMsg);
   };
 
-  const handleExportCsvBackup = () => {
+  const exportCsv = (appointments, patientsById) => {
     const headers = [
       'ID Cita',
       'Fecha y Hora Inicio',
@@ -107,13 +121,16 @@ export function SecurityPage({
           Respaldo y Exportación de Expedientes y Citas
         </h2>
         <p className="text-xs m-0">
-          Exporta los datos de pacientes, citas y notas de sesión como CSV o JSON. IMPORTANTE: las fotografías de consentimientos NO se incluyen en estos archivos. La restauración JSON tampoco recupera fotografías. No uses esta exportación como único respaldo clínico.
+          Exporta los datos de pacientes, citas y notas de sesión como CSV o JSON. IMPORTANTE: las fotografías de consentimientos NO se incluyen en estos archivos. Esta versión no admite restaurar archivos JSON. No uses esta exportación como único respaldo clínico.
         </p>
 
+        {busy && <p role="status">Consultando datos actuales para la exportación…</p>}
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         <div className="flex flex-wrap items-center gap-2.5 pt-1">
           <button
             type="button"
-            onClick={handleExportJsonBackup}
+            onClick={() => exportFresh('json')}
+            disabled={busy}
             className="submit-button inline-flex items-center gap-1.5 text-xs"
           >
             <Download className="w-4 h-4" />
@@ -122,7 +139,8 @@ export function SecurityPage({
 
           <button
             type="button"
-            onClick={handleExportCsvBackup}
+            onClick={() => exportFresh('csv')}
+            disabled={busy}
             className="secondary-button inline-flex items-center gap-1.5 text-xs"
           >
             <Download className="w-4 h-4" />

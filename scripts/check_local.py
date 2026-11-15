@@ -2,6 +2,8 @@
 import os, pathlib, subprocess, sys, tempfile, time, urllib.request
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 exe = pathlib.Path(sys.argv[1]).resolve()
+if '--browser' in sys.argv:
+    subprocess.run([sys.executable, 'scripts/check_upgrade.py', str(exe)], cwd=ROOT, check=True)
 with tempfile.TemporaryDirectory(prefix='mina-check-') as tmp:
     args = [str(exe), '--dir', str(pathlib.Path(tmp)/'data'), '--migrationsDir', str(ROOT/'local/pocketbase/pb_migrations')]
     log_path = pathlib.Path(tmp)/'server.log'
@@ -19,7 +21,9 @@ with tempfile.TemporaryDirectory(prefix='mina-check-') as tmp:
             else: raise RuntimeError('PocketBase did not start')
             subprocess.run([sys.executable, '-m', 'unittest', 'discover', '-s', 'local/pocketbase', '-p', 'test_*.py', '-v'], cwd=ROOT, check=True)
             if '--browser' in sys.argv:
-                subprocess.run(['node', 'scripts/check_local_browser.cjs'], cwd=ROOT, check=True)
+                if '--review-only' not in sys.argv:
+                    subprocess.run(['node', 'scripts/check_local_browser.cjs'], cwd=ROOT, check=True)
+                subprocess.run(['node', 'scripts/check_functional_review.cjs'], cwd=ROOT, check=True)
             if '--https' in sys.argv:
                 subprocess.run([sys.executable, 'scripts/check_https.py', os.environ['MINA_TEST_CADDY']], cwd=ROOT, check=True)
             print('Local integration checks passed.')

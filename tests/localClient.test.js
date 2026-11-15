@@ -61,3 +61,27 @@ test('login epochs distinguish logout and same-account re-entry but preserve rou
   assert.ok(api.localSessionEpoch() > firstLogin);
   api.localSignOut();
 });
+
+test('a 5xx write is uncertain and cannot be repeated blindly', async () => {
+  const api = await client(); let writes = 0;
+  globalThis.fetch = async (path) => {
+    if (path.includes('auth-')) return ok(session());
+    writes++; return new Response('{}', {status:503});
+  };
+  await api.localSignIn('test','test');
+  await assert.rejects(api.localPatientApi.save({full_name:'Ficticio'}), /confirmar el guardado/);
+  await assert.rejects(api.localPatientApi.save({full_name:'Ficticio'}), /guardado sin confirmar/);
+  assert.equal(writes,1); api.localSignOut();
+});
+test('a stale edit explains the conflict without replacing its captured version', async () => {
+  const api = await client(); let submitted;
+  globalThis.fetch = async (path, options) => {
+    if (path.includes('auth-')) return ok(session());
+    if (options.method === 'PATCH') { submitted=JSON.parse(options.body); return new Response('{}',{status:400}); }
+    return ok({id:'patient',write_version:'newer-version'});
+  };
+  await api.localSignIn('test','test');
+  await assert.rejects(api.localPatientApi.save({full_name:'Ficticio',write_version:'captured-old'},'patient'), /cambió en otra ventana/);
+  assert.equal(submitted.previous_version,'captured-old');
+  assert.notEqual(submitted.write_version,'captured-old'); api.localSignOut();
+});

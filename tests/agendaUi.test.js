@@ -95,7 +95,7 @@ test('auth and all three initial loads release errors or timeout timers', () => 
   for (const name of ['usePatients', 'useAppointments', 'useAvailability']) {
     const source = readFileSync(new URL(`../src/hooks/${name}.js`, import.meta.url), 'utf8');
     assert.match(source, /withTimeout\(fetch/);
-    assert.match(source, /\[session\?\.user\?\.id, locked\]/);
+    assert.match(source, /\[session\?\.user\?\.id, locked, reloadKey\]/);
   }
 });
 
@@ -116,7 +116,8 @@ test('signed consent image uploader is reachable from authenticated record', () 
   const record = readFileSync(new URL('../src/components/modals/RecordModal.jsx', import.meta.url), 'utf8');
   const consent = readFileSync(new URL('../src/components/modals/ConsentPhotoSection.jsx', import.meta.url), 'utf8');
   assert.ok(app.includes('userId={session?.user?.id ?? null}'));
-  assert.ok(record.includes('<ConsentPhotoSection patient={selectedPatientForRecord} userId={userId} onPendingChange={onPhotoPending} />'));
+  assert.ok(record.includes('<ConsentPhotoSection patient={selectedPatientForRecord}'));
+  assert.ok(record.includes('onPendingChange={onPhotoPending}'));
   assert.ok(consent.includes('Guardar fotografía privada'));
   assert.ok(consent.includes('uploadSignedConsent'));
 });

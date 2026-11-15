@@ -2,11 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { fetchPatients, savePatient as apiSavePatient, deletePatient as apiDeletePatient } from '../services/patientService';
 import { withTimeout } from '../utils/withTimeout';
 
-export function usePatients(session, appendAuditLog, setBannerAlert, locked = false) {
+export function usePatients(session, appendAuditLog, setBannerAlert, locked = false, reloadKey = 0) {
     const [patients, setPatients] = useState([]);
 
     const [loadedFor, setLoadedFor] = useState(null);
     const [initialLoadError, setInitialLoadError] = useState('');
+    const [loadedRevision, setLoadedRevision] = useState(null);
     useEffect(() => {
         if (locked) return;
         let cancelled = false;
@@ -25,11 +26,11 @@ export function usePatients(session, appendAuditLog, setBannerAlert, locked = fa
                     setInitialLoadError('No se pudieron cargar pacientes. Revisa la conexión e inténtalo de nuevo.');
                 }
             }).finally(() => {
-                if (!cancelled) setLoadedFor(owner);
+                if (!cancelled) { setLoadedFor(owner); setLoadedRevision(reloadKey); }
             });
         }
         return () => { cancelled = true; };
-    }, [session?.user?.id, locked]);
+    }, [session?.user?.id, locked, reloadKey]);
 
     const patientsById = useMemo(() => {
         const map = new Map();
@@ -56,7 +57,7 @@ export function usePatients(session, appendAuditLog, setBannerAlert, locked = fa
 
     const deletePatient = async (patientId) => {
         try {
-            const saved = await apiDeletePatient(patientId);
+            const saved = await apiDeletePatient(patients.find((p) => p.id === patientId));
             setPatients((prev) => prev.map((p) => p.id === patientId ? saved : p));
             appendAuditLog('PACIENTES', 'Expediente archivado; se conserva su historial.');
         } catch (error) {
@@ -70,6 +71,7 @@ export function usePatients(session, appendAuditLog, setBannerAlert, locked = fa
         savePatient,
         deletePatient,
         loadedFor,
-        initialLoadError
+        initialLoadError,
+        loadedRevision
     };
 }

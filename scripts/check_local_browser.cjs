@@ -1,3 +1,4 @@
+const { randomUUID } = require('node:crypto');
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 (async () => {
@@ -117,7 +118,7 @@ const assert = require('node:assert/strict');
     assert.ok(newReminderResponse.ok(), await newReminderResponse.text());
     const newReminder = await newReminderResponse.json();
     const phoneUpdate = await context.request.patch('http://127.0.0.1:8090/api/collections/mina_patients/records/'+reminderPatient.id, {
-      headers: reminderHeaders, data: { phone: '7225550198' },
+      headers: reminderHeaders, data: { phone: '7225550198', previous_version: reminderPatient.write_version, write_version: randomUUID() },
     });
     assert.ok(phoneUpdate.ok());
     assert.equal(await reminder.count(), 1);
@@ -130,7 +131,7 @@ const assert = require('node:assert/strict');
     await pendingReminder.getByText('WhatsApp abierto; envío sin confirmar', { exact: true }).waitFor();
     assert.match(await page.evaluate(() => window.testWhatsAppUrl), /^https:\/\/wa\.me\/527225550198\?text=/);
     const cancelRemote = await context.request.patch('http://127.0.0.1:8090/api/collections/mina_appointments/records/'+newReminder.id, {
-      headers: reminderHeaders, data: { status: 'cancelled' },
+      headers: reminderHeaders, data: { status: 'cancelled', previous_version: newReminder.write_version, write_version: randomUUID() },
     });
     assert.ok(cancelRemote.ok());
     await page.getByRole('button', { name: 'Actualizar', exact: true }).click();

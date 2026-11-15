@@ -16,6 +16,12 @@ El paquete contiene PocketBase 0.40.6 para Windows x64, age 1.2.1, Caddy 2.10.2,
 
 El programa conserva la version anterior y una copia local previa de los datos al actualizar. Estan dentro del mismo directorio protegido del usuario: no son copias cifradas externas ni sustituyen la recuperacion en otro equipo. Comprobar espacio y cifrado del disco. No borrar la carpeta `pb_data` para solucionar un arranque.
 
+## Actualizar datos y proteger ediciones
+
+Al cambiar de pestaña se consultan de nuevo los pacientes, citas y horarios. El icono **Actualizar datos** hace lo mismo sin cerrar MINA; termina o cierra las capturas antes de usarlo. No hay sincronizacion instantanea entre dispositivos. Si otra ventana cambia un registro que tenias abierto, el servidor rechaza tu edicion antigua y MINA conserva el texto para que puedas revisarlo. No repetir el guardado sin comprobar el registro actual.
+
+Usar siempre el paquete completo correspondiente a la base: la revision funcional añade proteccion de versiones mediante una migracion y los iniciadores anteriores no deben usarse para editar esa base. No borrar datos ni retirar restricciones para resolver un rechazo. Referencia: `docs/mina-local-revision-funcional.md`.
+
 ## Sesion durante la jornada
 
 - Por defecto el acceso se conserva en la pestaña/ventana. **Recordar este equipo** es opcional, solo en una cuenta Windows privada y protegida; conserva token/metadatos durante una jornada de hasta ocho horas, nunca contraseñas ni expedientes. Al reabrir se valida con PocketBase antes de mostrar datos.

@@ -2,6 +2,10 @@
 
 Rama de trabajo: `feat/mina-local-etapa1-20261108`. No fusionar ni cambiar `main`. Destino: PC Windows del consultorio de Lalo; Windows 11 Pro Education x64 confirmado; iPhone disponible, uso inicial pendiente de confirmar. Los documentos de la version anterior y de los prototipos se encuentran en `docs/archive`; este documento, el codigo y los resultados de CI son la referencia actual.
 
+## Revision funcional posterior
+
+La revision funcional ampliada y sus defectos/regresiones estan documentados en `docs/mina-local-revision-funcional.md`. Incluye visibilidad de agenda, actualizacion entre pantallas, fotografias, exportacion y proteccion de ediciones simultaneas mediante una migracion adicional. La validacion y descarga de ese bloque deben consultarse alli antes de usar los paquetes historicos siguientes.
+
 ## Correccion de actualizacion de recordatorios
 
 El boton Actualizar anterior solo consultaba las marcas de envio y reutilizaba las citas/pacientes cargados al entrar en la aplicacion. En `036aa50` Recordatorios toma una nueva lectura del servidor de citas, pacientes y seguimiento al entrar, actualizar, desbloquear o recibir cambios de la misma ventana. La lista recalcula su ventana temporal cada minuto. Solo incluye citas programadas que aun no empiezan, hasta siete dias desde el momento actual; no depende del dia seleccionado en Agenda.

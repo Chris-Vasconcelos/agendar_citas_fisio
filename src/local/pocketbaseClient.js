@@ -111,6 +111,10 @@ async function http(path, { method = 'GET', payload, mutation = false } = {}) {
   } finally { clearTimeout(timer); }
   if (requestEpoch !== epoch) throw new Error('La sesión cambió. La respuesta anterior fue descartada.');
   if (!response.ok) {
+    if (mutation && response.status >= 500) {
+      uncertainWrite = true;
+      throw new Error('No se pudo confirmar el guardado. Recarga y comprueba si aparece antes de repetirlo.');
+    }
     if (response.status === 401) localSignOut();
     throw new Error(response.status === 401 || response.status === 403
       ? 'Acceso denegado o sesión expirada.'
@@ -192,6 +196,24 @@ async function write(name, payload, id) {
     method: id ? 'PATCH' : 'POST', payload, mutation: true,
   });
 }
+async function versionedWrite(name, payload, id, expected) {
+  if (id && typeof expected !== 'string') throw new Error('Falta la versión del registro. Actualiza los datos y vuelve a abrirlo antes de guardar.');
+  const before = epoch;
+  try {
+    return await write(name, { ...payload, write_version: crypto.randomUUID(), ...(id ? { previous_version: expected } : {}) }, id);
+  } catch (error) {
+    if (id && epoch === before && !uncertainWrite) {
+      try {
+        requireSession();
+        const latest = await http(ROOT + name + '/records/' + encodeURIComponent(id));
+        if (latest.write_version !== expected) {
+          throw Object.assign(new Error('El registro cambió en otra ventana o dispositivo. Tus cambios no se guardaron. Conserva tu texto, actualiza los datos y vuelve a abrir el registro antes de guardar.'), { staleWrite: true });
+        }
+      } catch (check) { if (check.staleWrite) throw check; }
+    }
+    throw error;
+  }
+}
 const pick = (value, keys) => Object.fromEntries(keys.filter((k) => value[k] !== undefined).map((k) => [k, value[k]]));
 const iso = (value) => value ? new Date(value.replace(' ', 'T')).toISOString() : null;
 const patientMap = (p) => ({ ...p, email: p.email_address || null, user_id: p.owner });
@@ -203,26 +225,26 @@ export const localPatientApi = {
     await localRefreshSession();
     const fields = pick(p, patientFields);
     if ('email' in p) fields.email_address = p.email || '';
-    return patientMap(await write('mina_patients', { ...fields, owner: auth.id }, id));
+    return patientMap(await versionedWrite('mina_patients', { ...fields, owner: auth.id }, id, p.write_version));
   },
-  archive: async (id, archived = true) => patientMap(await write('mina_patients', { archived_at: archived ? new Date().toISOString() : '' }, id)),
+  archive: async (id, archived = true, version) => patientMap(await versionedWrite('mina_patients', { archived_at: archived ? new Date().toISOString() : '' }, id, version)),
 };
 export const localAppointmentApi = {
   list: async () => (await list('mina_appointments', 'start_time')).map(appointmentMap),
   save: async (p, id) => {
     await localRefreshSession();
-    return appointmentMap(await write('mina_appointments', {
+    return appointmentMap(await versionedWrite('mina_appointments', {
       ...pick(p, ['slot_number', 'start_time', 'end_time', 'status', 'patient_condition', 'treatment_notes', 'professional_name']),
       owner: auth.id, patient: p.patient_id,
-    }, id));
+    }, id, p.write_version));
   },
-  cancel: async (id) => appointmentMap(await write('mina_appointments', { status: 'cancelled' }, id)),
+  cancel: async (id, version) => appointmentMap(await versionedWrite('mina_appointments', { status: 'cancelled' }, id, version)),
 };
 export const localAvailabilityApi = {
   list: () => list('mina_availability', 'day_of_week'),
   save: async (p) => {
-    const existing = (await list('mina_availability', 'day_of_week')).find((x) => Number(x.day_of_week) === Number(p.day_of_week));
-    return write('mina_availability', { ...pick(p, ['day_of_week', 'start_time', 'end_time', 'slot_duration_minutes', 'is_active']), owner: auth.id }, existing?.id);
+    await localRefreshSession();
+    return versionedWrite('mina_availability', { ...pick(p, ['day_of_week', 'start_time', 'end_time', 'slot_duration_minutes', 'is_active']), owner: auth.id }, p.id, p.write_version);
   },
 };
 const documentMap = (d) => ({ ...d, patient_id: d.patient, uploaded_at: iso(d.created), storage_path: { id: d.id, filename: d.signed_consent } });
@@ -249,9 +271,9 @@ export const localReminderApi = {
     if (!['opened', 'confirmed_sent'].includes(status)) throw new Error('Estado no válido.');
     const existing = (await list('mina_appointment_reminders', 'id', 'appointment=' + JSON.stringify(appointmentId)))[0];
     const timestamp = new Date().toISOString();
-    return reminderMap(await write('mina_appointment_reminders', {
+    return reminderMap(await versionedWrite('mina_appointment_reminders', {
       owner: auth.id, appointment: appointmentId, appointment_start_time: startTime, status,
       ...(status === 'opened' ? { opened_at: timestamp, confirmed_at: '' } : { confirmed_at: timestamp }),
-    }, existing?.id));
+    }, existing?.id, existing?.write_version));
   },
 };
