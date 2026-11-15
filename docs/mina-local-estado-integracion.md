@@ -2,6 +2,16 @@
 
 Rama de trabajo: `feat/mina-local-etapa1-20261108`. No fusionar ni cambiar `main`. Destino: PC Windows del consultorio de Lalo; Windows 11 Pro Education x64 confirmado; iPhone disponible, uso inicial pendiente de confirmar. Los documentos de la version anterior y de los prototipos se encuentran en `docs/archive`; este documento, el codigo y los resultados de CI son la referencia actual.
 
+## Correccion de actualizacion de recordatorios
+
+El boton Actualizar anterior solo consultaba las marcas de envio y reutilizaba las citas/pacientes cargados al entrar en la aplicacion. En `036aa50` Recordatorios toma una nueva lectura del servidor de citas, pacientes y seguimiento al entrar, actualizar, desbloquear o recibir cambios de la misma ventana. La lista recalcula su ventana temporal cada minuto. Solo incluye citas programadas que aun no empiezan, hasta siete dias desde el momento actual; no depende del dia seleccionado en Agenda.
+
+Durante la carga o ante un fallo no muestra conteos ni un estado vacio que parezca confirmado. Ignora respuestas posteriores al cierre/cambio de carga y conserva el seguimiento manual: abrir WhatsApp no equivale a enviar. No cambia datos existentes ni migra la base.
+
+Verificado localmente con 32 pruebas Node, 11 API, ambas compilaciones y navegador real. La regresion crea una cita desde otra sesion HTTP mientras la pestaña permanece abierta, cambia el telefono, comprueba Actualizar/WhatsApp, cancela la cita y comprueba que desaparece. Tambien simula un 503 al consultar citas y verifica error sin conteo/estado vacio, seguido de recuperacion correcta. El recorrido anterior de sesiones, notas, fotos y archivo tambien aprobo.
+
+CI de `036aa50` aprobada en Linux y Windows, incluidos navegador, HTTPS, respaldo/restauracion e instalador nativo: https://github.com/Chris-Vasconcelos/agendar_citas_fisio/actions/runs/43673959538 . Paquete actualizado: https://github.com/Chris-Vasconcelos/agendar_citas_fisio/actions/runs/43673959538/artifacts/14145164854 (retencion de 14 dias). Cerrar MINA, extraer la descarga y ejecutar `Instalar-MINA.exe` con la misma cuenta Windows; conservara los datos existentes. El paquete anterior descrito abajo no incluye este arreglo. La aceptacion en el consultorio sigue pendiente.
+
 ## Version candidata: instalacion y sesion
 
 Implementado sobre esta rama, sujeto a las comprobaciones indicadas abajo: instalador nativo por usuario (`Instalar-MINA.exe`), iniciador `MINA.exe`, accesos MINA/Comprobar MINA y arranque al entrar en Windows. La ubicacion estable es `%LOCALAPPDATA%\MINA-Local\app`; la base existente permanece en `%LOCALAPPDATA%\MINA-Local\pb_data`. El instalador conserva cuentas/datos, verifica archivos, detiene solo procesos identificados de esa base y guarda una copia local previa al actualizar. Esa copia local sin cifrar NO sustituye el respaldo externo cifrado.
