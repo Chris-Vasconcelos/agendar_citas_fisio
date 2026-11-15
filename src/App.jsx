@@ -549,7 +549,7 @@ function Consultorio({ session, authLoading, authInitError, locked }) {
         )}
 
         {activeTab === 'reminders' && (
-          <RemindersPage appointments={appointments} patientsById={patientsById} session={session} />
+          <RemindersPage appointments={appointments} patientsById={patientsById} session={session} locked={locked} />
         )}
 
         {activeTab === 'availability' && (

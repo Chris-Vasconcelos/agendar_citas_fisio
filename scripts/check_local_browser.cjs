@@ -101,6 +101,50 @@ const assert = require('node:assert/strict');
     assert.match(await page.evaluate(() => window.testWhatsAppUrl), /^https:\/\/wa\.me\/527225550199\?text=/);
     await reminder.getByRole('button', { name: 'Ya lo envié', exact: true }).click();
     await reminder.getByText('Envío confirmado manualmente', { exact: true }).waitFor();
+    // A different device changes the server while this tab remains open.
+    const reminderLogin = await context.request.post('http://127.0.0.1:8090/api/collections/mina_operators/auth-with-password', {
+      data: { identity: 'mina-owner-1@example.invalid', password: 'PrototypePassword_123456!' },
+    });
+    assert.ok(reminderLogin.ok());
+    const reminderAuth = await reminderLogin.json();
+    const reminderHeaders = { Authorization: reminderAuth.token };
+    const patientsResponse = await context.request.get('http://127.0.0.1:8090/api/collections/mina_patients/records', { headers: reminderHeaders });
+    const reminderPatient = (await patientsResponse.json()).items.find((p) => p.full_name === 'Paciente Navegador Ficticio');
+    const newReminderResponse = await context.request.post('http://127.0.0.1:8090/api/collections/mina_appointments/records', {
+      headers: reminderHeaders, data: { owner: reminderAuth.record.id, patient: reminderPatient.id, slot_number: 1,
+        status: 'scheduled', start_time: day+'T20:00:00Z', end_time: day+'T21:00:00Z' },
+    });
+    assert.ok(newReminderResponse.ok(), await newReminderResponse.text());
+    const newReminder = await newReminderResponse.json();
+    const phoneUpdate = await context.request.patch('http://127.0.0.1:8090/api/collections/mina_patients/records/'+reminderPatient.id, {
+      headers: reminderHeaders, data: { phone: '7225550198' },
+    });
+    assert.ok(phoneUpdate.ok());
+    assert.equal(await reminder.count(), 1);
+    await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
+    await page.waitForFunction(() => document.querySelectorAll('h3').length >= 2);
+    assert.equal(await reminder.count(), 2);
+    const pendingReminder = reminder.nth(1); // The second appointment starts later that day.
+    await pendingReminder.getByRole('checkbox').check();
+    await pendingReminder.getByRole('button', { name: 'Abrir WhatsApp', exact: true }).click();
+    await pendingReminder.getByText('WhatsApp abierto; envío sin confirmar', { exact: true }).waitFor();
+    assert.match(await page.evaluate(() => window.testWhatsAppUrl), /^https:\/\/wa\.me\/527225550198\?text=/);
+    const cancelRemote = await context.request.patch('http://127.0.0.1:8090/api/collections/mina_appointments/records/'+newReminder.id, {
+      headers: reminderHeaders, data: { status: 'cancelled' },
+    });
+    assert.ok(cancelRemote.ok());
+    await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
+    await reminder.getByText('Envío confirmado manualmente', { exact: true }).waitFor();
+    assert.equal(await reminder.count(), 1);
+    // A failed refresh must show an error, without an empty-state or misleading totals.
+    await page.route('**/api/collections/mina_appointments/records?**', (route) => route.fulfill({ status: 503, body: '{}' }));
+    await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
+    await page.getByText(/No se pudieron actualizar las citas, los pacientes o el seguimiento/).waitFor();
+    assert.equal(await page.getByText('No hay citas programadas para los próximos 7 días.', { exact: true }).count(), 0);
+    assert.equal(await page.getByText(/Citas programadas de los próximos 7 días:/).count(), 0);
+    await page.unroute('**/api/collections/mina_appointments/records?**');
+    await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
+    await reminder.getByText('Envío confirmado manualmente', { exact: true }).waitFor();
     await page.reload();
     await page.getByRole('button', { name: 'Recordatorios', exact: true }).click();
     await reminder.getByText('Envío confirmado manualmente', { exact: true }).waitFor();
@@ -108,7 +152,7 @@ const assert = require('node:assert/strict');
     await page.getByRole('button', { name: 'Expedientes', exact: true }).click();
     await page.locator('#patient-search-input').fill('Navegador');
     await page.getByRole('button', { name: /Historial/ }).click();
-    await page.getByRole('button', { name: 'Editar nota', exact: true }).click();
+    await page.getByRole('button', { name: 'Editar nota', exact: true }).last().click();
     await page.locator('#apt-treatment-notes').fill('Tratamiento ficticio verificado por navegador.');
     await page.getByRole('button', { name: 'Guardar cambios', exact: true }).click();
     await page.getByRole('dialog').waitFor({ state: 'hidden' });
