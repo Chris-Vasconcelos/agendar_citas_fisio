@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { isSupabaseConfigured, signInWithEmailPassword } from '../../lib/supabase';
+import { signInWithEmailPassword } from '../../lib/backend';
 
 export function AuthModal({
   isOpen,
@@ -9,12 +9,15 @@ export function AuthModal({
   authSuccess,
   setAuthSuccess,
 }) {
+  const [busy, setBusy] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(false);
   const [authForm, setAuthForm] = useState({ email: '', password: '' });
 
   if (!isOpen) return null;
 
   const handleAuthSubmit = async (e) => {
     e.preventDefault();
+    if (busy) return;
     setAuthError('');
     setAuthSuccess('');
 
@@ -26,15 +29,9 @@ export function AuthModal({
       return;
     }
 
-    if (!isSupabaseConfigured) {
-      setAuthSuccess(
-        'Modo local activo: Para autenticar contra la nube, coloca VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en tu archivo .env.'
-      );
-      return;
-    }
-
+    setBusy(true);
     try {
-      const { error } = await signInWithEmailPassword(cleanEmail, cleanPass);
+      const { error } = await signInWithEmailPassword(cleanEmail, cleanPass, rememberDevice);
       if (error) {
         setAuthError(error.message);
         return;
@@ -43,7 +40,7 @@ export function AuthModal({
       onClose();
     } catch (err) {
       setAuthError(err?.message || 'Error de autenticación.');
-    }
+    } finally { setBusy(false); }
   };
 
   return (
@@ -99,6 +96,10 @@ export function AuthModal({
             />
           </div>
 
+          <label className="flex items-start gap-2 text-sm mb-4">
+            <input type="checkbox" checked={rememberDevice} onChange={(e) => setRememberDevice(e.target.checked)} />
+            <span>Recordar este equipo durante la jornada (hasta 8 horas). Solo en tu computadora de confianza; bloqueo tras 10 minutos sin uso.</span>
+          </label>
           <div aria-live="polite" className="mb-4">
             {authError && <div className="error-message active">{authError}</div>}
             {authSuccess && (
@@ -110,7 +111,7 @@ export function AuthModal({
 
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-slate-600">Acceso exclusivo del consultorio. Las cuentas son administradas por el responsable del sistema.</p>
-            <button type="submit" className="submit-button">
+            <button type="submit" disabled={busy} className="submit-button">
               Entrar al Consultorio
             </button>
           </div>

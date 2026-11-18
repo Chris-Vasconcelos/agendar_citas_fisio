@@ -3,8 +3,10 @@ import { DAYS_OF_WEEK } from '../utils/constants';
 
 export function AvailabilityPage({ availability, appointments = [], saveAvailabilityDay }) {
   const [feedback, setFeedback] = React.useState('');
+  const [savingDay, setSavingDay] = React.useState(null);
   const validTime = (time) => String(time || '08:00').slice(0,5);
   const update = async (row, changes) => {
+    if (savingDay !== null) return;
     const next = { ...row, ...changes };
     if (next.start_time >= next.end_time) {
       setFeedback('La hora de cierre debe ser posterior a la apertura.');
@@ -22,8 +24,11 @@ export function AvailabilityPage({ availability, appointments = [], saveAvailabi
       }
     }
     setFeedback('');
-    const result = await saveAvailabilityDay(next);
-    if (!result?.success) setFeedback(result?.error || 'No se pudo guardar el horario.');
+    setSavingDay(row.day_of_week);
+    try {
+      const result = await saveAvailabilityDay(next);
+      if (!result?.success) setFeedback(result?.error || 'No se pudo guardar el horario.');
+    } finally { setSavingDay(null); }
   };
 
   return (
@@ -33,6 +38,7 @@ export function AvailabilityPage({ availability, appointments = [], saveAvailabi
         <p>Configura los días y horas de atención del consultorio.</p>
       </div>
       {feedback && <p role="alert" className="mina-inline-error">{feedback}</p>}
+      {savingDay !== null && <p role="status">Guardando horario…</p>}
       <div className="mina-hours-list">
         {DAYS_OF_WEEK.map((day) => {
           const row = availability.find((a) => a.day_of_week === day.value) || {
@@ -46,19 +52,19 @@ export function AvailabilityPage({ availability, appointments = [], saveAvailabi
           return (
             <div key={day.value} className={`mina-hours-row ${active ? '' : 'mina-hours-row-closed'}`}>
               <label className="mina-hours-toggle">
-                <input type="checkbox" checked={active} onChange={(e) => update(row, { is_active:e.target.checked })} />
+                <input type="checkbox" checked={active} disabled={savingDay !== null} onChange={(e) => update(row, { is_active:e.target.checked })} />
                 <span>{day.label}</span>
               </label>
               <div className="mina-hours-times">
                 <label>
                   <span className="sr-only">Apertura de {day.label}</span>
-                  <input type="time" step="3600" value={start} disabled={!active}
+                  <input type="time" step="3600" value={start} disabled={!active || savingDay !== null}
                     onChange={(e) => update(row,{start_time:e.target.value})} />
                 </label>
                 <span aria-hidden="true">–</span>
                 <label>
                   <span className="sr-only">Cierre de {day.label}</span>
-                  <input type="time" step="3600" value={end} disabled={!active}
+                  <input type="time" step="3600" value={end} disabled={!active || savingDay !== null}
                     onChange={(e) => update(row,{end_time:e.target.value})} />
                 </label>
               </div>

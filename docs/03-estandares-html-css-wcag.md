@@ -42,7 +42,7 @@ Este documento registra las reglas técnicas obligatorias adoptadas en el proyec
    - **Prohibición absoluta de botones `reset`** para impedir el borrado accidental de datos clínicos o de agenda.
 4. **Validación con `novalidate`, `:user-invalid` y Constraint Validation API:**
    - Se utiliza `:user-invalid` y `:user-valid` en lugar de `:invalid` para no mostrar errores agresivos antes de que el usuario interactúe con el campo.
-   - Se valida en cliente para UX inmediata y se re-valida en base de datos/servidor (constraints `CHECK`, `EXCLUDE USING gist` y RLS en PostgreSQL) como barrera de seguridad.
+   - Se valida en cliente para UX inmediata y se re-valida en base de datos/servidor (reglas PocketBase, validacion de campos y triggers SQLite) como barrera de seguridad.
 
 ---
 

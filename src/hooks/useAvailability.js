@@ -1,32 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { fetchAvailability, updateAvailability as apiUpdateAvailability } from '../services/availabilityService';
-import { INITIAL_DEMO_AVAILABILITY } from '../utils/constants';
-import { isSupabaseConfigured } from '../lib/supabase';
 import { withTimeout } from '../utils/withTimeout';
-import { readLocalJSON, writeLocalJSON } from '../utils/localJSON';
 import { DAYS_OF_WEEK } from '../utils/constants';
 
-export function useAvailability(session, setBannerAlert) {
-    const [availability, setAvailability] = useState(() => {
-        if (isSupabaseConfigured) return [];
-        return readLocalJSON('fisio_availability_v3', INITIAL_DEMO_AVAILABILITY);
-    });
-
-    const loadAvailability = useCallback(async () => {
-        try {
-            const data = await fetchAvailability();
-            if (Array.isArray(data)) {
-               setAvailability(data);
-            }
-        } catch (error) {
-            console.error(error);
-        }
-    }, []);
+export function useAvailability(session, setBannerAlert, locked = false, reloadKey = 0) {
+    const [availability, setAvailability] = useState([]);
 
     const [loadedFor, setLoadedFor] = useState(null);
     const [initialLoadError, setInitialLoadError] = useState('');
+    const [loadedRevision, setLoadedRevision] = useState(null);
     useEffect(() => {
-        if (!isSupabaseConfigured) return;
+        if (locked) return;
         let cancelled = false;
         const owner = session?.user?.id;
         setAvailability([]);
@@ -43,22 +27,15 @@ export function useAvailability(session, setBannerAlert) {
                     setInitialLoadError('No se pudieron cargar horarios. Revisa la conexión y recarga.');
                 }
             }).finally(() => {
-                if (!cancelled) setLoadedFor(owner);
+                if (!cancelled) { setLoadedFor(owner); setLoadedRevision(reloadKey); }
             });
         }
         return () => { cancelled = true; };
-    }, [session?.user?.id]);
-
-    useEffect(() => {
-        if (!isSupabaseConfigured) {
-          writeLocalJSON('fisio_availability_v3', availability);
-        }
-    }, [availability]);
-
+    }, [session?.user?.id, locked, reloadKey]);
 
     const saveAvailabilityDay = async (payload) => {
         try {
-            const saved = await apiUpdateAvailability(payload, session?.user?.id);
+            const saved = await apiUpdateAvailability(payload);
             setAvailability((prev) => {
                 const exists = prev.some((item) => item.day_of_week === payload.day_of_week);
                 if (exists) {
@@ -68,7 +45,7 @@ export function useAvailability(session, setBannerAlert) {
             });
             return { success: true };
         } catch (error) {
-            console.error('[Supabase Error]:', error);
+            console.error('[MINA] Error de guardado:', error);
             setBannerAlert({ type: 'error', text: 'No se pudo guardar la configuración de horario: ' + error.message });
             return { success: false, error: error.message };
         }
@@ -79,6 +56,8 @@ export function useAvailability(session, setBannerAlert) {
 
         const existingRule = availability.find((item) => item.day_of_week === dayOfWeekNumber);
         const payload = {
+            id: existingRule?.id,
+            write_version: existingRule?.write_version,
             day_of_week: dayOfWeekNumber,
             is_active: true,
             start_time: existingRule?.start_time || '08:00',
@@ -97,11 +76,10 @@ export function useAvailability(session, setBannerAlert) {
 
     return {
         availability,
-        setAvailability,
-        loadAvailability,
         handleEnableDayNow,
         saveAvailabilityDay,
         loadedFor,
-        initialLoadError
+        initialLoadError,
+        loadedRevision
     };
 }

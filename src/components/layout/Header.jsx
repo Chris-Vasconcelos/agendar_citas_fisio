@@ -1,6 +1,7 @@
 import React from 'react';
-import { Shield, Lock, LogOut, Plus } from 'lucide-react';
-import { signOutUser, isSupabaseConfigured } from '../../lib/supabase';
+import { Shield, Lock, LogOut, Plus, RefreshCcw } from 'lucide-react';
+import { signOutUser } from '../../lib/backend';
+import { localLockSession } from '../../local/pocketbaseClient';
 
 export function Header({
   textSize,
@@ -11,7 +12,10 @@ export function Header({
   setAuthSuccess,
   setShowAuthModal,
   openCreateAppointmentModal,
-  selectedDate
+  selectedDate,
+  dataUnavailable = false,
+  onRefresh,
+  refreshDisabled = false
 }) {
   return (
     <header className="mina-app-header">
@@ -49,6 +53,10 @@ export function Header({
             <Shield className="w-4 h-4" aria-hidden="true" />
           </button>
 
+          {session && <button type="button" className="mina-icon-button" title="Actualizar datos"
+            aria-label="Actualizar datos" disabled={refreshDisabled} onClick={onRefresh}><RefreshCcw className="w-4 h-4" aria-hidden="true" /></button>}
+          {session && <button type="button" className="mina-icon-button" title="Bloquear MINA"
+            aria-label="Bloquear MINA" onClick={localLockSession}><Lock className="w-4 h-4" aria-hidden="true" /></button>}
           {session ? (
             <button type="button" className="mina-icon-button" title="Cerrar sesión"
               aria-label="Cerrar sesión" onClick={signOutUser}>
@@ -66,8 +74,8 @@ export function Header({
             </button>
           )}
 
-          {(!isSupabaseConfigured || session) && (
-            <button type="button" className="mina-new-appointment"
+          {session && (
+            <button type="button" className="mina-new-appointment" disabled={dataUnavailable}
               onClick={() => openCreateAppointmentModal('09:00', 'auto', selectedDate)}>
               <Plus className="w-4 h-4" aria-hidden="true" />
               <span>Nueva cita</span>

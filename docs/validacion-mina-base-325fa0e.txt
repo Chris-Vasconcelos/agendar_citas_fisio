@@ -1,0 +1,16 @@
+Reproduccion con datos ficticios en una copia aislada del commit 325fa0e.
+El resultado esperado era fallo: estos controles no estaban cubiertos o fallaban en esa version.
+La suite ampliada actual agrega otros cuatro casos y los 16 aprobaron en 12b1d23 (Windows y Linux).
+
+Review FAIL: HTTP stale edit is rejected even without browser validation: Expected "actual" to be strictly unequal to: 200
+Review FAIL: weekly view displays both consecutive appointments and 23:00 outside working hours: locator.waitFor: Timeout 12000ms exceeded.
+Review FAIL: closed day keeps its three appointments and creates no empty appointment buttons: Expected values to be strictly equal:
+Review FAIL: photograph load failure never claims there are no photographs: Expected values to be strictly equal:
+Review FAIL: closing a record asks before discarding a selected photo: Expected values to be strictly equal:
+Review FAIL: returning to Patients reads changes from another device: page.waitForFunction: Timeout 12000ms exceeded.
+Review FAIL: explicit refresh reads an updated weekly schedule: Expected values to be strictly equal:
+Review FAIL: JSON export reads the server at export time and retains clinical notes: Expected values to be strictly equal:
+Review FAIL: CSV export also reads the current patient data: The expression evaluated to a falsy value:
+Review FAIL: failed export shows an error and does not offer a stale download: locator.waitFor: Timeout 12000ms exceeded.
+Review FAIL: a stale clinical note is rejected and its unsaved text is preserved: locator.click: Timeout 12000ms exceeded.
+Review FAIL: blocked browser storage does not prevent an in-memory login: locator.click: Timeout 30000ms exceeded.

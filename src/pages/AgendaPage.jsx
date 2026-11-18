@@ -1,6 +1,8 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, Calendar, Clock, CheckCircle2, Eye, Edit3, ClipboardList, MessageCircle, XCircle } from 'lucide-react';
 import { addMinutesToTimeStr, getTodayDateString, formatDateHuman, formatTimeShort } from '../utils/date';
+import { appointmentsInCell, calendarCell } from '../utils/calendar';
+import { upcomingReminders } from '../utils/reminders';
 import { formatPatientName } from '../utils/name';
 
 export function AgendaPage({
@@ -220,27 +222,11 @@ export function AgendaPage({
                             ? Number(wd.rule.end_time.split(':')[0])
                             : 19;
                           const isWithinWorkingHours =
-                            wd.isActive && hourNum >= startH && hourNum < endH;
+                            wd.isActive && hourNum >= startH && (hourNum < endH || (hourNum === endH && Number(wd.rule.end_time.slice(3,5)) > 0));
 
-                          const slotStartMs = new Date(
-                            `${wd.dateStr}T${hourStr}:00`
-                          ).getTime();
-                          const slotEndMs = new Date(
-                            `${wd.dateStr}T${nextHourStr}:00`
-                          ).getTime();
-
-                          const activeInCell = wd.appointments.filter((a) => {
-                            const aS = new Date(a.start_time).getTime();
-                            const aE = new Date(a.end_time).getTime();
-                            return slotStartMs < aE && aS < slotEndMs;
-                          });
-
-                          const slot1Apt = activeInCell.find(
-                            (a) => Number(a.slot_number || 1) === 1
-                          );
-                          const slot2Apt = activeInCell.find(
-                            (a) => Number(a.slot_number || 1) === 2
-                          );
+                          const [slotStartMs, slotEndMs] = calendarCell(wd.dateStr, hourStr);
+                          const activeInCell = wd.appointments.filter((a) =>
+                            slotStartMs < new Date(a.end_time).getTime() && new Date(a.start_time).getTime() < slotEndMs);
 
                           if (!isWithinWorkingHours && activeInCell.length === 0) {
                             return (
@@ -262,18 +248,18 @@ export function AgendaPage({
                             >
                               <div className="mina-hour-lanes">
                                 {[1, 2].map((slotNum) => {
-                                  const apt = slotNum === 1 ? slot1Apt : slot2Apt;
-                                  if (apt) {
+                                  const inLane = appointmentsInCell(wd.appointments, wd.dateStr, hourStr, slotNum);
+                                  if (inLane.length) return <div key={`slot-${slotNum}`} className="space-y-1">{inLane.map((apt) => {
                                     const pt = patientsById.get(apt.patient_id);
                                     const hasAllergy = pt?.allergies &&
                                       !['ninguna', 'ninguna conocida', 'no preguntado'].includes(pt.allergies.trim().toLowerCase());
                                     return (
-                                      <div key={`slot-${slotNum}`}
+                                      <div key={apt.id}
                                         className={`mina-week-appointment mina-space-${slotNum} ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}>
                                         <button type="button" className="mina-week-appointment-main"
                                           onClick={() => openEditAppointmentModal(apt)}
-                                          title={`${formatPatientName(pt?.full_name) || 'Paciente'} · ${hourStr}–${nextHourStr}`}
-                                          aria-label={`Abrir cita de ${formatPatientName(pt?.full_name) || 'Paciente'}, espacio ${slotNum}, de ${hourStr} a ${nextHourStr}`}>
+                                          title={`${formatPatientName(pt?.full_name) || 'Paciente'} · ${formatTimeShort(apt.start_time)}–${formatTimeShort(apt.end_time)}`}
+                                          aria-label={`Abrir cita de ${formatPatientName(pt?.full_name) || 'Paciente'}, espacio ${slotNum}, de ${formatTimeShort(apt.start_time)} a ${formatTimeShort(apt.end_time)}`}>
                                           <span className="mina-space-chip" title={`Espacio ${slotNum}`}>E{slotNum}</span>
                                           <span className="mina-week-appointment-details">
                                             <span className="mina-week-appointment-name">{formatPatientName(pt?.full_name) || 'Paciente'}</span>
@@ -296,7 +282,8 @@ export function AgendaPage({
                                         </button>}
                                       </div>
                                     );
-                                  }
+                                  })}</div>;
+                                  if (!isWithinWorkingHours) return <span key={`slot-${slotNum}`} className="text-xs text-slate-500">Sin horario</span>;
                                   return (
                                     <button key={`slot-${slotNum}`} type="button"
                                       onClick={() => openCreateAppointmentModal(hourStr, String(slotNum), wd.dateStr)}
@@ -379,23 +366,6 @@ export function AgendaPage({
                 <tbody>
                   {dailyHourlySlots.map((hourStr) => {
                     const nextHourStr = addMinutesToTimeStr(hourStr, 60);
-                    const sMs = new Date(`${selectedDate}T${hourStr}:00`).getTime();
-                    const eMs = new Date(`${selectedDate}T${nextHourStr}:00`).getTime();
-
-                    const activeInHour = appointmentsForSelectedDate.filter((a) => {
-                      if (a.status === 'cancelled') return false;
-                      const aS = new Date(a.start_time).getTime();
-                      const aE = new Date(a.end_time).getTime();
-                      return sMs < aE && aS < eMs;
-                    });
-
-                    const slot1Apt = activeInHour.find(
-                      (a) => Number(a.slot_number || 1) === 1
-                    );
-                    const slot2Apt = activeInHour.find(
-                      (a) => Number(a.slot_number || 1) === 2
-                    );
-
                     return (
                       <tr key={hourStr}>
                         <th scope="row" className="calendar-hour-col">
@@ -406,11 +376,13 @@ export function AgendaPage({
                         </th>
 
                         {[1, 2].map((slotNum) => {
-                          const apt = slotNum === 1 ? slot1Apt : slot2Apt;
-                          if (!apt) {
+                          const inLane = appointmentsInCell(appointmentsForSelectedDate, selectedDate, hourStr, slotNum);
+                          const day = weekDays.find((wd) => wd.dateStr === selectedDate);
+                          const working = day?.isActive && hourStr >= day.rule.start_time.slice(0,5) && hourStr < day.rule.end_time.slice(0,5);
+                          if (!inLane.length) {
                             return (
                               <td key={`day-slot-${slotNum}`} className="bg-white">
-                                <button
+                                {!working ? <span className="text-xs text-slate-500">Sin horario</span> : <button
                                   type="button"
                                   onClick={() =>
                                     openCreateAppointmentModal(
@@ -422,18 +394,13 @@ export function AgendaPage({
                                   className="mina-day-empty-slot"
                                 >
                                   <span>+ Agendar</span>
-                                </button>
+                                </button>}
                               </td>
                             );
                           }
 
+                          return <td key={`day-slot-${slotNum}`} className="bg-white space-y-1">{inLane.map((apt) => {
                           const patient = patientsById.get(apt.patient_id);
-                          const cleanPhone = (patient?.phone || '').replace(/\D/g, '');
-                          const whatsappMsg = encodeURIComponent(
-                            `Hola ${patient?.full_name || ''}, te recordamos tu sesión de fisioterapia el ${formatDateHuman(
-                              selectedDate
-                            )} a las ${hourStr}.`
-                          );
                           const hasAllergies =
                             patient?.allergies &&
                             patient.allergies.toLowerCase() !== 'ninguna' &&
@@ -441,8 +408,7 @@ export function AgendaPage({
                             patient.allergies.toLowerCase() !== 'no preguntado';
 
                           return (
-                            <td key={`day-slot-${slotNum}`} className="bg-white">
-                              <div className={`calendar-booked-slot ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}>
+                              <div key={apt.id} className={`calendar-booked-slot ${apt.status === 'completed' ? 'completed' : apt.status === 'no_show' ? 'no-show' : ''}`}>
                                 <div className="slot-card-header">
                                   <span className="text-sm font-bold text-[#222222]">
                                     {formatPatientName(patient?.full_name) || 'Paciente'}
@@ -459,6 +425,7 @@ export function AgendaPage({
                                 {hasAllergies && (
                                    <div className="slot-card-allergy">⚠️ Alergia: {patient.allergies}</div>
                                  )}
+                                 <p className="text-xs font-semibold">{formatTimeShort(apt.start_time)} – {formatTimeShort(apt.end_time)}</p>
                                  {Boolean(apt.treatment_notes?.trim()) && (
                                    <p className="mina-note-status">Nota de sesión registrada</p>
                                  )}
@@ -482,17 +449,9 @@ export function AgendaPage({
                                       Expediente
                                     </button>
                                   )}
-                                  {cleanPhone && (
-                                    <a
-                                      href={`https://wa.me/52${cleanPhone}?text=${whatsappMsg}`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="toolbar-btn no-underline"
-                                    >
-                                      <MessageCircle className="w-3.5 h-3.5" />
-                                      WhatsApp
-                                    </a>
-                                  )}
+                                  {upcomingReminders([apt]).length > 0 && <button type="button" className="toolbar-btn" onClick={() => setActiveTab('reminders')}>
+                                    <MessageCircle className="w-3.5 h-3.5" /> Recordatorio
+                                  </button>}
                                   <button
                                     type="button"
                                     onClick={() => handleCancelAppointment(apt)}
@@ -503,8 +462,8 @@ export function AgendaPage({
                                   </button>
                                 </div>
                               </div>
-                            </td>
                           );
+                          })}</td>;
                         })}
                       </tr>
                     );

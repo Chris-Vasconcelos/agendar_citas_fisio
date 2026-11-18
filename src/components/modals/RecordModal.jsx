@@ -8,8 +8,10 @@ export function RecordModal({
   setSelectedPatientForRecord,
   appointments,
   openEditAppointmentModal,
-  userId
+  userId,
+  onPhotoPending
 }) {
+  const [photoBusy, setPhotoBusy] = React.useState(false);
   if (!selectedPatientForRecord) return null;
 
   return (
@@ -32,6 +34,7 @@ export function RecordModal({
           </div>
           <button
             type="button"
+            disabled={photoBusy}
             onClick={() => setSelectedPatientForRecord(null)}
             className="secondary-button text-xs py-1 px-2.5"
           >
@@ -57,7 +60,7 @@ export function RecordModal({
           </div>
         </div>
 
-        <ConsentPhotoSection patient={selectedPatientForRecord} userId={userId} />
+        <ConsentPhotoSection patient={selectedPatientForRecord} userId={userId} onPendingChange={onPhotoPending} onBusyChange={setPhotoBusy} />
         <div className="space-y-2 border-t-2 border-[#595959] pt-3">
           <h3 className="text-sm font-bold text-[#222222]">
             Historial de Sesiones y Tratamientos
@@ -68,6 +71,7 @@ export function RecordModal({
             .map((ses) => (
               <div
                 key={ses.id}
+                data-appointment-id={ses.id}
                 className="rounded-sm border border-[#595959] p-3 bg-white text-xs space-y-1"
               >
                 <div className="flex items-center justify-between font-bold text-[#004070]">
@@ -78,8 +82,9 @@ export function RecordModal({
                   </span>
                   <button
                     type="button"
+                    disabled={photoBusy}
                     onClick={() => {
-                      setSelectedPatientForRecord(null);
+                      if (setSelectedPatientForRecord(null) === false) return;
                       openEditAppointmentModal(ses);
                     }}
                     className="underline text-[#004070] cursor-pointer"
@@ -87,6 +92,7 @@ export function RecordModal({
                     Editar nota
                   </button>
                 </div>
+                <p>Estado: {({scheduled:'Programada',completed:'Completada',cancelled:'Cancelada',no_show:'No asistió'})[ses.status] || ses.status}</p>
                 {ses.patient_condition && (
                   <p className="text-[#222222]">
                     <strong>Estado del paciente:</strong> {ses.patient_condition}

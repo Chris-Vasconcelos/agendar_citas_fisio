@@ -1,5 +1,5 @@
+import { calendarHours } from './utils/calendar';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { getTodayDateString, formatTimeShort, addMinutesToTimeStr } from './utils/date';
 import { DEFAULT_PROFESSIONAL } from './utils/constants';
 import { formatPatientName } from './utils/name';
@@ -29,32 +29,39 @@ import { PatientModal } from './components/modals/PatientModal';
 import { RecordModal } from './components/modals/RecordModal';
 import { PrivacyModal } from './components/modals/PrivacyModal';
 import { AuthModal } from './components/modals/AuthModal';
+import { SessionLock } from './components/modals/SessionLock';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('agenda');
+  const auth = useAuth();
+  // All clinical UI state and its async callbacks belong to one login generation.
+  // A -> logout -> A is a new lifetime; routine token refresh keeps the same lifetime.
+  return <Consultorio key={`${auth.sessionGeneration}:${auth.session?.user?.id || 'signed-out'}`} {...auth} />;
+}
+
+function Consultorio({ session, authLoading, authInitError, locked }) {
+  const [activeTab, setTab] = useState('agenda');
+  const [reloadKey, setReloadKey] = useState(0);
+  const setActiveTab = (tab) => { setTab(tab); setReloadKey((previous) => previous + 1); };
   const [introRevealing, setIntroRevealing] = useState(false);
   const handleSplashReveal = useCallback(() => setIntroRevealing(true), []);
   const [selectedDate, setSelectedDate] = useState(getTodayDateString);
   const [calendarViewMode, setCalendarViewMode] = useState('week');
   const [textSize, setTextSize] = useState(() => {
-    const saved = localStorage.getItem('mina_text_size_v1');
-    return ['sm', 'md', 'lg'].includes(saved) ? saved : 'md';
+    try { const saved = localStorage.getItem('mina_text_size_v1'); return ['sm', 'md', 'lg'].includes(saved) ? saved : 'md'; } catch { return 'md'; }
   });
   useEffect(() => {
     document.documentElement.dataset.size = textSize;
-    localStorage.setItem('mina_text_size_v1', textSize);
+    try { localStorage.setItem('mina_text_size_v1', textSize); } catch {}
   }, [textSize]);
   const [designSkill, setDesignSkill] = useState(
-    () => localStorage.getItem('fisio_typeui_skill_v2') || 'clean'
+    () => { try { return localStorage.getItem('fisio_typeui_skill_v2') || 'clean'; } catch { return 'clean'; } }
   );
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', designSkill);
-    localStorage.setItem('fisio_typeui_skill_v2', designSkill);
+    try { localStorage.setItem('fisio_typeui_skill_v2', designSkill); } catch {}
   }, [designSkill]);
 
-  // Autenticación Supabase
-  const { session, authLoading, authInitError } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authError, setAuthError] = useState('');
   const [authSuccess, setAuthSuccess] = useState('');
@@ -68,7 +75,6 @@ export default function App() {
     return () => clearTimeout(timeout);
   }, [bannerAlert]);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [restoreReport, setRestoreReport] = useState(null);
 
   const appendAuditLog = useCallback((code, detail) => {
     const entry = {
@@ -81,20 +87,12 @@ export default function App() {
   }, []);
 
   // 1. Availability no tiene dependencias entre hooks
-  const { availability, setAvailability, handleEnableDayNow, saveAvailabilityDay, loadedFor: availabilityLoadedFor, initialLoadError: availabilityLoadError } = useAvailability(session, setBannerAlert);
+  const { availability, handleEnableDayNow, saveAvailabilityDay, loadedFor: availabilityLoadedFor, initialLoadError: availabilityLoadError, loadedRevision: availabilityRevision } = useAvailability(session, setBannerAlert, locked, reloadKey);
 
-  // 2. Patients depende solo indirectamente de appointments (para validación en borrado)
-  // Pasaremos una referencia en lugar de un estado directo para no forzar renderizados cruzados:
-  const appointmentsRef = React.useRef([]);
-
-  const { patients, setPatients, patientsById, savePatient, deletePatient, loadedFor: patientsLoadedFor, initialLoadError: patientsLoadError } = usePatients(session, appendAuditLog, setBannerAlert, appointmentsRef);
+  const { patients, patientsById, savePatient, deletePatient, loadedFor: patientsLoadedFor, initialLoadError: patientsLoadError, loadedRevision: patientsRevision } = usePatients(session, appendAuditLog, setBannerAlert, locked, reloadKey);
 
   // 3. Appointments necesita patientsById puramente (no crea ciclo infinito si lo usamos directamente)
-  const { appointments, setAppointments, validateAppointmentConstraints, saveAppointment, cancelAppointment, loadedFor: appointmentsLoadedFor, initialLoadError: appointmentsLoadError } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById);
-
-  useEffect(() => {
-    appointmentsRef.current = appointments;
-  }, [appointments]);
+  const { appointments, validateAppointmentConstraints, saveAppointment, cancelAppointment, loadedFor: appointmentsLoadedFor, initialLoadError: appointmentsLoadError, loadedRevision: appointmentsRevision } = useAppointments(session, appendAuditLog, setBannerAlert, patientsById, locked, reloadKey);
 
   // Modal de Cita
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
@@ -111,18 +109,16 @@ export default function App() {
   const [patientFieldErrors, setPatientFieldErrors] = useState({});
   const [patientFormError, setPatientFormError] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
-  // Close sensitive patient views immediately when authentication disappears.
+  const [pendingPhoto, setPendingPhoto] = useState(false);
   useEffect(() => {
-    if (isSupabaseConfigured && !session?.user?.id) {
-      setSelectedPatientForRecord(null);
-      setIsAppointmentModalOpen(false);
-      setIsPatientModalOpen(false);
-      setPatientSearch('');
-    }
-  }, [session?.user?.id]);
-
-
-
+    const warn = (event) => {
+      if (isPatientModalOpen || isAppointmentModalOpen || pendingPhoto) {
+        event.preventDefault(); event.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [isPatientModalOpen, isAppointmentModalOpen, pendingPhoto]);
   // Lógica de apertura de Modales
   const openCreateAppointmentModal = (defaultStart = '09:00', defaultSlot = 'auto', customDate = selectedDate) => {
     const targetDate = customDate || selectedDate;
@@ -153,6 +149,7 @@ export default function App() {
     setAptFieldErrors({});
     setAptFormError('');
     setAptForm({
+      write_version: apt.write_version,
       patient_id: apt.patient_id,
       slot_number: String(apt.slot_number || 1),
       date: `${y}-${m}-${day}`,
@@ -190,6 +187,7 @@ export default function App() {
     setPatientFieldErrors({});
     setPatientFormError('');
     setPatientForm({
+      write_version: pt.write_version,
       full_name: pt.full_name || '',
       age: pt.age !== null && pt.age !== undefined ? String(pt.age) : '',
       phone: pt.phone || '',
@@ -227,7 +225,9 @@ export default function App() {
     const startISO = new Date(`${form.date}T${form.startTime}:00`).toISOString();
     const endISO = new Date(`${form.date}T${form.endTime}:00`).toISOString();
 
-    const validation = validateAppointmentConstraints(startISO, endISO, form.slot_number, editId, form.patient_id);
+    const validation = form.status === 'cancelled'
+      ? { valid: true, assignedSlot: Number(form.slot_number) || 1 }
+      : validateAppointmentConstraints(startISO, endISO, form.slot_number, editId, form.patient_id);
     if (!validation.valid) {
       if (validation.field) setAptFieldErrors({ [validation.field]: validation.error });
       setAptFormError(validation.error);
@@ -236,6 +236,7 @@ export default function App() {
 
     const assignedSlot = validation.assignedSlot || 1;
     const payload = {
+      write_version: form.write_version,
       patient_id: form.patient_id,
       slot_number: assignedSlot,
       start_time: startISO,
@@ -246,7 +247,7 @@ export default function App() {
       professional_name: (form.professional_name || DEFAULT_PROFESSIONAL).trim(),
     };
 
-    const res = await saveAppointment(payload, editId, assignedSlot);
+    const res = await saveAppointment(payload, editId);
     if (res.success) {
       setIsAppointmentModalOpen(false);
     } else {
@@ -266,10 +267,10 @@ export default function App() {
 
     const fieldErrors = {};
     if (cleanName.length < 3) fieldErrors.full_name = 'El nombre completo debe contener al menos 3 caracteres.';
-    if (numericAge === null || Number.isNaN(numericAge) || numericAge < 0 || numericAge > 120) {
+    if (numericAge === null || !Number.isInteger(numericAge) || numericAge < 0 || numericAge > 120) {
       fieldErrors.age = 'La edad debe ser un número válido entre 0 y 120 años.';
     }
-    if (cleanPhone.length < 7) fieldErrors.phone = 'Ingresa un teléfono válido de al menos 7 dígitos.';
+    if (cleanPhone.replace(/\D/g, '').length < 7) fieldErrors.phone = 'Ingresa un teléfono válido de al menos 7 dígitos.';
     if (cleanEmail && (!cleanEmail.includes('@') || cleanEmail.length < 6)) {
       fieldErrors.email = 'Ingresa un correo electrónico válido o déjalo vacío.';
     }
@@ -287,6 +288,7 @@ export default function App() {
     }
 
     const payload = {
+      write_version: form.write_version,
       full_name: cleanName,
       age: numericAge,
       phone: cleanPhone,
@@ -372,49 +374,15 @@ export default function App() {
     });
   }, [selectedDate, availability, appointments]);
 
-  const weeklyHourRange = useMemo(() => {
-    let minH = 8;
-    let maxH = 19;
-    let maxM = 0;
-    const activeRules = availability.filter((a) => a.is_active);
-    if (activeRules.length > 0) {
-      minH = Math.min(...activeRules.map((r) => Number(r.start_time.split(':')[0])));
-      const maxEndTime = activeRules.reduce((max, r) => {
-        const [h, m] = r.end_time.split(':').map(Number);
-        return h > max.h || (h === max.h && m > max.m) ? { h, m } : max;
-      }, { h: 0, m: 0 });
-      maxH = maxEndTime.h;
-      maxM = maxEndTime.m;
-    }
-
-    // Add extra hour if end time has minutes
-    const effectiveMaxH = maxM > 0 ? maxH + 1 : maxH;
-
-    const hours = [];
-    for (let h = minH; h < effectiveMaxH; h += 1) {
-      hours.push(`${String(h).padStart(2, '0')}:00`);
-    }
-    return hours;
-  }, [availability]);
+  const weeklyHourRange = useMemo(() => calendarHours(
+    weekDays.map((day) => day.rule).filter(Boolean), weekDays.flatMap((day) => day.appointments)
+  ), [weekDays]);
 
   const dailyHourlySlots = useMemo(() => {
     const [y, m, d] = selectedDate.split('-').map(Number);
-    const dayOfWeek = new Date(y, m - 1, d).getDay();
-    const rule = availability.find((a) => Number(a.day_of_week) === dayOfWeek);
-    if (!rule || !rule.is_active) return [];
-
-    const [startH] = rule.start_time.split(':').map(Number);
-    const [endH, endM] = rule.end_time.split(':').map(Number);
-
-    // Add extra hour if end time has minutes
-    const effectiveEndH = endM > 0 ? endH + 1 : endH;
-
-    const hours = [];
-    for (let h = startH; h < effectiveEndH; h += 1) {
-      hours.push(`${String(h).padStart(2, '0')}:00`);
-    }
-    return hours;
-  }, [availability, selectedDate]);
+    const rule = availability.find((a) => Number(a.day_of_week) === new Date(y, m - 1, d).getDay());
+    return calendarHours(rule ? [rule] : [], appointmentsForSelectedDate);
+  }, [availability, selectedDate, appointmentsForSelectedDate]);
 
   const activeDayAppointments = appointmentsForSelectedDate.filter(
     (a) => a.status !== 'cancelled'
@@ -436,8 +404,9 @@ export default function App() {
   // Do not display the login screen until the persisted session has been checked.
   // Never treat an empty asynchronous result as a successful initial load.
   const owner = session?.user?.id;
-  const startupReady = !authLoading && (!isSupabaseConfigured || !owner ||
-    (patientsLoadedFor === owner && appointmentsLoadedFor === owner && availabilityLoadedFor === owner));
+  const startupReady = !authLoading && (!owner ||
+    (patientsLoadedFor === owner && appointmentsLoadedFor === owner && availabilityLoadedFor === owner &&
+      patientsRevision === reloadKey && appointmentsRevision === reloadKey && availabilityRevision === reloadKey));
   const startupErrors = [authInitError, patientsLoadError, appointmentsLoadError, availabilityLoadError].filter(Boolean);
   const loadFailed = startupReady && startupErrors.length > 0;
   const loadingData = !startupReady;
@@ -446,11 +415,12 @@ export default function App() {
       <h2 className="font-bold">No se pudieron cargar los datos de MINA.</h2>
       <p className="mt-2 text-sm">Por seguridad, la agenda y los expedientes no se muestran hasta confirmar una carga correcta.</p>
       <p className="mt-2 text-sm">{startupErrors.join(' ')}</p>
-      <button type="button" className="toolbar-btn mt-3" onClick={() => window.location.reload()}>Reintentar carga</button>
+      <button type="button" className="toolbar-btn mt-3" onClick={() => { if (authInitError) window.location.reload(); else setReloadKey((value) => value + 1); }}>Reintentar carga</button>
     </section>
   );
   return (
     <>
+      <div hidden={locked} inert={locked ? true : undefined} aria-hidden={locked}>
       <Splash ready={startupReady} onRevealStart={handleSplashReveal} />
       <a className="mina-skip-link" href="#main-content">Saltar al contenido</a>
     <div className={`dash-main mina-app-shell pb-24 md:pb-8 ${introRevealing ? 'mina-app-revealing' : 'mina-app-starting'}`} data-theme={designSkill}>
@@ -465,6 +435,9 @@ export default function App() {
         setAuthSuccess={setAuthSuccess}
         setShowAuthModal={setShowAuthModal}
         openCreateAppointmentModal={openCreateAppointmentModal}
+        dataUnavailable={loadingData || loadFailed}
+        onRefresh={() => setReloadKey((value) => value + 1)}
+        refreshDisabled={loadingData || locked || isAppointmentModalOpen || isPatientModalOpen || Boolean(selectedPatientForRecord)}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         patientsCount={patients.length}
@@ -494,7 +467,7 @@ export default function App() {
           startupIssue
         ) : loadingData ? (
           <p role="status" className="p-12 text-center text-slate-600">Cargando tu agenda…</p>
-        ) : (!session && isSupabaseConfigured) ? (
+        ) : !session ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
             {import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL ? (
               <img src={import.meta.env.VITE_MINA_CONSULTORIO_PHOTO_URL}
@@ -554,14 +527,13 @@ export default function App() {
         )}
 
         {activeTab === 'reminders' && (
-          <RemindersPage appointments={appointments} patientsById={patientsById} session={session} />
+          <RemindersPage appointments={appointments} patientsById={patientsById} session={session} locked={locked} />
         )}
 
         {activeTab === 'availability' && (
           <AvailabilityPage
             appointments={appointments}
             availability={availability}
-            setAvailability={setAvailability}
             saveAvailabilityDay={saveAvailabilityDay}
             setActiveTab={setActiveTab}
           />
@@ -569,27 +541,15 @@ export default function App() {
 
             {activeTab === 'security' && (
               <SecurityPage
-                patients={patients}
-                appointments={appointments}
-                availability={availability}
-                patientsById={patientsById}
                 appendAuditLog={appendAuditLog}
-                restoreReport={restoreReport}
-                setRestoreReport={setRestoreReport}
                 auditLogs={auditLogs}
-                setBannerAlert={setBannerAlert}
-                setPatients={setPatients}
-                setAppointments={setAppointments}
-                setAvailability={setAvailability}
-                session={session}
-                supabase={supabase}
-                isSupabaseConfigured={isSupabaseConfigured}
               />
             )}
           </>
         )}
       </main>
 
+      <div hidden={loadingData || loadFailed} inert={loadingData || loadFailed ? true : undefined}>
       <AppointmentModal
         isOpen={isAppointmentModalOpen}
         onClose={() => setIsAppointmentModalOpen(false)}
@@ -600,7 +560,7 @@ export default function App() {
         setAptFieldErrors={setAptFieldErrors}
         aptFormError={aptFormError}
         setAptFormError={setAptFormError}
-        patients={patients}
+        patients={patients.filter((p) => !p.archived_at || p.id === aptForm.patient_id)}
         onSave={handleAppointmentFormSave}
       />
 
@@ -619,11 +579,16 @@ export default function App() {
       />
 
       <RecordModal
-        selectedPatientForRecord={!isSupabaseConfigured || session?.user?.id ? selectedPatientForRecord : null}
-        setSelectedPatientForRecord={setSelectedPatientForRecord}
+        selectedPatientForRecord={session?.user?.id && selectedPatientForRecord ? (patientsById.get(selectedPatientForRecord.id) || selectedPatientForRecord) : null}
+        setSelectedPatientForRecord={(next) => {
+          if (next === null && pendingPhoto && !window.confirm('Hay una fotografía sin terminar de guardar. ¿Quieres cerrar el expediente y descartarla?')) return false;
+          setSelectedPatientForRecord(next);
+          return true;
+        }}
         appointments={appointments}
         openEditAppointmentModal={openEditAppointmentModal}
         userId={session?.user?.id ?? null}
+        onPhotoPending={setPendingPhoto}
       />
 
       <PrivacyModal
@@ -631,6 +596,7 @@ export default function App() {
         onClose={() => setShowPrivacyNoticeModal(false)}
       />
 
+      </div>
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
@@ -641,6 +607,8 @@ export default function App() {
       />
 
     </div>
+      </div>
+      {locked && <SessionLock email={session?.user?.email} />}
     </>
   );
 }

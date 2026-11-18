@@ -1,36 +1,45 @@
 import { useState, useEffect } from 'react';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { localCurrentUser, localSessionEpoch, localSubscribe, localRestoreSession, localSessionState, localCheckSession, localTouchSession, localStorageChanged } from '../local/pocketbaseClient';
 
 export function useAuth() {
-  const [session, setSession] = useState(null);
-  const [authLoading, setAuthLoading] = useState(Boolean(isSupabaseConfigured && supabase));
+  const [identity, setIdentity] = useState(() => ({ session: null, generation: localSessionEpoch(), locked: false }));
+  const [authLoading, setAuthLoading] = useState(true);
   const [authInitError, setAuthInitError] = useState('');
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) { setAuthLoading(false); return; }
-    let cancelled = false;
-    let resolved = false;
-    const finish = (nextSession, error = '') => {
-      if (cancelled || resolved) return;
-      resolved = true;
-      setSession(nextSession);
-      setAuthInitError(error);
-      setAuthLoading(false);
+    let active = true;
+    const acceptUser = (user) => {
+      if (!active) return;
+      setIdentity((previous) => {
+        // A sign-in attempt clears the client while it is already signed out.
+        // Keep that form mounted so a rejected password can still show its error.
+        if (!user && !previous.session) return previous;
+        return { session: user ? { user } : null, generation: localSessionEpoch(), ...localSessionState() };
+      });
+      setAuthInitError('');
     };
-    const timeout = setTimeout(() => {
-      finish(null, 'No se pudo comprobar la sesión. Comprueba tu conexión e inténtalo nuevamente.');
-    }, 12000);
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (cancelled) return;
-      setSession(nextSession);
-      if (nextSession) setAuthInitError('');
-      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') finish(nextSession);
-    });
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (error) finish(null, 'No se pudo recuperar tu sesión. Intenta iniciar sesión nuevamente.');
-      else finish(data?.session ?? null);
-    }).catch(() => finish(null, 'No se pudo comprobar la sesión. Comprueba tu conexión.'));
-    return () => { cancelled = true; clearTimeout(timeout); subscription.unsubscribe(); };
+    const unsubscribe = localSubscribe(acceptUser);
+    const touch = () => localTouchSession();
+    const check = () => localCheckSession();
+    const activityEvents = ['pointerdown', 'keydown', 'scroll', 'touchstart'];
+    activityEvents.forEach((name) => window.addEventListener(name, touch, { passive: true }));
+    window.addEventListener('focus', check);
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('storage', localStorageChanged);
+    const idleTimer = setInterval(check, 15000);
+    const restoreEpoch = localSessionEpoch();
+    localRestoreSession().then(() => {
+      acceptUser(localCurrentUser());
+    }).catch((error) => {
+      if (active && localSessionEpoch() === restoreEpoch) setAuthInitError(error.message);
+    }).finally(() => { if (active) setAuthLoading(false); });
+    return () => {
+      active = false; unsubscribe(); clearInterval(idleTimer);
+      activityEvents.forEach((name) => window.removeEventListener(name, touch));
+      window.removeEventListener('focus', check);
+      document.removeEventListener('visibilitychange', check);
+      window.removeEventListener('storage', localStorageChanged);
+    };
   }, []);
-  return { session, authLoading, authInitError };
+  return { session: identity.session, sessionGeneration: identity.generation, authLoading, authInitError, locked: identity.locked };
 }
