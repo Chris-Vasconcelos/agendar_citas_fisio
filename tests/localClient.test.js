@@ -85,3 +85,44 @@ test('a stale edit explains the conflict without replacing its captured version'
   assert.equal(submitted.previous_version,'captured-old');
   assert.notEqual(submitted.write_version,'captured-old'); api.localSignOut();
 });
+
+for (const failure of ['network', 'invalid JSON']) test(`an old ${failure} failure cannot block writes in the new account`, async () => {
+  const api = await client(); let owner='account-a', failOld, signal;
+  const dispatched=new Promise(resolve=>{signal=resolve;});
+  globalThis.fetch=async(path, options)=>{
+    if(path.includes('auth-')) return ok({token:jwt(),record:{id:owner,email:owner+'@example.invalid'}});
+    const payload=JSON.parse(options.body);
+    if(payload.full_name==='Pending account A') {signal();return new Promise((resolve,reject)=>{failOld=()=>failure==='network' ? reject(new TypeError('Old response lost')) : resolve(new Response('Unreadable old response'));});}
+    return ok({id:'patient-b',owner,full_name:payload.full_name});
+  };
+  await api.localSignIn('a','test');
+  const oldResult=api.localPatientApi.save({full_name:'Pending account A'}).catch(error=>error);
+  await dispatched;api.localSignOut();owner='account-b';await api.localSignIn('b','test');
+  failOld();
+  const oldError=await oldResult;
+  try {
+    const saved=await api.localPatientApi.save({full_name:'Valid account B'});
+    assert.equal(saved.owner,'account-b');
+    assert.match(oldError.message,/descartada/);
+  } finally {api.localSignOut();}
+});
+
+test('discarding A failure must not clear the uncertainty of an actual B write', async () => {
+  const api=await client();let owner='account-a', failOld, signal, writes=0;
+  const dispatched=new Promise(resolve=>{signal=resolve;});
+  globalThis.fetch=async(path)=>{
+    if(path.includes('auth-'))return ok({token:jwt(),record:{id:owner,email:owner+'@example.invalid'}});
+    writes++;
+    if(owner==='account-a'){signal();return new Promise((resolve,reject)=>{failOld=reject;});}
+    return new Response('B response could not be decoded');
+  };
+  await api.localSignIn('a','test');
+  const old=api.localPatientApi.save({full_name:'Pending A'}).catch(error=>error);
+  await dispatched;api.localSignOut();owner='account-b';await api.localSignIn('b','test');
+  try {
+    await assert.rejects(api.localPatientApi.save({full_name:'Uncertain B'}),/confirmar el guardado/);
+    failOld(new TypeError('Late failure A'));assert.match((await old).message,/descartada/);
+    await assert.rejects(api.localPatientApi.save({full_name:'Do not repeat B'}),/guardado sin confirmar/);
+    assert.equal(writes,2);
+  } finally {api.localSignOut();}
+});

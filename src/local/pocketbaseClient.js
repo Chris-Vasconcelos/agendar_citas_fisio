@@ -104,6 +104,7 @@ async function http(path, { method = 'GET', payload, mutation = false } = {}) {
       ...(payload === undefined ? {} : { body: multipart ? payload : JSON.stringify(payload) }) });
     result = await response.json();
   } catch {
+    if (requestEpoch !== epoch) throw new Error('La sesión cambió. La respuesta anterior fue descartada.');
     if (mutation) uncertainWrite = true;
     throw new Error(mutation
       ? 'No se pudo confirmar el guardado. Recarga y comprueba si aparece antes de repetirlo.'

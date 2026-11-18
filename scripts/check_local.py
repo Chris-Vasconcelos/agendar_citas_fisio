@@ -24,8 +24,9 @@ with tempfile.TemporaryDirectory(prefix='mina-check-') as tmp:
                 if '--review-only' not in sys.argv:
                     subprocess.run(['node', 'scripts/check_local_browser.cjs'], cwd=ROOT, check=True)
                 subprocess.run(['node', 'scripts/check_functional_review.cjs'], cwd=ROOT, check=True)
+                subprocess.run(['node', 'scripts/check_session_isolation.cjs'], cwd=ROOT, check=True)
             if '--https' in sys.argv:
-                subprocess.run([sys.executable, 'scripts/check_https.py', os.environ['MINA_TEST_CADDY']], cwd=ROOT, check=True)
+                subprocess.run([sys.executable, 'scripts/check_https.py', os.environ['MINA_TEST_CADDY'], '--snapshot', str(pathlib.Path(tmp)/'https-state')], cwd=ROOT, check=True)
             print('Local integration checks passed.')
         except Exception:
             log.flush()
@@ -41,9 +42,10 @@ with tempfile.TemporaryDirectory(prefix='mina-check-') as tmp:
             age_dir = pathlib.Path(os.environ['MINA_TEST_AGE_DIR']).resolve()
             suffix = '.exe' if os.name == 'nt' else ''
             env = dict(os.environ, MINA_TEST_RESTORED=str(restored))
+            ca_args = ['-SourceHttps', str(pathlib.Path(tmp)/'https-state')] if '--https' in sys.argv else []
             subprocess.run([os.environ.get('MINA_TEST_PWSH','pwsh'), '-NoProfile', '-File', str(ROOT/'scripts/test_backup.ps1'),
                 '-Age', str(age_dir/('age'+suffix)), '-Keygen', str(age_dir/('age-keygen'+suffix)),
-                '-SourceData', str(pathlib.Path(tmp)/'data')], cwd=ROOT, env=env, check=True)
+                '-SourceData', str(pathlib.Path(tmp)/'data')] + ca_args, cwd=ROOT, env=env, check=True)
             recovered = subprocess.Popen([str(exe), 'serve', '--http', '127.0.0.1:8090', '--dir', str(restored/'pb_data'),
                 '--migrationsDir', str(restored/'pb_migrations'), '--publicDir', str(ROOT/'dist-local')], stdout=log, stderr=log)
             try:
@@ -72,6 +74,8 @@ with tempfile.TemporaryDirectory(prefix='mina-check-') as tmp:
                 if '--browser' in sys.argv:
                     code, appts = request('GET', collection('mina_appointments'), token=auth['token'])
                     assert code == 200 and any(a['treatment_notes'] == 'Tratamiento ficticio verificado por navegador.' for a in appts['items']), 'Restored clinical note missing'
+                if '--https' in sys.argv:
+                    subprocess.run([sys.executable, 'scripts/check_https.py', os.environ['MINA_TEST_CADDY'], '--state', str(restored/'https-datos')], cwd=ROOT, check=True)
                 print('Restored PocketBase PASS: operator login, patient records, private photograph and clinical notes.')
             finally:
                 recovered.terminate()

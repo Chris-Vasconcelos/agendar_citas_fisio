@@ -1,4 +1,4 @@
-param([Parameter(Mandatory=$true)][string]$Age, [Parameter(Mandatory=$true)][string]$Keygen, [string]$SourceData)
+param([Parameter(Mandatory=$true)][string]$Age, [Parameter(Mandatory=$true)][string]$Keygen, [string]$SourceData, [string]$SourceHttps)
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot '../local/windows/Respaldo-Comun.ps1')
 $Work = Join-Path ([IO.Path]::GetTempPath()) ('mina-backup-test-' + [guid]::NewGuid().ToString('N'))
@@ -12,8 +12,11 @@ try {
     $Root = Join-Path $Work 'origen'
     $App = Join-Path $Work 'app'
     [IO.Directory]::CreateDirectory($Root) | Out-Null
-    [IO.Directory]::CreateDirectory((Join-Path $Root 'https-datos/pki')) | Out-Null
-    'CA privada ficticia' | Set-Content (Join-Path $Root 'https-datos/pki/root.key')
+    if ($SourceHttps) { Copy-Item $SourceHttps (Join-Path $Root 'https-datos') -Recurse }
+    else {
+        [IO.Directory]::CreateDirectory((Join-Path $Root 'https-datos/pki')) | Out-Null
+        'CA privada ficticia' | Set-Content (Join-Path $Root 'https-datos/pki/root.key')
+    }
     'Configuracion HTTPS ficticia' | Set-Content (Join-Path $Root 'celular.Caddyfile')
     if ($SourceData) { Copy-Item $SourceData (Join-Path $Root 'pb_data') -Recurse }
     else {
