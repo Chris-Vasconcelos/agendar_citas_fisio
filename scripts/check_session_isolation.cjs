@@ -82,7 +82,16 @@ const { readFileSync } = require('node:fs');
     }
   };
   try {
-    await page.goto(root);await signIn(1);
+    await page.goto(root);
+    await page.getByRole('button',{name:'Aviso de privacidad',exact:true}).click();
+    const notice=page.getByRole('dialog');
+    assert.match(await notice.innerText(),/WhatsApp, un servicio externo/);
+    assert.match(await notice.innerText(),/presiona Enviar manualmente/);
+    assert.match(await notice.innerText(),/fotografías de consentimientos/);
+    assert.doesNotMatch(await notice.innerText(),/no se comparten ni sincronizan.*servicios de terceros/);
+    await notice.getByRole('button',{name:'Cerrar',exact:true}).click();
+    console.log('Session PASS: the privacy notice accurately describes local records and authorized manual WhatsApp.');
+    await signIn(1);
     await page.locator('#patient-search-input').fill(secretName);
     await page.getByRole('button',{name:/Historial/}).click();
     await page.locator('[data-appointment-id="'+appointments[0].id+'"]').getByRole('button',{name:'Editar nota',exact:true}).click();

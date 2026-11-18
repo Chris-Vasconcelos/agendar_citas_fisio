@@ -27,13 +27,16 @@ export function PrivacyModal({ isOpen, onClose }) {
           <strong>Responsable:</strong> Consultorio de Fisioterapia Deportiva (Lic. Ft. Eduardo).
         </p>
         <p>
-          <strong>Datos recabados:</strong> Nombre completo, edad, teléfono, correo electrónico, alergias, estudios previos, antecedentes familiares, motivo de consulta y notas de evolución fisioterapéutica.
+          <strong>Datos recabados:</strong> Nombre completo, edad, teléfono, correo electrónico, alergias, estudios previos, antecedentes familiares, motivo de consulta, notas de evolución fisioterapéutica y fotografías de consentimientos firmados cuando se incorporen al expediente.
         </p>
         <p>
           <strong>Finalidades:</strong> Integración y resguardo del expediente clínico del paciente, programación de sesiones de rehabilitación, prevención de riesgos por alergias y seguimiento de tratamientos.
         </p>
         <p>
-          <strong>Confidencialidad:</strong> Los datos clínicos se resguardan de forma privada y <strong>no se comparten ni sincronizan con calendarios externos ni servicios de terceros</strong>.
+          <strong>Confidencialidad:</strong> Los expedientes se resguardan en el servidor local del consultorio con acceso restringido. No se sincronizan con calendarios externos.
+        </p>
+        <p>
+          <strong>Recordatorios por WhatsApp:</strong> Con autorización previa del paciente, el consultorio puede abrir WhatsApp, un servicio externo, con su teléfono, primer nombre y fecha y hora de la cita. El responsable revisa el mensaje y presiona Enviar manualmente. El mensaje preparado no añade notas clínicas, antecedentes ni fotografías.
         </p>
         <p>
           <strong>Acceso y actualización:</strong> El paciente puede solicitar en cualquier momento copia de su historial de sesiones o la actualización de sus datos directamente en el consultorio.

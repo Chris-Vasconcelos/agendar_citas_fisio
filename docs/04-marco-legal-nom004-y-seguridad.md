@@ -8,6 +8,7 @@ Los expedientes, antecedentes y fotografias contienen datos sensibles. La refere
 | Aislamiento | Reglas PocketBase por propietario y relaciones del paciente; pruebas con dos operadores ficticios. Estado de pantalla por generacion de sesion. |
 | Integridad de agenda | Migraciones PocketBase y triggers SQLite para espacios/paciente; pruebas de concurrencia reales. |
 | Fotografias | Archivos protegidos, autorizacion y token temporal; JPG/PNG/WebP, firma de formato y limite de 8 MB en cliente. |
+| WhatsApp | Autorizacion previa, telefono/nombre y fecha/hora en servicio externo; revision/envio y confirmacion manuales. No añadir notas clinicas ni fotografias. |
 | Retencion | Archivar expedientes, conservar citas y documentos. No sustituir la politica de conservacion por exportaciones parciales. |
 | Recuperacion | Copia completa autenticada/cifrada con age, verificacion de todos los archivos y restauracion separada; probar tambien fuera del equipo original. |
 | Equipo y red | Cuentas Windows protegidas, disco cifrado, copias externas, red privada y HTTPS si se utiliza otro dispositivo. Pendiente comprobar el consultorio real. |

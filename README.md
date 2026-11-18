@@ -2,7 +2,9 @@
 
 Aplicacion de citas y expedientes de fisioterapia para el consultorio de Lalo/Eduardo. Esta rama utiliza exclusivamente **PocketBase local**, SQLite administrada por PocketBase y fotografias privadas. React/Vite conserva el diseño original.
 
-Una sola base en la PC Windows. Sin hosting, integracion de calendarios, servicios cloud ni expedientes alternativos en el navegador. Las preferencias visuales pueden persistir en el navegador y el token se conserva en sessionStorage, siempre sujeto a validacion.
+Una sola base en la PC Windows, sin hosting ni servicios cloud para guardar expedientes y sin integracion de calendarios. No se guardan expedientes alternativos en el navegador. Las preferencias visuales pueden persistir; el token se conserva por defecto en sessionStorage y, si se elige Recordar este equipo, en localStorage durante una jornada de hasta ocho horas, siempre sujeto a validacion. No se guardan contraseñas ni expedientes en esos almacenes.
+
+Los recordatorios por WhatsApp son opcionales y manuales: con autorizacion del paciente se abre un servicio externo con telefono, primer nombre y fecha/hora de la cita. El responsable revisa y envia el mensaje. No es un proveedor del almacenamiento clinico.
 
 ## Usar el paquete Windows
 
